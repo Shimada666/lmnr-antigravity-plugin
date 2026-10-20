@@ -1,4 +1,4 @@
-# Validation — 0.2.0 — 2026-10-20
+# Validation — 0.3.0 — 2026-10-20
 
 ## Environment
 
@@ -13,7 +13,22 @@ The first version passed short synthetic conversations but parsed the entire tra
 
 These were implementation defects. Validation now covers the real lifecycle, not just a successful POST.
 
-## Automated checks
+## 0.3.0 worker validation
+
+The local receiver exercises incremental export before Stop, final root token aggregation, lost acknowledgements both with and without server acceptance, rate-limit retry, partial rejection, killing the worker during an accepted request, connection-refusal recovery, owner pause versus real exit, PID reuse, boot identity changes, journal-only native hooks, v0.2 checkpoint migration, and isolation of corrupt sessions. Ambiguous unaccepted requests remain uncertain rather than being blindly resent.
+
+The following real Laminar evidence was collected for 0.2.0; new worker runtime validation is recorded separately below.
+
+## 0.3.0 live acceptance
+
+- 32 regression scenarios and 15 worker lifecycle scenarios pass, including preservation and repair of a torn journal tail. Type/format checks, bundle build, and strict CLI plugin validation pass.
+- Two private long-conversation journals replayed against a local receiver: 126 spans, 63 model spans, no duplicate IDs. All exported model token counters were compared with the source transcripts. No replay payload was sent to the real project.
+- Installed the worker as an enabled, active systemd user service; user lingering is enabled. Existing v0.2 completed checkpoints were migrated without replaying their completed spans.
+- Fresh streaming session `0214c9e1-fe33-4bcb-b4a8-20379d0d0da8`: a project SQL query returned the completed LLM span while the CLI was alive and before fully-idle Stop. Final trace `cba1791f-129b-f22a-76bd-68fb4eb3da56` contains five unique spans with a successful root.
+- Fresh interrupted session `518047a4-d910-434b-86be-523abc16b20a`: the test CLI was killed after PreToolUse and before Stop. The independent service finalized trace `6570b38c-11ea-f0cb-a997-6527e123e6a5` with three unique spans: successful completed LLM, interrupted tool, and error root. Model tokens match the transcript in both fresh traces.
+- Existing business CLI processes were not restarted or terminated. The process-kill check targeted only the disposable test session, after verifying PID/start identity.
+
+## Earlier automated checks
 
 `npm test` runs real hook subprocesses against a local HTTP receiver:
 
@@ -50,4 +65,4 @@ Earlier exploratory traces are not acceptance evidence for corrected error-statu
 
 ## Boundaries
 
-This validates the CLI lifecycle above. It does not establish App/IDE integration, nested subagent linkage, browser/image artifacts, Windows/macOS behavior, pricing, hidden reasoning, or an exact full provider prompt. Compaction messages are supported; physically deleting observed transcript rows is not. Cancellation tests require the CLI to emit a Stop. A live headless permission-denial probe exited without PostInvocation/Stop, leaving only an incomplete journal; process kills/crashes have the same observability limit. No successful trace is invented for those cases.
+This validates the CLI lifecycle above. It does not establish App/IDE integration, nested subagent linkage, browser/image artifacts, Windows/macOS behavior, pricing, hidden reasoning, or an exact full provider prompt. Compaction messages are supported; physically deleting observed transcript rows is not. The earlier headless permission-denial probe exited without PostInvocation/Stop. Version 0.3.0 records process identity on new hooks and can finalize such interrupted turns after verified exit. Legacy journals without owner identity retain their observability limit. No successful completion is invented for those cases.

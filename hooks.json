@@ -42,7 +42,7 @@
       {
         "type": "command",
         "command": "node dist/hook.cjs Stop",
-        "timeout": 75
+        "timeout": 5
       }
     ]
   }

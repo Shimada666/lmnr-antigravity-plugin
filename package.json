@@ -1,6 +1,6 @@
 {
   "name": "lmnr-antigravity-plugin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Antigravity CLI tracing for Laminar",
   "type": "module",
@@ -9,12 +9,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "esbuild src/hook.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/hook.cjs",
+    "build": "esbuild src/hook.ts src/worker.ts --bundle --platform=node --target=node22 --format=cjs --outdir=dist --out-extension:.js=.cjs",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write src scripts README.md VALIDATION.md package.json plugin.json hooks.json tsconfig.json .github",
-    "check": "tsc --noEmit && prettier --check src scripts README.md VALIDATION.md package.json plugin.json hooks.json tsconfig.json .github",
+    "format": "prettier --write src scripts CONTRIBUTING.md README.md VALIDATION.md package.json plugin.json hooks.json tsconfig.json .github",
+    "check": "tsc --noEmit && prettier --check src scripts CONTRIBUTING.md README.md VALIDATION.md package.json plugin.json hooks.json tsconfig.json .github",
     "smoke": "node scripts/smoke.mjs",
-    "test": "npm run smoke && node scripts/regression.mjs"
+    "test": "node scripts/regression.mjs && node scripts/smoke.mjs"
   },
   "dependencies": {
     "proper-lockfile": "4.1.2",

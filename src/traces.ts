@@ -4,7 +4,7 @@ import type {
   EventRecord,
   ExportRequest,
   Span,
-  StopPayload,
+  Owner,
   TranscriptRow,
   ToolCall,
 } from "./schema.js";
@@ -42,56 +42,54 @@ function json(value: unknown, limit: number): string {
     : encoded;
 }
 
-function invocationForStep(step: number, events: EventRecord[]) {
-  // Resuming a conversation can insert SYSTEM_MESSAGE after initialNumSteps.
-  const pre = events.findLast(
-    (e) =>
-      e.payload.event === "PreInvocation" && e.payload.initialNumSteps <= step,
-  );
-  assert(
-    pre?.payload.event === "PreInvocation",
-    `Missing PreInvocation for step ${step}`,
-  );
-  const payload = pre.payload;
-  const post = events.find(
-    (e) =>
-      e.payload.event === "PostInvocation" &&
-      e.payload.initialNumSteps === payload.initialNumSteps &&
-      e.payload.invocationNum === payload.invocationNum &&
-      e.at >= pre.at,
-  );
-  const terminal = events.find(
-    (e) =>
-      e.payload.event === "Stop" &&
-      e.payload.fullyIdle &&
-      e.at >= pre.at &&
-      ["ERROR", "USER_CANCELED"].includes(e.payload.terminationReason),
-  );
-  assert(post || terminal, `Missing PostInvocation for step ${step}`);
-  return {
-    pre: { at: pre.at, payload },
-    post: (post ?? terminal)!,
-    interrupted: post === undefined,
-  };
-}
+type Part =
+  | { type: "text"; content: string }
+  | {
+      type: "tool_call";
+      id: string;
+      name: string;
+      arguments: ToolCall["args"];
+    };
+type Message = {
+  role: string;
+  content?: string;
+  parts?: Part[];
+  tool_call_id?: string;
+};
 
-/** One trace per explicit user turn; model/tool spans are siblings below it. */
-export function buildExport(
+/** Immutable completed child spans; root is emitted only with an observed end. */
+export function buildSpans(
   rows: TranscriptRow[],
   events: EventRecord[],
-  stop: StopPayload,
-  throughStep: number,
+  importedThroughStep: number,
   maxChars: number,
-): { request: ExportRequest; throughStep: number } | null {
+  observedAt: string,
+  alive: (owner: Owner) => boolean,
+  partialTranscript: boolean,
+): Span[] {
+  const first = events.find(
+    (e) =>
+      e.payload.event === "PreInvocation" &&
+      e.payload.initialNumSteps > importedThroughStep,
+  );
+  if (!first) return [];
+  assert(first.payload.event === "PreInvocation");
+  const firstStep = first.payload.initialNumSteps;
+  const firstUser = rows.findLast(
+    (r) =>
+      r.type === "USER_INPUT" &&
+      r.source === "USER_EXPLICIT" &&
+      r.step_index < firstStep,
+  );
+  assert(firstUser, "No user turn before observed invocation");
   const starts = rows.filter(
     (r) =>
       r.type === "USER_INPUT" &&
       r.source === "USER_EXPLICIT" &&
-      r.step_index > throughStep,
+      r.step_index >= firstUser.step_index &&
+      r.step_index > importedThroughStep,
   );
-  if (starts.length === 0) return null;
   const spans: Span[] = [];
-  let exportedThrough = throughStep;
   for (const [turnIndex, user] of starts.entries()) {
     const next = starts[turnIndex + 1];
     const turnRows = rows.filter(
@@ -99,50 +97,62 @@ export function buildExport(
         r.step_index >= user.step_index &&
         (next === undefined || r.step_index < next.step_index),
     );
-    const last = turnRows.at(-1);
-    if (!last) break;
-    const models = turnRows.filter((r) => r.type === "PLANNER_RESPONSE");
-
-    const traceId = id(
-      `antigravity:${stop.conversationId}:${user.step_index}`,
-      32,
-    );
-    const rootId = id(`${traceId}:root`, 16);
-    const lastModel = models.at(-1);
-    const turnInvocations = events.filter(
+    const invocations = events.filter(
       (e) =>
         e.payload.event === "PreInvocation" &&
         e.payload.initialNumSteps > user.step_index &&
         (next === undefined || e.payload.initialNumSteps <= next.step_index),
     );
-    const lastInvocation = turnInvocations.at(-1);
-    // A new queued user input can already be in the transcript during replay.
-    if (!lastInvocation) break;
-    const { post: lastPost } = lastModel
-      ? invocationForStep(lastModel.step_index, events)
-      : { post: lastInvocation };
-    const finish = events.find(
+    const lastInvocation = invocations.at(-1);
+    if (!lastInvocation) continue;
+    const nextInvocation =
+      next === undefined
+        ? undefined
+        : events.find(
+            (e) =>
+              e.payload.event === "PreInvocation" &&
+              e.payload.initialNumSteps > next.step_index,
+          );
+    const turnEvents = events.filter(
+      (e) =>
+        e.at >= invocations[0]!.at &&
+        (nextInvocation === undefined || e.at < nextInvocation.at),
+    );
+    const lastActivity = turnEvents.findLast(
+      (e) => e.payload.event !== "Stop",
+    )!;
+    const stop = turnEvents.find(
       (e) =>
         e.payload.event === "Stop" &&
         e.payload.fullyIdle &&
-        e.at >= lastPost.at &&
-        e.at >= lastInvocation.at,
+        e.at >= lastActivity.at,
     );
-    assert(finish?.payload.event === "Stop", "Missing Stop event for turn");
+    const dead = lastInvocation.owner !== null && !alive(lastInvocation.owner);
+    const finishAt =
+      stop?.at ?? nextInvocation?.at ?? (dead ? observedAt : undefined);
+    const reason =
+      stop?.payload.event === "Stop"
+        ? stop.payload.terminationReason
+        : nextInvocation
+          ? "SUPERSEDED_WITHOUT_STOP"
+          : dead
+            ? "OWNER_EXITED_WITHOUT_STOP"
+            : undefined;
+    const normal =
+      stop?.payload.event === "Stop" &&
+      !stop.payload.error &&
+      ["NO_TOOL_CALL", "TERMINAL_STEP_TYPE", "INJECTED_RESPONSE"].includes(
+        stop.payload.terminationReason,
+      );
     const terminalError =
-      finish.payload.error ||
-      ([
-        "ERROR",
-        "USER_CANCELED",
-        "MAX_INVOCATIONS",
-        "MAX_FORCED_INVOCATIONS",
-        "MAX_TOKEN_BUDGET_EXCEEDED",
-      ].includes(finish.payload.terminationReason)
-        ? finish.payload.terminationReason
-        : undefined);
-    const session = {
-      "lmnr.association.properties.session_id": stop.conversationId,
-    };
+      finishAt === undefined || normal
+        ? undefined
+        : (stop?.payload.event === "Stop" && stop.payload.error) || reason;
+    const traceId = id(
+      `antigravity:${first.payload.conversationId}:${user.step_index}`,
+      32,
+    );
+    const rootId = id(`${traceId}:root`, 16);
     const makeSpan = (
       name: string,
       key: string,
@@ -160,7 +170,11 @@ export function buildExport(
         kind: 1,
         startTimeUnixNano: nano(start),
         endTimeUnixNano: nano(end),
-        attributes: attributes({ ...session, ...attrs }),
+        attributes: attributes({
+          "lmnr.association.properties.session_id":
+            first.payload.conversationId,
+          ...attrs,
+        }),
         events: error
           ? [
               {
@@ -177,45 +191,65 @@ export function buildExport(
           : { code: 1 },
       };
     };
-    const prompt = user.content;
-    assert(prompt !== undefined, "User content missing");
-    const inputMessages: { role: string; content: string }[] = [
-      { role: "user", content: text(prompt, maxChars) },
+    assert(user.content !== undefined, "Missing user content");
+    const messages: Message[] = [
+      { role: "user", content: text(user.content, maxChars) },
     ];
-    const coveredTools = new Set<number>();
-    const coveredInvocations = new Set<string>();
+    const models = turnRows.filter((r) => r.type === "PLANNER_RESPONSE");
+    const seenInvocations = new Set<string>();
+    const seenTools = new Set<number>();
+    let priorModel = user.step_index;
     for (const model of models) {
-      const { pre, post, interrupted } = invocationForStep(
-        model.step_index,
-        events,
-      );
-      const invocationKey = `${pre.at}:${pre.payload.initialNumSteps}`;
-      assert(
-        !coveredInvocations.has(invocationKey),
-        `Multiple model responses mapped to one invocation at step ${model.step_index}`,
-      );
-      coveredInvocations.add(invocationKey);
       for (const system of turnRows.filter(
         (r) =>
           ["SYSTEM_MESSAGE", "CHECKPOINT", "ERROR_MESSAGE"].includes(r.type) &&
-          r.step_index >
-            (models[models.indexOf(model) - 1]?.step_index ??
-              user.step_index) &&
+          r.step_index > priorModel &&
           r.step_index < model.step_index,
       )) {
         assert(
           system.source === "SYSTEM" &&
             (system.content !== undefined || system.error !== undefined),
-          "Invalid SYSTEM_MESSAGE",
+          "Invalid system message",
         );
-        inputMessages.push({
+        messages.push({
           role: "system",
           content: text(system.content ?? system.error!, maxChars),
         });
       }
-      const following: number =
-        models.find((m) => m.step_index > model.step_index)?.step_index ??
-        last.step_index + 1;
+      priorModel = model.step_index;
+      const pre = invocations.findLast(
+        (e) =>
+          e.payload.event === "PreInvocation" &&
+          e.payload.initialNumSteps <= model.step_index,
+      );
+      if (!pre) {
+        assert(!finishAt, `Missing PreInvocation at step ${model.step_index}`);
+        break;
+      }
+      assert(pre.payload.event === "PreInvocation");
+      const prePayload = pre.payload;
+      const invocationKey = `${pre.at}:${prePayload.initialNumSteps}`;
+      if (seenInvocations.has(invocationKey)) {
+        assert(
+          !finishAt,
+          `Multiple model responses mapped to one invocation at step ${model.step_index}`,
+        );
+        break;
+      }
+      seenInvocations.add(invocationKey);
+      const post = turnEvents.find(
+        (e) =>
+          e.payload.event === "PostInvocation" &&
+          e.payload.initialNumSteps === prePayload.initialNumSteps &&
+          e.payload.invocationNum === prePayload.invocationNum &&
+          e.at >= pre.at,
+      );
+      if (normal)
+        assert(post, `Missing PostInvocation at step ${model.step_index}`);
+      const following =
+        models.find((r) => r.step_index > model.step_index)?.step_index ??
+        next?.step_index ??
+        Infinity;
       const results = turnRows.filter(
         (r) =>
           r.type === "GENERIC" &&
@@ -224,17 +258,97 @@ export function buildExport(
       );
       const calls = model.tool_calls ?? [];
       assert(
-        results.length === calls.length,
-        `Tool-call/result mismatch at step ${model.step_index}`,
+        results.length <= calls.length,
+        `Too many tool results at step ${model.step_index}`,
       );
-      const tools = results.map((result, i) => {
+      if (normal)
+        assert(
+          results.length === calls.length,
+          `Tool-call/result mismatch at step ${model.step_index}`,
+        );
+      const toolHooks = turnEvents.filter(
+        (e) =>
+          e.payload.event === "PreToolUse" &&
+          e.payload.stepIdx > model.step_index &&
+          e.payload.stepIdx < following,
+      );
+      const modelEnd = toolHooks[0]?.at ?? post?.at ?? finishAt;
+      const modelComplete =
+        model.status === "DONE" &&
+        (toolHooks.length > 0 || post !== undefined || finishAt !== undefined);
+      const parts: Part[] = [];
+      if (model.content !== undefined)
+        parts.push({ type: "text", content: text(model.content, maxChars) });
+      calls.forEach((call, i) =>
+        parts.push({
+          type: "tool_call",
+          id: `call-${model.step_index}-${i}`,
+          name: call.name,
+          arguments:
+            JSON.stringify(call.args).length > maxChars
+              ? { _truncated: text(JSON.stringify(call.args), maxChars) }
+              : call.args,
+        }),
+      );
+      if (modelEnd && (modelComplete || finishAt)) {
+        const attrs: Record<string, string | number | boolean> = {
+          "lmnr.span.type": "LLM",
+          "gen_ai.request.model": prePayload.modelName,
+          "gen_ai.response.model": prePayload.modelName,
+          "gen_ai.input.messages": JSON.stringify(messages),
+          "gen_ai.output.messages": JSON.stringify([
+            { role: "assistant", parts },
+          ]),
+          "antigravity.step_index": model.step_index,
+          "antigravity.incomplete": !modelComplete,
+          "antigravity.timing_source":
+            toolHooks.length > 0 || post
+              ? "hook_wall_clock"
+              : "recovery_observation",
+        };
+        if (modelComplete) {
+          for (const [field, target] of [
+            ["output_tokens", "output_tokens"],
+            ["cache_read_tokens", "cache_read_input_tokens"],
+            ["thinking_tokens", "reasoning_tokens"],
+          ] as const)
+            if (model[field] !== undefined)
+              attrs[`gen_ai.usage.${target}`] = model[field];
+          if (model.input_tokens !== undefined) {
+            assert(
+              model.cache_read_tokens !== undefined,
+              "Cannot normalize input tokens without cache counter",
+            );
+            attrs["antigravity.usage.uncached_input_tokens"] =
+              model.input_tokens;
+            attrs["antigravity.usage.cache_read_tokens"] =
+              model.cache_read_tokens;
+            attrs["gen_ai.usage.input_tokens"] =
+              model.input_tokens + model.cache_read_tokens;
+          }
+        }
+        spans.push(
+          makeSpan(
+            `LLM ${prePayload.invocationNum + 1}`,
+            `llm:${model.step_index}`,
+            pre.at,
+            modelEnd,
+            attrs,
+            modelComplete
+              ? undefined
+              : model.error || terminalError || "Incomplete model response",
+          ),
+        );
+      }
+      messages.push({ role: "assistant", parts });
+      for (const [i, result] of results.entries()) {
         const call = calls[i]!;
-        const preTool = events.find(
+        const preTool = toolHooks.find(
           (e) =>
             e.payload.event === "PreToolUse" &&
             e.payload.stepIdx === result.step_index,
         );
-        const postTool = events.find(
+        const postTool = turnEvents.find(
           (e) =>
             e.payload.event === "PostToolUse" &&
             e.payload.stepIdx === result.step_index,
@@ -242,236 +356,188 @@ export function buildExport(
         if (preTool) {
           assert(preTool.payload.event === "PreToolUse");
           assert.deepEqual(preTool.payload.toolCall, call);
-          if (postTool) {
-            assert(postTool.payload.event === "PostToolUse");
-            assert.deepEqual(postTool.payload.toolCall, call);
-            assert(postTool.at >= preTool.at, "Tool hook order is invalid");
-          } else
-            assert(
-              interrupted,
-              `Missing PostToolUse for step ${result.step_index}`,
-            );
-        } else {
-          assert(
-            !postTool,
-            `PostToolUse without PreToolUse at step ${result.step_index}`,
-          );
-          assert(
-            ["ERROR", "INVALID"].includes(result.status),
-            `Missing PreToolUse for step ${result.step_index}`,
-          );
         }
-        return { result, call, preTool, postTool };
-      });
-      // A rejected call can fail before hooks run; preserve its transcript error
-      // and mark timestamp-only timing rather than inventing an execution time.
-      const modelEnd =
-        tools.flatMap((t) => (t.preTool ? [t.preTool.at] : [])).sort()[0] ??
-        post.at;
-      const parts: (
-        | { type: "text"; content: string }
-        | {
-            type: "tool_call";
-            id: string;
-            name: string;
-            arguments: ToolCall["args"];
-          }
-      )[] = [];
-      if (model.content !== undefined)
-        parts.push({ type: "text", content: text(model.content, maxChars) });
-      for (const tool of tools) {
-        const call = tool.call;
-        parts.push({
-          type: "tool_call",
-          id: `step-${tool.result.step_index}`,
-          name: call.name,
-          arguments:
-            JSON.stringify(call.args).length > maxChars
-              ? { _truncated: text(JSON.stringify(call.args), maxChars) }
-              : call.args,
-        });
-      }
-      const attrs: Record<string, string | number | boolean> = {
-        "lmnr.span.type": "LLM",
-        "gen_ai.request.model": pre.payload.modelName,
-        "gen_ai.response.model": pre.payload.modelName,
-        "gen_ai.input.messages": JSON.stringify(inputMessages),
-        "gen_ai.output.messages": JSON.stringify([
-          { role: "assistant", parts },
-        ]),
-        "antigravity.step_index": model.step_index,
-        "antigravity.timing_source": "hook_wall_clock",
-      };
-      for (const [field, target] of [
-        ["output_tokens", "output_tokens"],
-        ["cache_read_tokens", "cache_read_input_tokens"],
-        ["thinking_tokens", "reasoning_tokens"],
-      ] as const) {
-        if (model[field] !== undefined)
-          attrs[`gen_ai.usage.${target}`] = model[field];
-      }
-      if (model.input_tokens !== undefined) {
-        assert(
-          model.cache_read_tokens !== undefined,
-          "Cannot normalize input tokens without the cache counter",
-        );
-        // agy 1.4.2 reports uncached input separately; Laminar/OTel input
-        // includes cached input. Preserve both source counters explicitly.
-        attrs["antigravity.usage.uncached_input_tokens"] = model.input_tokens;
-        attrs["antigravity.usage.cache_read_tokens"] = model.cache_read_tokens;
-        attrs["gen_ai.usage.input_tokens"] =
-          model.input_tokens + model.cache_read_tokens;
-      }
-      spans.push(
-        makeSpan(
-          `LLM ${pre.payload.invocationNum + 1}`,
-          `llm:${model.step_index}`,
-          pre.at,
-          modelEnd,
-          attrs,
-          interrupted
-            ? "Invocation interrupted before PostInvocation"
-            : undefined,
-        ),
-      );
-      if (model.content !== undefined)
-        inputMessages.push({
-          role: "assistant",
-          content: text(model.content, maxChars),
-        });
-      for (const tool of tools) {
-        const { result, call, preTool, postTool } = tool;
+        if (postTool) {
+          assert(preTool && postTool.payload.event === "PostToolUse");
+          assert.deepEqual(postTool.payload.toolCall, call);
+          assert(postTool.at >= preTool.at);
+        }
+        const failedBeforeHook =
+          !preTool && ["ERROR", "INVALID"].includes(result.status);
+        if (!preTool && !failedBeforeHook) {
+          assert(!finishAt, `Missing PreToolUse for step ${result.step_index}`);
+          continue;
+        }
+        if (!postTool && !failedBeforeHook && !result.error && !finishAt)
+          continue;
+        if (normal && preTool && !result.error)
+          assert(postTool, `Missing PostToolUse for step ${result.step_index}`);
         assert(
           result.content !== undefined || result.error !== undefined,
-          `Tool result missing at step ${result.step_index}`,
+          `Missing tool content at step ${result.step_index}`,
         );
         const content = result.content ?? result.error!;
-        coveredTools.add(result.step_index);
         const hookError =
           postTool?.payload.event === "PostToolUse"
             ? postTool.payload.error
             : undefined;
+        const incomplete =
+          preTool !== undefined && postTool === undefined && !result.error;
         spans.push(
           makeSpan(
             call.name,
             `tool:${result.step_index}`,
-            preTool?.at ?? result.created_at,
-            postTool?.at ?? (preTool ? post.at : result.created_at),
+            !postTool && result.error
+              ? result.created_at
+              : (preTool?.at ?? result.created_at),
+            postTool?.at ??
+              (result.error
+                ? result.created_at
+                : preTool
+                  ? finishAt!
+                  : result.created_at),
             {
               "lmnr.span.type": "TOOL",
               "lmnr.span.input": json(call.args, maxChars),
               "lmnr.span.output": json(content, maxChars),
               "antigravity.step_index": result.step_index,
               "antigravity.transcript_status": result.status,
+              "antigravity.incomplete": incomplete,
               "antigravity.tool_scope":
                 result.status === "RUNNING"
                   ? "background_dispatch"
                   : "tool_execution",
-              "antigravity.timing_source": preTool
+              "antigravity.timing_source": postTool
                 ? "hook_wall_clock"
-                : "transcript_timestamp_only",
+                : preTool
+                  ? "recovery_observation"
+                  : "transcript_timestamp_only",
             },
             hookError ||
               result.error ||
-              (preTool && !postTool
-                ? "Tool interrupted before PostToolUse"
-                : undefined),
+              (incomplete ? terminalError || "Interrupted tool" : undefined),
           ),
         );
-        inputMessages.push({ role: "tool", content: text(content, maxChars) });
+        seenTools.add(result.step_index);
+        messages.push({
+          role: "tool",
+          tool_call_id: `call-${model.step_index}-${i}`,
+          content: text(content, maxChars),
+        });
       }
     }
-    for (const invocation of turnInvocations) {
-      assert(invocation.payload.event === "PreInvocation");
-      const initial = invocation.payload.initialNumSteps;
-      const later = turnInvocations.find(
-        (e) =>
-          e.payload.event === "PreInvocation" &&
-          e.payload.initialNumSteps > initial,
-      );
-      const upper =
-        later?.payload.event === "PreInvocation"
-          ? later.payload.initialNumSteps
-          : Infinity;
-      if (models.some((m) => m.step_index >= initial && m.step_index < upper))
-        continue;
-      assert(
-        terminalError,
-        `Invocation has no model response at step ${initial}`,
-      );
-      spans.push(
-        makeSpan(
-          `LLM ${invocation.payload.invocationNum + 1}`,
-          `incomplete:${initial}`,
-          invocation.at,
-          finish.at,
-          {
-            "lmnr.span.type": "LLM",
-            "gen_ai.request.model": invocation.payload.modelName,
-            "antigravity.initial_num_steps": initial,
-            "antigravity.incomplete": true,
-            "antigravity.timing_source": "hook_wall_clock",
-          },
+    if (finishAt) {
+      for (const pre of invocations) {
+        assert(pre.payload.event === "PreInvocation");
+        if (seenInvocations.has(`${pre.at}:${pre.payload.initialNumSteps}`))
+          continue;
+        assert(
           terminalError,
-        ),
-      );
-    }
-    for (const row of turnRows) {
-      assert(
-        row.type !== "GENERIC" || coveredTools.has(row.step_index),
-        `Unmapped GENERIC step ${row.step_index}`,
-      );
-      assert(
-        row.type !== "USER_INPUT" || row.step_index === user.step_index,
-        `Unsupported injected input at step ${row.step_index}`,
-      );
-    }
-    const root = makeSpan(
-      `Antigravity - Turn at step ${user.step_index} (${stop.conversationId.slice(0, 8)})`,
-      "root",
-      user.created_at,
-      finish.at,
-      {
-        "lmnr.span.type": "DEFAULT",
-        "lmnr.span.input": json(
-          { role: "user", content: text(prompt, maxChars) },
-          maxChars,
-        ),
-        "lmnr.span.output": json(
-          {
-            role: "assistant",
-            content: text(lastModel?.content ?? "", maxChars),
-          },
-          maxChars,
-        ),
-        "lmnr.association.properties.metadata.source": "antigravity",
-        "antigravity.termination_reason": finish.payload.terminationReason,
-        "antigravity.user_step": user.step_index,
-        "antigravity.input_scope": "visible_transcript_not_full_model_request",
-      },
-      terminalError,
-    );
-    delete root.parentSpanId;
-    spans.unshift(root);
-    exportedThrough = last.step_index;
-  }
-  if (spans.length === 0) return null;
-  return {
-    throughStep: exportedThrough,
-    request: {
-      resourceSpans: [
+          `Invocation has no model response at step ${pre.payload.initialNumSteps}`,
+        );
+        spans.push(
+          makeSpan(
+            `LLM ${pre.payload.invocationNum + 1}`,
+            `incomplete:${pre.payload.initialNumSteps}`,
+            pre.at,
+            finishAt,
+            {
+              "lmnr.span.type": "LLM",
+              "gen_ai.request.model": pre.payload.modelName,
+              "antigravity.initial_num_steps": pre.payload.initialNumSteps,
+              "antigravity.incomplete": true,
+              "antigravity.timing_source": "recovery_observation",
+            },
+            terminalError,
+          ),
+        );
+      }
+      for (const e of turnEvents) {
+        if (
+          e.payload.event !== "PreToolUse" ||
+          seenTools.has(e.payload.stepIdx)
+        )
+          continue;
+        assert(
+          terminalError,
+          `Unmatched tool start at step ${e.payload.stepIdx}`,
+        );
+        const p = e.payload;
+        spans.push(
+          makeSpan(
+            p.toolCall.name,
+            `tool:${p.stepIdx}`,
+            e.at,
+            finishAt,
+            {
+              "lmnr.span.type": "TOOL",
+              "lmnr.span.input": json(p.toolCall.args, maxChars),
+              "antigravity.step_index": p.stepIdx,
+              "antigravity.incomplete": true,
+              "antigravity.timing_source": "recovery_observation",
+            },
+            terminalError,
+          ),
+        );
+      }
+      for (const r of turnRows)
+        assert(
+          r.type !== "USER_INPUT" || r.step_index === user.step_index,
+          `Unsupported injected input at step ${r.step_index}`,
+        );
+      const root = makeSpan(
+        `Antigravity - Turn at step ${user.step_index} (${first.payload.conversationId.slice(0, 8)})`,
+        "root",
+        user.created_at,
+        finishAt,
         {
-          resource: {
-            attributes: attributes({
-              "service.name": "antigravity",
-              "telemetry.sdk.name": "lmnr-antigravity-plugin",
-            }),
-          },
-          scopeSpans: [
-            { scope: { name: "lmnr.antigravity", version: "0.2.0" }, spans },
-          ],
+          "lmnr.span.type": "DEFAULT",
+          "lmnr.span.input": json(
+            { role: "user", content: text(user.content, maxChars) },
+            maxChars,
+          ),
+          "lmnr.span.output": json(
+            {
+              role: "assistant",
+              content: text(models.at(-1)?.content ?? "", maxChars),
+            },
+            maxChars,
+          ),
+          "lmnr.association.properties.metadata.source": "antigravity",
+          "antigravity.termination_reason": reason!,
+          "antigravity.user_step": user.step_index,
+          "antigravity.input_scope":
+            "visible_transcript_not_full_model_request",
+          "antigravity.recovered": stop === undefined,
+          "antigravity.partial_transcript": partialTranscript,
+          "antigravity.last_observed_at": lastActivity.at,
+          "antigravity.timing_source": stop
+            ? "hook_wall_clock"
+            : "recovery_observation",
         },
-      ],
-    },
+        terminalError,
+      );
+      delete root.parentSpanId;
+      spans.push(root);
+    }
+  }
+  return spans;
+}
+
+export function pack(spans: Span[]): ExportRequest {
+  return {
+    resourceSpans: [
+      {
+        resource: {
+          attributes: attributes({
+            "service.name": "antigravity",
+            "telemetry.sdk.name": "lmnr-antigravity-plugin",
+          }),
+        },
+        scopeSpans: [
+          { scope: { name: "lmnr.antigravity", version: "0.3.0" }, spans },
+        ],
+      },
+    ],
   };
 }

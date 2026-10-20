@@ -14,5 +14,5 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
-      - run: git diff --exit-code -- dist/hook.cjs
+      - run: git diff --exit-code -- dist/
       - run: npm test

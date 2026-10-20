@@ -538,8 +538,8 @@ var require_graceful_fs = __commonJS({
         }
       }
       var fs$writeFile = fs2.writeFile;
-      fs2.writeFile = writeFile2;
-      function writeFile2(path, data, options, cb) {
+      fs2.writeFile = writeFile;
+      function writeFile(path, data, options, cb) {
         if (typeof options === "function")
           cb = options, options = null;
         return go$writeFile(path, data, options, cb);
@@ -556,8 +556,8 @@ var require_graceful_fs = __commonJS({
       }
       var fs$appendFile = fs2.appendFile;
       if (fs$appendFile)
-        fs2.appendFile = appendFile2;
-      function appendFile2(path, data, options, cb) {
+        fs2.appendFile = appendFile;
+      function appendFile(path, data, options, cb) {
         if (typeof options === "function")
           cb = options, options = null;
         return go$appendFile(path, data, options, cb);
@@ -698,7 +698,7 @@ var require_graceful_fs = __commonJS({
       }
       function ReadStream$open() {
         var that = this;
-        open(that.path, that.flags, that.mode, function(err, fd) {
+        open2(that.path, that.flags, that.mode, function(err, fd) {
           if (err) {
             if (that.autoClose)
               that.destroy();
@@ -718,7 +718,7 @@ var require_graceful_fs = __commonJS({
       }
       function WriteStream$open() {
         var that = this;
-        open(that.path, that.flags, that.mode, function(err, fd) {
+        open2(that.path, that.flags, that.mode, function(err, fd) {
           if (err) {
             that.destroy();
             that.emit("error", err);
@@ -735,8 +735,8 @@ var require_graceful_fs = __commonJS({
         return new fs2.WriteStream(path, options);
       }
       var fs$open = fs2.open;
-      fs2.open = open;
-      function open(path, flags, mode, cb) {
+      fs2.open = open2;
+      function open2(path, flags, mode, cb) {
         if (typeof mode === "function")
           cb = mode, mode = null;
         return go$open(path, flags, mode, cb);
@@ -1608,12 +1608,8 @@ var require_proper_lockfile = __commonJS({
 
 // src/hook.ts
 var import_strict2 = __toESM(require("node:assert/strict"), 1);
-var import_node_crypto2 = require("node:crypto");
-var import_node_fs = require("node:fs");
-var import_promises = require("node:fs/promises");
-var import_node_os = require("node:os");
-var import_node_path = require("node:path");
-var import_proper_lockfile = __toESM(require_proper_lockfile(), 1);
+var import_node_fs2 = require("node:fs");
+var import_node_path2 = require("node:path");
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -4559,24 +4555,24 @@ var $ZodObjectJIT = /* @__PURE__ */ $constructor("$ZodObjectJIT", (inst, def) =>
     }
     doc.write(`const newResult = {};`);
     for (const key of normalized.keys) {
-      const id2 = ids[key];
+      const id = ids[key];
       const k = esc(key);
-      doc.write(`const ${id2} = ${parseStr(key)};`);
+      doc.write(`const ${id} = ${parseStr(key)};`);
       doc.write(`
-        if (${id2}.issues.length) {
-          payload.issues = payload.issues.concat(${id2}.issues.map(iss => ({
+        if (${id}.issues.length) {
+          payload.issues = payload.issues.concat(${id}.issues.map(iss => ({
             ...iss,
             path: iss.path ? [${k}, ...iss.path] : [${k}]
           })));
         }
         
         
-        if (${id2}.value === undefined) {
+        if (${id}.value === undefined) {
           if (${k} in input) {
             newResult[${k}] = undefined;
           }
         } else {
-          newResult[${k}] = ${id2}.value;
+          newResult[${k}] = ${id}.value;
         }
         
       `);
@@ -8689,8 +8685,8 @@ var parsedTypeFromType = (t, data = void 0) => {
   }
   return t;
 };
-var capitalizeFirstCharacter = (text2) => {
-  return text2.charAt(0).toUpperCase() + text2.slice(1);
+var capitalizeFirstCharacter = (text) => {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 };
 function getUnitTypeFromNumber(number4) {
   const abs = Math.abs(number4);
@@ -12267,24 +12263,24 @@ var JSONSchemaGenerator = class {
         const _json = result.schema;
         switch (def.type) {
           case "string": {
-            const json3 = _json;
-            json3.type = "string";
+            const json2 = _json;
+            json2.type = "string";
             const { minimum, maximum, format, patterns, contentEncoding } = schema._zod.bag;
             if (typeof minimum === "number")
-              json3.minLength = minimum;
+              json2.minLength = minimum;
             if (typeof maximum === "number")
-              json3.maxLength = maximum;
+              json2.maxLength = maximum;
             if (format) {
-              json3.format = formatMap[format] ?? format;
-              if (json3.format === "")
-                delete json3.format;
+              json2.format = formatMap[format] ?? format;
+              if (json2.format === "")
+                delete json2.format;
             }
             if (contentEncoding)
-              json3.contentEncoding = contentEncoding;
+              json2.contentEncoding = contentEncoding;
             if (patterns && patterns.size > 0) {
               const regexes = [...patterns];
               if (regexes.length === 1)
-                json3.pattern = regexes[0].source;
+                json2.pattern = regexes[0].source;
               else if (regexes.length > 1) {
                 result.schema.allOf = [
                   ...regexes.map((regex) => ({
@@ -12297,53 +12293,53 @@ var JSONSchemaGenerator = class {
             break;
           }
           case "number": {
-            const json3 = _json;
+            const json2 = _json;
             const { minimum, maximum, format, multipleOf, exclusiveMaximum, exclusiveMinimum } = schema._zod.bag;
             if (typeof format === "string" && format.includes("int"))
-              json3.type = "integer";
+              json2.type = "integer";
             else
-              json3.type = "number";
+              json2.type = "number";
             if (typeof exclusiveMinimum === "number") {
               if (this.target === "draft-4" || this.target === "openapi-3.0") {
-                json3.minimum = exclusiveMinimum;
-                json3.exclusiveMinimum = true;
+                json2.minimum = exclusiveMinimum;
+                json2.exclusiveMinimum = true;
               } else {
-                json3.exclusiveMinimum = exclusiveMinimum;
+                json2.exclusiveMinimum = exclusiveMinimum;
               }
             }
             if (typeof minimum === "number") {
-              json3.minimum = minimum;
+              json2.minimum = minimum;
               if (typeof exclusiveMinimum === "number" && this.target !== "draft-4") {
                 if (exclusiveMinimum >= minimum)
-                  delete json3.minimum;
+                  delete json2.minimum;
                 else
-                  delete json3.exclusiveMinimum;
+                  delete json2.exclusiveMinimum;
               }
             }
             if (typeof exclusiveMaximum === "number") {
               if (this.target === "draft-4" || this.target === "openapi-3.0") {
-                json3.maximum = exclusiveMaximum;
-                json3.exclusiveMaximum = true;
+                json2.maximum = exclusiveMaximum;
+                json2.exclusiveMaximum = true;
               } else {
-                json3.exclusiveMaximum = exclusiveMaximum;
+                json2.exclusiveMaximum = exclusiveMaximum;
               }
             }
             if (typeof maximum === "number") {
-              json3.maximum = maximum;
+              json2.maximum = maximum;
               if (typeof exclusiveMaximum === "number" && this.target !== "draft-4") {
                 if (exclusiveMaximum <= maximum)
-                  delete json3.maximum;
+                  delete json2.maximum;
                 else
-                  delete json3.exclusiveMaximum;
+                  delete json2.exclusiveMaximum;
               }
             }
             if (typeof multipleOf === "number")
-              json3.multipleOf = multipleOf;
+              json2.multipleOf = multipleOf;
             break;
           }
           case "boolean": {
-            const json3 = _json;
-            json3.type = "boolean";
+            const json2 = _json;
+            json2.type = "boolean";
             break;
           }
           case "bigint": {
@@ -12396,23 +12392,23 @@ var JSONSchemaGenerator = class {
             break;
           }
           case "array": {
-            const json3 = _json;
+            const json2 = _json;
             const { minimum, maximum } = schema._zod.bag;
             if (typeof minimum === "number")
-              json3.minItems = minimum;
+              json2.minItems = minimum;
             if (typeof maximum === "number")
-              json3.maxItems = maximum;
-            json3.type = "array";
-            json3.items = this.process(def.element, { ...params, path: [...params.path, "items"] });
+              json2.maxItems = maximum;
+            json2.type = "array";
+            json2.items = this.process(def.element, { ...params, path: [...params.path, "items"] });
             break;
           }
           case "object": {
-            const json3 = _json;
-            json3.type = "object";
-            json3.properties = {};
+            const json2 = _json;
+            json2.type = "object";
+            json2.properties = {};
             const shape = def.shape;
             for (const key in shape) {
-              json3.properties[key] = this.process(shape[key], {
+              json2.properties[key] = this.process(shape[key], {
                 ...params,
                 path: [...params.path, "properties", key]
               });
@@ -12427,15 +12423,15 @@ var JSONSchemaGenerator = class {
               }
             }));
             if (requiredKeys.size > 0) {
-              json3.required = Array.from(requiredKeys);
+              json2.required = Array.from(requiredKeys);
             }
             if (def.catchall?._zod.def.type === "never") {
-              json3.additionalProperties = false;
+              json2.additionalProperties = false;
             } else if (!def.catchall) {
               if (this.io === "output")
-                json3.additionalProperties = false;
+                json2.additionalProperties = false;
             } else if (def.catchall) {
-              json3.additionalProperties = this.process(def.catchall, {
+              json2.additionalProperties = this.process(def.catchall, {
                 ...params,
                 path: [...params.path, "additionalProperties"]
               });
@@ -12443,16 +12439,16 @@ var JSONSchemaGenerator = class {
             break;
           }
           case "union": {
-            const json3 = _json;
+            const json2 = _json;
             const options = def.options.map((x, i) => this.process(x, {
               ...params,
               path: [...params.path, "anyOf", i]
             }));
-            json3.anyOf = options;
+            json2.anyOf = options;
             break;
           }
           case "intersection": {
-            const json3 = _json;
+            const json2 = _json;
             const a = this.process(def.left, {
               ...params,
               path: [...params.path, "allOf", 0]
@@ -12466,12 +12462,12 @@ var JSONSchemaGenerator = class {
               ...isSimpleIntersection(a) ? a.allOf : [a],
               ...isSimpleIntersection(b) ? b.allOf : [b]
             ];
-            json3.allOf = allOf;
+            json2.allOf = allOf;
             break;
           }
           case "tuple": {
-            const json3 = _json;
-            json3.type = "array";
+            const json2 = _json;
+            json2.type = "array";
             const prefixPath = this.target === "draft-2020-12" ? "prefixItems" : "items";
             const restPath = this.target === "draft-2020-12" ? "items" : this.target === "openapi-3.0" ? "items" : "additionalItems";
             const prefixItems = def.items.map((x, i) => this.process(x, {
@@ -12483,44 +12479,44 @@ var JSONSchemaGenerator = class {
               path: [...params.path, restPath, ...this.target === "openapi-3.0" ? [def.items.length] : []]
             }) : null;
             if (this.target === "draft-2020-12") {
-              json3.prefixItems = prefixItems;
+              json2.prefixItems = prefixItems;
               if (rest) {
-                json3.items = rest;
+                json2.items = rest;
               }
             } else if (this.target === "openapi-3.0") {
-              json3.items = {
+              json2.items = {
                 anyOf: prefixItems
               };
               if (rest) {
-                json3.items.anyOf.push(rest);
+                json2.items.anyOf.push(rest);
               }
-              json3.minItems = prefixItems.length;
+              json2.minItems = prefixItems.length;
               if (!rest) {
-                json3.maxItems = prefixItems.length;
+                json2.maxItems = prefixItems.length;
               }
             } else {
-              json3.items = prefixItems;
+              json2.items = prefixItems;
               if (rest) {
-                json3.additionalItems = rest;
+                json2.additionalItems = rest;
               }
             }
             const { minimum, maximum } = schema._zod.bag;
             if (typeof minimum === "number")
-              json3.minItems = minimum;
+              json2.minItems = minimum;
             if (typeof maximum === "number")
-              json3.maxItems = maximum;
+              json2.maxItems = maximum;
             break;
           }
           case "record": {
-            const json3 = _json;
-            json3.type = "object";
+            const json2 = _json;
+            json2.type = "object";
             if (this.target === "draft-7" || this.target === "draft-2020-12") {
-              json3.propertyNames = this.process(def.keyType, {
+              json2.propertyNames = this.process(def.keyType, {
                 ...params,
                 path: [...params.path, "propertyNames"]
               });
             }
-            json3.additionalProperties = this.process(def.valueType, {
+            json2.additionalProperties = this.process(def.valueType, {
               ...params,
               path: [...params.path, "additionalProperties"]
             });
@@ -12539,17 +12535,17 @@ var JSONSchemaGenerator = class {
             break;
           }
           case "enum": {
-            const json3 = _json;
+            const json2 = _json;
             const values = getEnumValues(def.entries);
             if (values.every((v) => typeof v === "number"))
-              json3.type = "number";
+              json2.type = "number";
             if (values.every((v) => typeof v === "string"))
-              json3.type = "string";
-            json3.enum = values;
+              json2.type = "string";
+            json2.enum = values;
             break;
           }
           case "literal": {
-            const json3 = _json;
+            const json2 = _json;
             const vals = [];
             for (const val of def.values) {
               if (val === void 0) {
@@ -12570,27 +12566,27 @@ var JSONSchemaGenerator = class {
             if (vals.length === 0) {
             } else if (vals.length === 1) {
               const val = vals[0];
-              json3.type = val === null ? "null" : typeof val;
+              json2.type = val === null ? "null" : typeof val;
               if (this.target === "draft-4" || this.target === "openapi-3.0") {
-                json3.enum = [val];
+                json2.enum = [val];
               } else {
-                json3.const = val;
+                json2.const = val;
               }
             } else {
               if (vals.every((v) => typeof v === "number"))
-                json3.type = "number";
+                json2.type = "number";
               if (vals.every((v) => typeof v === "string"))
-                json3.type = "string";
+                json2.type = "string";
               if (vals.every((v) => typeof v === "boolean"))
-                json3.type = "string";
+                json2.type = "string";
               if (vals.every((v) => v === null))
-                json3.type = "null";
-              json3.enum = vals;
+                json2.type = "null";
+              json2.enum = vals;
             }
             break;
           }
           case "file": {
-            const json3 = _json;
+            const json2 = _json;
             const file2 = {
               type: "string",
               format: "binary",
@@ -12604,15 +12600,15 @@ var JSONSchemaGenerator = class {
             if (mime) {
               if (mime.length === 1) {
                 file2.contentMediaType = mime[0];
-                Object.assign(json3, file2);
+                Object.assign(json2, file2);
               } else {
-                json3.anyOf = mime.map((m) => {
+                json2.anyOf = mime.map((m) => {
                   const mFile = { ...file2, contentMediaType: m };
                   return mFile;
                 });
               }
             } else {
-              Object.assign(json3, file2);
+              Object.assign(json2, file2);
             }
             break;
           }
@@ -12638,8 +12634,8 @@ var JSONSchemaGenerator = class {
             break;
           }
           case "success": {
-            const json3 = _json;
-            json3.type = "boolean";
+            const json2 = _json;
+            json2.type = "boolean";
             break;
           }
           case "default": {
@@ -12674,12 +12670,12 @@ var JSONSchemaGenerator = class {
             break;
           }
           case "template_literal": {
-            const json3 = _json;
+            const json2 = _json;
             const pattern = schema._zod.pattern;
             if (!pattern)
               throw new Error("Pattern not found in template literal");
-            json3.type = "string";
-            json3.pattern = pattern.source;
+            json2.type = "string";
+            json2.pattern = pattern.source;
             break;
           }
           case "pipe": {
@@ -12757,13 +12753,13 @@ var JSONSchemaGenerator = class {
       const defsSegment = this.target === "draft-2020-12" ? "$defs" : "definitions";
       if (params.external) {
         const externalId = params.external.registry.get(entry[0])?.id;
-        const uriGenerator = params.external.uri ?? ((id3) => id3);
+        const uriGenerator = params.external.uri ?? ((id2) => id2);
         if (externalId) {
           return { ref: uriGenerator(externalId) };
         }
-        const id2 = entry[1].defId ?? entry[1].schema.id ?? `schema${this.counter++}`;
-        entry[1].defId = id2;
-        return { defId: id2, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id2}` };
+        const id = entry[1].defId ?? entry[1].schema.id ?? `schema${this.counter++}`;
+        entry[1].defId = id;
+        return { defId: id, ref: `${uriGenerator("__shared")}#/${defsSegment}/${id}` };
       }
       if (entry[1] === root) {
         return { ref: "#" };
@@ -12811,8 +12807,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
           continue;
         }
       }
-      const id2 = this.metadataRegistry.get(entry[0])?.id;
-      if (id2) {
+      const id = this.metadataRegistry.get(entry[0])?.id;
+      if (id) {
         extractToDef(entry);
         continue;
       }
@@ -12869,10 +12865,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       console.warn(`Invalid target: ${this.target}`);
     }
     if (params.external?.uri) {
-      const id2 = params.external.registry.get(schema)?.id;
-      if (!id2)
+      const id = params.external.registry.get(schema)?.id;
+      if (!id)
         throw new Error("Schema is missing an `id` property");
-      result.$id = params.external.uri(id2);
+      result.$id = params.external.uri(id);
     }
     Object.assign(result, root.def);
     const defs = params.external?.defs ?? {};
@@ -14196,7 +14192,17 @@ var hookPayload = external_exports.discriminatedUnion("event", [
     error: external_exports.string().optional()
   })
 ]);
+var ownerSchema = external_exports.object({
+  pid: external_exports.number().int().positive(),
+  startTicks: external_exports.string().regex(/^\d+$/),
+  bootId: external_exports.uuid()
+});
 var eventRecord = external_exports.object({
+  journalRecovery: external_exports.object({
+    fragmentHash: external_exports.string().regex(/^[0-9a-f]{64}$/),
+    bytes: external_exports.number().int().positive()
+  }).optional(),
+  owner: ownerSchema.nullable(),
   at: external_exports.iso.datetime(),
   payload: hookPayload
 });
@@ -14227,7 +14233,7 @@ var transcriptRow = external_exports.object({
   thinking_tokens: index.optional(),
   tool_calls: external_exports.array(toolCall).optional()
 }).superRefine((row, ctx) => {
-  if (row.status !== "DONE" && row.type !== "GENERIC")
+  if (row.status !== "DONE" && !["GENERIC", "PLANNER_RESPONSE"].includes(row.type))
     ctx.addIssue({
       code: "custom",
       message: `Unsupported ${row.type} status ${row.status}`
@@ -14280,418 +14286,172 @@ var exportRequest = external_exports.object({
     })
   )
 });
-var pendingExport = external_exports.object({
-  throughStep: index,
-  request: exportRequest
-});
-var checkpoint = external_exports.object({ throughStep: external_exports.number().int().min(-1) });
+var ledgerSchema = external_exports.object({
+  version: external_exports.literal(3),
+  importedThroughStep: external_exports.number().int().min(-1)
+}).strict();
+var deliverySchema = external_exports.object({
+  state: external_exports.enum([
+    "ready",
+    "sending",
+    "accepted",
+    "confirmed",
+    "uncertain",
+    "rejected"
+  ]),
+  attempts: external_exports.number().int().nonnegative(),
+  retryAt: external_exports.number().nonnegative(),
+  error: external_exports.string().optional()
+}).strict();
+var outboxSchema = external_exports.object({ span, request: exportRequest }).strict();
 
-// src/traces.ts
+// src/storage.ts
 var import_strict = __toESM(require("node:assert/strict"), 1);
 var import_node_crypto = require("node:crypto");
-function id(seed, length) {
-  return (0, import_node_crypto.createHash)("sha256").update(seed).digest("hex").slice(0, length);
-}
-function nano(timestamp) {
-  return (BigInt(Date.parse(timestamp)) * 1000000n).toString();
-}
-function attributes(values) {
-  return Object.entries(values).map(([key, value]) => ({
-    key,
-    value: typeof value === "string" ? { stringValue: value } : typeof value === "boolean" ? { boolValue: value } : { intValue: String(value) }
-  }));
-}
-function text(value, limit) {
-  return value.length > limit ? value.slice(0, limit) + "\n[truncated by lmnr-antigravity]" : value;
-}
-function json2(value, limit) {
-  const encoded = JSON.stringify(value);
-  (0, import_strict.default)(encoded !== void 0);
-  return encoded.length > limit ? JSON.stringify(text(encoded, limit)) : encoded;
-}
-function invocationForStep(step, events) {
-  const pre = events.findLast(
-    (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps <= step
-  );
-  (0, import_strict.default)(
-    pre?.payload.event === "PreInvocation",
-    `Missing PreInvocation for step ${step}`
-  );
-  const payload = pre.payload;
-  const post = events.find(
-    (e) => e.payload.event === "PostInvocation" && e.payload.initialNumSteps === payload.initialNumSteps && e.payload.invocationNum === payload.invocationNum && e.at >= pre.at
-  );
-  const terminal = events.find(
-    (e) => e.payload.event === "Stop" && e.payload.fullyIdle && e.at >= pre.at && ["ERROR", "USER_CANCELED"].includes(e.payload.terminationReason)
-  );
-  (0, import_strict.default)(post || terminal, `Missing PostInvocation for step ${step}`);
-  return {
-    pre: { at: pre.at, payload },
-    post: post ?? terminal,
-    interrupted: post === void 0
-  };
-}
-function buildExport(rows, events, stop, throughStep, maxChars) {
-  const starts = rows.filter(
-    (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index > throughStep
-  );
-  if (starts.length === 0) return null;
-  const spans = [];
-  let exportedThrough = throughStep;
-  for (const [turnIndex, user] of starts.entries()) {
-    const next = starts[turnIndex + 1];
-    const turnRows = rows.filter(
-      (r) => r.step_index >= user.step_index && (next === void 0 || r.step_index < next.step_index)
-    );
-    const last = turnRows.at(-1);
-    if (!last) break;
-    const models = turnRows.filter((r) => r.type === "PLANNER_RESPONSE");
-    const traceId = id(
-      `antigravity:${stop.conversationId}:${user.step_index}`,
-      32
-    );
-    const rootId = id(`${traceId}:root`, 16);
-    const lastModel = models.at(-1);
-    const turnInvocations = events.filter(
-      (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps > user.step_index && (next === void 0 || e.payload.initialNumSteps <= next.step_index)
-    );
-    const lastInvocation = turnInvocations.at(-1);
-    if (!lastInvocation) break;
-    const { post: lastPost } = lastModel ? invocationForStep(lastModel.step_index, events) : { post: lastInvocation };
-    const finish = events.find(
-      (e) => e.payload.event === "Stop" && e.payload.fullyIdle && e.at >= lastPost.at && e.at >= lastInvocation.at
-    );
-    (0, import_strict.default)(finish?.payload.event === "Stop", "Missing Stop event for turn");
-    const terminalError = finish.payload.error || ([
-      "ERROR",
-      "USER_CANCELED",
-      "MAX_INVOCATIONS",
-      "MAX_FORCED_INVOCATIONS",
-      "MAX_TOKEN_BUDGET_EXCEEDED"
-    ].includes(finish.payload.terminationReason) ? finish.payload.terminationReason : void 0);
-    const session = {
-      "lmnr.association.properties.session_id": stop.conversationId
-    };
-    const makeSpan = (name, key, start, end, attrs, error46) => {
-      (0, import_strict.default)(Date.parse(end) >= Date.parse(start), `Negative duration: ${key}`);
-      return {
-        traceId,
-        spanId: id(`${traceId}:${key}`, 16),
-        parentSpanId: rootId,
-        name,
-        kind: 1,
-        startTimeUnixNano: nano(start),
-        endTimeUnixNano: nano(end),
-        attributes: attributes({ ...session, ...attrs }),
-        events: error46 ? [
-          {
-            name: "exception",
-            timeUnixNano: nano(end),
-            attributes: attributes({
-              "exception.message": text(error46, maxChars)
-            })
-          }
-        ] : [],
-        status: error46 ? { code: 2, message: text(error46, maxChars) } : { code: 1 }
-      };
-    };
-    const prompt = user.content;
-    (0, import_strict.default)(prompt !== void 0, "User content missing");
-    const inputMessages = [
-      { role: "user", content: text(prompt, maxChars) }
-    ];
-    const coveredTools = /* @__PURE__ */ new Set();
-    const coveredInvocations = /* @__PURE__ */ new Set();
-    for (const model of models) {
-      const { pre, post, interrupted } = invocationForStep(
-        model.step_index,
-        events
-      );
-      const invocationKey = `${pre.at}:${pre.payload.initialNumSteps}`;
-      (0, import_strict.default)(
-        !coveredInvocations.has(invocationKey),
-        `Multiple model responses mapped to one invocation at step ${model.step_index}`
-      );
-      coveredInvocations.add(invocationKey);
-      for (const system of turnRows.filter(
-        (r) => ["SYSTEM_MESSAGE", "CHECKPOINT", "ERROR_MESSAGE"].includes(r.type) && r.step_index > (models[models.indexOf(model) - 1]?.step_index ?? user.step_index) && r.step_index < model.step_index
-      )) {
-        (0, import_strict.default)(
-          system.source === "SYSTEM" && (system.content !== void 0 || system.error !== void 0),
-          "Invalid SYSTEM_MESSAGE"
-        );
-        inputMessages.push({
-          role: "system",
-          content: text(system.content ?? system.error, maxChars)
-        });
-      }
-      const following = models.find((m) => m.step_index > model.step_index)?.step_index ?? last.step_index + 1;
-      const results = turnRows.filter(
-        (r) => r.type === "GENERIC" && r.step_index > model.step_index && r.step_index < following
-      );
-      const calls = model.tool_calls ?? [];
-      (0, import_strict.default)(
-        results.length === calls.length,
-        `Tool-call/result mismatch at step ${model.step_index}`
-      );
-      const tools = results.map((result, i) => {
-        const call = calls[i];
-        const preTool = events.find(
-          (e) => e.payload.event === "PreToolUse" && e.payload.stepIdx === result.step_index
-        );
-        const postTool = events.find(
-          (e) => e.payload.event === "PostToolUse" && e.payload.stepIdx === result.step_index
-        );
-        if (preTool) {
-          (0, import_strict.default)(preTool.payload.event === "PreToolUse");
-          import_strict.default.deepEqual(preTool.payload.toolCall, call);
-          if (postTool) {
-            (0, import_strict.default)(postTool.payload.event === "PostToolUse");
-            import_strict.default.deepEqual(postTool.payload.toolCall, call);
-            (0, import_strict.default)(postTool.at >= preTool.at, "Tool hook order is invalid");
-          } else
-            (0, import_strict.default)(
-              interrupted,
-              `Missing PostToolUse for step ${result.step_index}`
-            );
-        } else {
-          (0, import_strict.default)(
-            !postTool,
-            `PostToolUse without PreToolUse at step ${result.step_index}`
-          );
-          (0, import_strict.default)(
-            ["ERROR", "INVALID"].includes(result.status),
-            `Missing PreToolUse for step ${result.step_index}`
-          );
-        }
-        return { result, call, preTool, postTool };
-      });
-      const modelEnd = tools.flatMap((t) => t.preTool ? [t.preTool.at] : []).sort()[0] ?? post.at;
-      const parts = [];
-      if (model.content !== void 0)
-        parts.push({ type: "text", content: text(model.content, maxChars) });
-      for (const tool of tools) {
-        const call = tool.call;
-        parts.push({
-          type: "tool_call",
-          id: `step-${tool.result.step_index}`,
-          name: call.name,
-          arguments: JSON.stringify(call.args).length > maxChars ? { _truncated: text(JSON.stringify(call.args), maxChars) } : call.args
-        });
-      }
-      const attrs = {
-        "lmnr.span.type": "LLM",
-        "gen_ai.request.model": pre.payload.modelName,
-        "gen_ai.response.model": pre.payload.modelName,
-        "gen_ai.input.messages": JSON.stringify(inputMessages),
-        "gen_ai.output.messages": JSON.stringify([
-          { role: "assistant", parts }
-        ]),
-        "antigravity.step_index": model.step_index,
-        "antigravity.timing_source": "hook_wall_clock"
-      };
-      for (const [field, target] of [
-        ["output_tokens", "output_tokens"],
-        ["cache_read_tokens", "cache_read_input_tokens"],
-        ["thinking_tokens", "reasoning_tokens"]
-      ]) {
-        if (model[field] !== void 0)
-          attrs[`gen_ai.usage.${target}`] = model[field];
-      }
-      if (model.input_tokens !== void 0) {
-        (0, import_strict.default)(
-          model.cache_read_tokens !== void 0,
-          "Cannot normalize input tokens without the cache counter"
-        );
-        attrs["antigravity.usage.uncached_input_tokens"] = model.input_tokens;
-        attrs["antigravity.usage.cache_read_tokens"] = model.cache_read_tokens;
-        attrs["gen_ai.usage.input_tokens"] = model.input_tokens + model.cache_read_tokens;
-      }
-      spans.push(
-        makeSpan(
-          `LLM ${pre.payload.invocationNum + 1}`,
-          `llm:${model.step_index}`,
-          pre.at,
-          modelEnd,
-          attrs,
-          interrupted ? "Invocation interrupted before PostInvocation" : void 0
-        )
-      );
-      if (model.content !== void 0)
-        inputMessages.push({
-          role: "assistant",
-          content: text(model.content, maxChars)
-        });
-      for (const tool of tools) {
-        const { result, call, preTool, postTool } = tool;
-        (0, import_strict.default)(
-          result.content !== void 0 || result.error !== void 0,
-          `Tool result missing at step ${result.step_index}`
-        );
-        const content = result.content ?? result.error;
-        coveredTools.add(result.step_index);
-        const hookError = postTool?.payload.event === "PostToolUse" ? postTool.payload.error : void 0;
-        spans.push(
-          makeSpan(
-            call.name,
-            `tool:${result.step_index}`,
-            preTool?.at ?? result.created_at,
-            postTool?.at ?? (preTool ? post.at : result.created_at),
-            {
-              "lmnr.span.type": "TOOL",
-              "lmnr.span.input": json2(call.args, maxChars),
-              "lmnr.span.output": json2(content, maxChars),
-              "antigravity.step_index": result.step_index,
-              "antigravity.transcript_status": result.status,
-              "antigravity.tool_scope": result.status === "RUNNING" ? "background_dispatch" : "tool_execution",
-              "antigravity.timing_source": preTool ? "hook_wall_clock" : "transcript_timestamp_only"
-            },
-            hookError || result.error || (preTool && !postTool ? "Tool interrupted before PostToolUse" : void 0)
-          )
-        );
-        inputMessages.push({ role: "tool", content: text(content, maxChars) });
-      }
-    }
-    for (const invocation of turnInvocations) {
-      (0, import_strict.default)(invocation.payload.event === "PreInvocation");
-      const initial = invocation.payload.initialNumSteps;
-      const later = turnInvocations.find(
-        (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps > initial
-      );
-      const upper = later?.payload.event === "PreInvocation" ? later.payload.initialNumSteps : Infinity;
-      if (models.some((m) => m.step_index >= initial && m.step_index < upper))
-        continue;
-      (0, import_strict.default)(
-        terminalError,
-        `Invocation has no model response at step ${initial}`
-      );
-      spans.push(
-        makeSpan(
-          `LLM ${invocation.payload.invocationNum + 1}`,
-          `incomplete:${initial}`,
-          invocation.at,
-          finish.at,
-          {
-            "lmnr.span.type": "LLM",
-            "gen_ai.request.model": invocation.payload.modelName,
-            "antigravity.initial_num_steps": initial,
-            "antigravity.incomplete": true,
-            "antigravity.timing_source": "hook_wall_clock"
-          },
-          terminalError
-        )
-      );
-    }
-    for (const row of turnRows) {
-      (0, import_strict.default)(
-        row.type !== "GENERIC" || coveredTools.has(row.step_index),
-        `Unmapped GENERIC step ${row.step_index}`
-      );
-      (0, import_strict.default)(
-        row.type !== "USER_INPUT" || row.step_index === user.step_index,
-        `Unsupported injected input at step ${row.step_index}`
-      );
-    }
-    const root = makeSpan(
-      `Antigravity - Turn at step ${user.step_index} (${stop.conversationId.slice(0, 8)})`,
-      "root",
-      user.created_at,
-      finish.at,
-      {
-        "lmnr.span.type": "DEFAULT",
-        "lmnr.span.input": json2(
-          { role: "user", content: text(prompt, maxChars) },
-          maxChars
-        ),
-        "lmnr.span.output": json2(
-          {
-            role: "assistant",
-            content: text(lastModel?.content ?? "", maxChars)
-          },
-          maxChars
-        ),
-        "lmnr.association.properties.metadata.source": "antigravity",
-        "antigravity.termination_reason": finish.payload.terminationReason,
-        "antigravity.user_step": user.step_index,
-        "antigravity.input_scope": "visible_transcript_not_full_model_request"
-      },
-      terminalError
-    );
-    delete root.parentSpanId;
-    spans.unshift(root);
-    exportedThrough = last.step_index;
-  }
-  if (spans.length === 0) return null;
-  return {
-    throughStep: exportedThrough,
-    request: {
-      resourceSpans: [
-        {
-          resource: {
-            attributes: attributes({
-              "service.name": "antigravity",
-              "telemetry.sdk.name": "lmnr-antigravity-plugin"
-            })
-          },
-          scopeSpans: [
-            { scope: { name: "lmnr.antigravity", version: "0.2.0" }, spans }
-          ]
-        }
-      ]
-    }
-  };
-}
-
-// src/hook.ts
+var import_node_fs = require("node:fs");
+var import_promises = require("node:fs/promises");
+var import_node_os = require("node:os");
+var import_node_path = require("node:path");
+var import_proper_lockfile = __toESM(require_proper_lockfile(), 1);
+var configPath = process.env.LMNR_ANTIGRAVITY_CONFIG ?? (0, import_node_path.join)((0, import_node_os.homedir)(), ".config/lmnr/antigravity-plugin.json");
+var stateRoot = process.env.LMNR_ANTIGRAVITY_STATE_DIR ?? (0, import_node_path.join)((0, import_node_os.homedir)(), ".local/state/lmnr/antigravity");
 var configSchema = external_exports.object({
   projectApiKey: external_exports.string().min(1),
   baseUrl: external_exports.url(),
   maxChars: external_exports.number().int().min(256).max(1e5).default(2e4),
   timeoutMs: external_exports.number().int().min(100).max(15e3).default(5e3)
 }).strict();
-var configPath = process.env.LMNR_ANTIGRAVITY_CONFIG ?? (0, import_node_path.join)((0, import_node_os.homedir)(), ".config/lmnr/antigravity-plugin.json");
-var stateRoot = process.env.LMNR_ANTIGRAVITY_STATE_DIR ?? (0, import_node_path.join)((0, import_node_os.homedir)(), ".local/state/lmnr/antigravity");
-async function atomicJson(path, value) {
-  const temporary = `${path}.${process.pid}.tmp`;
-  await (0, import_promises.writeFile)(temporary, JSON.stringify(value) + "\n", { mode: 384 });
-  await (0, import_promises.rename)(temporary, path);
-}
-async function upload(request, config2) {
+async function readConfig() {
+  const config2 = configSchema.parse(
+    JSON.parse(await (0, import_promises.readFile)(configPath, "utf8"))
+  );
   const base = new URL(config2.baseUrl);
-  (0, import_strict2.default)(
+  (0, import_strict.default)(
     ["http:", "https:"].includes(base.protocol),
     "Laminar URL must be HTTP(S)"
   );
-  (0, import_strict2.default)(
+  (0, import_strict.default)(
     !base.username && !base.password && !base.search && !base.hash,
     "Invalid Laminar base URL"
   );
-  const response = await fetch(
-    `${config2.baseUrl.replace(/\/$/, "")}/v1/traces`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${config2.projectApiKey}`
-      },
-      body: JSON.stringify(request),
-      signal: AbortSignal.timeout(config2.timeoutMs),
-      redirect: "error"
-    }
-  );
-  (0, import_strict2.default)(response.ok, `Laminar OTLP export failed: HTTP ${response.status}`);
-  const body = await response.text();
-  const result = external_exports.object({
-    partialSuccess: external_exports.object({
-      rejectedSpans: external_exports.union([external_exports.string().regex(/^\d+$/), external_exports.number().int().nonnegative()]).optional(),
-      errorMessage: external_exports.string().optional()
-    }).optional()
-  }).strict().parse(body === "" ? {} : JSON.parse(body));
-  (0, import_strict2.default)(
-    !result.partialSuccess?.rejectedSpans || Number(result.partialSuccess.rejectedSpans) === 0,
-    "Laminar rejected spans; retaining pending export"
-  );
+  return config2;
 }
+function sessionKey(payload, config2) {
+  return (0, import_node_crypto.createHash)("sha256").update(
+    `${payload.conversationId}
+${payload.transcriptPath}
+${config2.baseUrl}
+${config2.projectApiKey}`
+  ).digest("hex");
+}
+async function atomicJson(path, value) {
+  const temporary = `${path}.${process.pid}.tmp`;
+  const file2 = await (0, import_promises.open)(temporary, "w", 384);
+  try {
+    await file2.writeFile(JSON.stringify(value) + "\n");
+    await file2.sync();
+  } finally {
+    await file2.close();
+  }
+  await (0, import_promises.rename)(temporary, path);
+  const directory = await (0, import_promises.open)((0, import_node_path.dirname)(path), "r");
+  try {
+    await directory.sync();
+  } finally {
+    await directory.close();
+  }
+}
+var journalLock = {
+  realpath: false,
+  retries: { retries: 40, minTimeout: 50, maxTimeout: 50 },
+  stale: 3e4
+};
+async function appendRecord(directory, record2) {
+  await (0, import_promises.mkdir)(directory, { recursive: true, mode: 448 });
+  const path = (0, import_node_path.join)(directory, "events.jsonl");
+  const release = await import_proper_lockfile.default.lock(path, journalLock);
+  try {
+    if (!(0, import_node_fs.existsSync)(path))
+      await atomicJson((0, import_node_path.join)(directory, "ledger.json"), {
+        version: 3,
+        importedThroughStep: -1
+      });
+    let recovered;
+    if ((0, import_node_fs.existsSync)(path)) {
+      const prior = await (0, import_promises.open)(path, "r+");
+      try {
+        const size = (await prior.stat()).size;
+        const last = Buffer.alloc(1);
+        if (size > 0) await prior.read(last, 0, 1, size - 1);
+        if (size > 0 && last[0] !== 10) {
+          const original = await (0, import_promises.readFile)(path);
+          const boundary = original.lastIndexOf(10) + 1;
+          const tail = original.subarray(boundary);
+          const fragmentHash = (0, import_node_crypto.createHash)("sha256").update(tail).digest("hex");
+          await atomicJson(
+            (0, import_node_path.join)(directory, `torn-journal-${fragmentHash}.json`),
+            { offset: boundary, base64: tail.toString("base64") }
+          );
+          await prior.truncate(boundary);
+          await prior.sync();
+          recovered = { fragmentHash, bytes: tail.length };
+          console.error(
+            `lmnr-antigravity recovered_torn_journal bytes=${tail.length} fragment=${fragmentHash}`
+          );
+        }
+      } finally {
+        await prior.close();
+      }
+    }
+    const file2 = await (0, import_promises.open)(path, "a", 384);
+    try {
+      await file2.writeFile(
+        JSON.stringify({
+          ...record2,
+          ...recovered ? { journalRecovery: recovered } : {}
+        }) + "\n"
+      );
+      await file2.sync();
+    } finally {
+      await file2.close();
+    }
+  } finally {
+    await release();
+  }
+}
+function proc(pid) {
+  const value = (0, import_node_fs.readFileSync)(`/proc/${pid}/stat`, "utf8");
+  const fields = value.slice(value.lastIndexOf(")") + 2).trim().split(/\s+/);
+  (0, import_strict.default)(fields.length > 19, "Invalid Linux process stat");
+  return {
+    state: fields[0],
+    parent: external_exports.coerce.number().int().nonnegative().parse(fields[1]),
+    startTicks: external_exports.string().regex(/^\d+$/).parse(fields[19])
+  };
+}
+function observeOwner() {
+  (0, import_strict.default)(
+    process.platform === "linux",
+    "Process recovery currently requires Linux"
+  );
+  let pid = process.ppid;
+  const requested = process.env.LMNR_ANTIGRAVITY_OWNER_PID === void 0 ? void 0 : external_exports.coerce.number().int().positive().parse(process.env.LMNR_ANTIGRAVITY_OWNER_PID);
+  while (pid > 1) {
+    const info = proc(pid);
+    const name = (0, import_node_fs.readFileSync)(`/proc/${pid}/comm`, "utf8").trim();
+    if (requested === pid || requested === void 0 && name === "agy") {
+      return ownerSchema.parse({
+        pid,
+        startTicks: info.startTicks,
+        bootId: (0, import_node_fs.readFileSync)("/proc/sys/kernel/random/boot_id", "utf8").trim()
+      });
+    }
+    pid = info.parent;
+  }
+  import_strict.default.fail("No Antigravity owner process found in hook ancestry");
+}
+
+// src/hook.ts
 async function main() {
   const event = external_exports.enum([
     "PreInvocation",
@@ -14700,8 +14460,12 @@ async function main() {
     "PostToolUse",
     "Stop"
   ]).parse(process.argv[2]);
+  (0, import_strict2.default)(
+    process.argv[3] === void 0,
+    "Hooks only record events; use worker for retry/recovery"
+  );
   const reply = event === "PreToolUse" ? { decision: "allow" } : event === "Stop" ? { decision: "stop" } : {};
-  if (!(0, import_node_fs.existsSync)(configPath)) {
+  if (!(0, import_node_fs2.existsSync)(configPath)) {
     (0, import_strict2.default)(
       process.env.LMNR_ANTIGRAVITY_CONFIG === void 0,
       "Explicit Laminar config path does not exist"
@@ -14709,121 +14473,16 @@ async function main() {
     console.log(JSON.stringify(reply));
     return;
   }
-  const config2 = configSchema.parse(
-    JSON.parse(await (0, import_promises.readFile)(configPath, "utf8"))
-  );
+  const config2 = await readConfig();
   let stdin = "";
   for await (const chunk of process.stdin) stdin += chunk;
   const payload = hookPayload.parse({ ...JSON.parse(stdin), event });
-  (0, import_strict2.default)((0, import_node_path.isAbsolute)(payload.transcriptPath), "transcriptPath must be absolute");
-  const key = (0, import_node_crypto2.createHash)("sha256").update(
-    `${payload.conversationId}
-${payload.transcriptPath}
-${config2.baseUrl}
-${config2.projectApiKey}`
-  ).digest("hex");
-  const directory = (0, import_node_path.join)(stateRoot, key);
-  await (0, import_promises.mkdir)(directory, { recursive: true, mode: 448 });
-  const journalPath = (0, import_node_path.join)(directory, "events.jsonl");
-  const replay = process.argv[3] === "--retry";
-  (0, import_strict2.default)(process.argv[3] === void 0 || replay, "Unknown hook argument");
-  (0, import_strict2.default)(!replay || payload.event === "Stop", "Only Stop can be retried");
-  const journalLock = {
-    realpath: false,
-    retries: { retries: 40, minTimeout: 50, maxTimeout: 50 },
-    stale: 3e4
-  };
-  if (!replay) {
-    const releaseJournal = await import_proper_lockfile.default.lock(journalPath, journalLock);
-    try {
-      await (0, import_promises.appendFile)(
-        journalPath,
-        JSON.stringify({ at: (/* @__PURE__ */ new Date()).toISOString(), payload }) + "\n",
-        { mode: 384 }
-      );
-    } finally {
-      await releaseJournal();
-    }
-  }
-  if (payload.event !== "Stop" || !payload.fullyIdle) {
-    console.log(JSON.stringify(reply));
-    return;
-  }
-  const release = await import_proper_lockfile.default.lock(directory, {
-    retries: { retries: 200, minTimeout: 100, maxTimeout: 100 },
-    stale: 3e4
+  (0, import_strict2.default)((0, import_node_path2.isAbsolute)(payload.transcriptPath), "transcriptPath must be absolute");
+  await appendRecord((0, import_node_path2.join)(stateRoot, sessionKey(payload, config2)), {
+    at: (/* @__PURE__ */ new Date()).toISOString(),
+    payload,
+    owner: observeOwner()
   });
-  try {
-    const checkpointPath = (0, import_node_path.join)(directory, "checkpoint.json");
-    const pendingPath = (0, import_node_path.join)(directory, "pending.json");
-    let throughStep = (0, import_node_fs.existsSync)(checkpointPath) ? checkpoint.parse(JSON.parse(await (0, import_promises.readFile)(checkpointPath, "utf8"))).throughStep : -1;
-    if ((0, import_node_fs.existsSync)(pendingPath)) {
-      const pending2 = pendingExport.parse(
-        JSON.parse(await (0, import_promises.readFile)(pendingPath, "utf8"))
-      );
-      if (pending2.throughStep > throughStep) {
-        await upload(pending2.request, config2);
-        throughStep = pending2.throughStep;
-        await atomicJson(checkpointPath, { throughStep });
-      }
-      await (0, import_promises.rm)(pendingPath);
-    }
-    const releaseJournal = await import_proper_lockfile.default.lock(journalPath, journalLock);
-    let journalText;
-    try {
-      journalText = await (0, import_promises.readFile)(journalPath, "utf8");
-    } finally {
-      await releaseJournal();
-    }
-    const journal = journalText.trimEnd().split("\n").map((line) => eventRecord.parse(JSON.parse(line)));
-    const raw = await (0, import_promises.readFile)(payload.transcriptPath, "utf8");
-    (0, import_strict2.default)(
-      raw.endsWith("\n"),
-      "Transcript has a partial trailing line; retry after it flushes"
-    );
-    const stopIndex = journal.findLastIndex(
-      (e) => e.payload.event === "Stop" && e.payload.fullyIdle
-    );
-    (0, import_strict2.default)(stopIndex >= 0, "No recorded fully-idle Stop");
-    const events = journal.slice(0, stopIndex + 1);
-    const finish = events.at(-1);
-    const first = events.find((e) => e.payload.event === "PreInvocation");
-    (0, import_strict2.default)(first?.payload.event === "PreInvocation", "No observed invocation");
-    const firstStep = first.payload.initialNumSteps;
-    const envelopes = raw.trimEnd().split("\n").map((line) => transcriptEnvelope.parse(JSON.parse(line)));
-    for (let i = 1; i < envelopes.length; i++)
-      (0, import_strict2.default)(
-        envelopes[i].step_index > envelopes[i - 1].step_index,
-        "Transcript steps must be strictly increasing"
-      );
-    const user = envelopes.findLast(
-      (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index < firstStep
-    );
-    (0, import_strict2.default)(user, "No explicit user turn before first observed invocation");
-    const nextInvocation = journal.slice(stopIndex + 1).find((e) => e.payload.event === "PreInvocation");
-    const upper = nextInvocation?.payload.event === "PreInvocation" ? nextInvocation.payload.initialNumSteps : Infinity;
-    const rows = envelopes.filter(
-      (r) => r.step_index >= user.step_index && r.step_index > throughStep && r.step_index < upper && Date.parse(r.created_at) <= Date.parse(finish.at)
-    ).map((r) => transcriptRow.parse(r));
-    const pending = buildExport(
-      rows,
-      events,
-      payload,
-      throughStep,
-      config2.maxChars
-    );
-    if (pending !== null) {
-      await atomicJson(pendingPath, pending);
-      await upload(pending.request, config2);
-      await atomicJson(checkpointPath, { throughStep: pending.throughStep });
-      await (0, import_promises.rm)(pendingPath);
-      console.error(
-        `lmnr-antigravity exported conversation=${payload.conversationId} through_step=${pending.throughStep}`
-      );
-    }
-    console.log(JSON.stringify(reply));
-  } finally {
-    await release();
-  }
+  console.log(JSON.stringify(reply));
 }
 void main();

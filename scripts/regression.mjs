@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -16,6 +17,14 @@ import { join, resolve } from "node:path";
 
 const directory = await mkdtemp(join(tmpdir(), "lmnr-regression-"));
 const requests = [];
+const stored = new Map();
+const owner = {
+  pid: process.pid,
+  startTicks: readFileSync(`/proc/${process.pid}/stat`, "utf8")
+    .split(") ")[1]
+    .split(" ")[19],
+  bootId: readFileSync("/proc/sys/kernel/random/boot_id", "utf8").trim(),
+};
 let httpStatus = 200;
 let httpBody = "{}";
 let httpDelay = 0;
@@ -24,7 +33,29 @@ let requestStarted;
 const server = createServer(async (request, response) => {
   let body = "";
   for await (const chunk of request) body += chunk;
-  requests.push(JSON.parse(body));
+  const decoded = JSON.parse(body);
+  if (request.url === "/v1/sql/query") {
+    const sid = decoded.query
+      .match(/span_id = '([0-9a-f-]+)'/)[1]
+      .replaceAll("-", "")
+      .slice(16);
+    const tid = decoded.query
+      .match(/trace_id = '([0-9a-f-]+)'/)[1]
+      .replaceAll("-", "");
+    response.end(
+      JSON.stringify({ data: [{ copies: stored.get(`${tid}-${sid}`) ?? 0 }] }),
+    );
+    return;
+  }
+  assert.equal(request.url, "/v1/traces");
+  requests.push(decoded);
+  if (httpStatus === 200)
+    for (const r of decoded.resourceSpans)
+      for (const scope of r.scopeSpans)
+        for (const span of scope.spans) {
+          const k = `${span.traceId}-${span.spanId}`;
+          stored.set(k, (stored.get(k) ?? 0) + 1);
+        }
   requestStarted?.();
   if (uploadGate) await uploadGate;
   if (httpDelay) await new Promise((r) => setTimeout(r, httpDelay));
@@ -115,6 +146,7 @@ async function run(name, data, verify, failure) {
     modelName: "synthetic",
   };
   const records = data.events.map((e) => ({
+    owner,
     at: e.at,
     payload: { ...base, ...e.payload },
   }));
@@ -124,6 +156,11 @@ async function run(name, data, verify, failure) {
     .digest("hex");
   const state = join(work, "state", key);
   await mkdir(state, { recursive: true });
+  await writeFile(
+    join(state, "ledger.json"),
+    JSON.stringify({ version: 3, importedThroughStep: -1 }),
+  );
+  stored.clear();
   await writeFile(join(state, "events.jsonl"), journal);
   await writeFile(
     transcriptPath,
@@ -141,14 +178,13 @@ async function run(name, data, verify, failure) {
   async function invoke(event = "Stop", input = payload) {
     const child = spawn(
       process.execPath,
-      [
-        resolve("dist/hook.cjs"),
-        event,
-        ...(event === "Stop" ? ["--retry"] : []),
-      ],
+      event === "Stop"
+        ? [resolve("dist/worker.cjs"), "--session", state]
+        : [resolve("dist/hook.cjs"), event],
       {
         env: {
           ...process.env,
+          LMNR_ANTIGRAVITY_OWNER_PID: String(process.pid),
           LMNR_ANTIGRAVITY_CONFIG: config,
           LMNR_ANTIGRAVITY_STATE_DIR: join(work, "state"),
         },
@@ -395,9 +431,18 @@ try {
     stop(5, { terminationReason: "USER_CANCELED" }),
   ];
   await run(
-    "cancelled tool and invocation retain incomplete errors",
+    "cancelled tool preserves completed model and interrupted tool",
     f,
-    (spans) => assert(spans.every((s) => s.status.code === 2)),
+    (spans) => {
+      assert.equal(
+        spans.find((s) => attr(s, "lmnr.span.type") === "LLM").status.code,
+        1,
+      );
+      assert.equal(
+        spans.find((s) => attr(s, "lmnr.span.type") === "TOOL").status.code,
+        2,
+      );
+    },
   );
   f = fixture();
   f.rows[1].tool_calls.push({ name: "read_file", args: { Path: "synthetic" } });
@@ -454,10 +499,16 @@ try {
   f = fixture();
   f.partial = true;
   await run(
-    "partial transcript does not advance checkpoint",
+    "partial trailing line preserves complete records with explicit flag",
     f,
-    null,
-    /partial trailing line/,
+    (spans) =>
+      assert.equal(
+        attr(
+          spans.find((s) => !s.parentSpanId),
+          "antigravity.partial_transcript",
+        ),
+        true,
+      ),
   );
   f = fixture();
   f.rows[2].status = "ERROR";

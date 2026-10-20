@@ -39,7 +39,20 @@ export const hookPayload = z.discriminatedUnion("event", [
     error: z.string().optional(),
   }),
 ]);
+export const ownerSchema = z.object({
+  pid: z.number().int().positive(),
+  startTicks: z.string().regex(/^\d+$/),
+  bootId: z.uuid(),
+});
+export type Owner = z.infer<typeof ownerSchema>;
 export const eventRecord = z.object({
+  journalRecovery: z
+    .object({
+      fragmentHash: z.string().regex(/^[0-9a-f]{64}$/),
+      bytes: z.number().int().positive(),
+    })
+    .optional(),
+  owner: ownerSchema.nullable(),
   at: z.iso.datetime(),
   payload: hookPayload,
 });
@@ -81,7 +94,10 @@ export const transcriptRow = z
     tool_calls: z.array(toolCall).optional(),
   })
   .superRefine((row, ctx) => {
-    if (row.status !== "DONE" && row.type !== "GENERIC")
+    if (
+      row.status !== "DONE" &&
+      !["GENERIC", "PLANNER_RESPONSE"].includes(row.type)
+    )
       ctx.addIssue({
         code: "custom",
         message: `Unsupported ${row.type} status ${row.status}`,
@@ -148,8 +164,28 @@ export const exportRequest = z.object({
   ),
 });
 export type ExportRequest = z.infer<typeof exportRequest>;
-export const pendingExport = z.object({
-  throughStep: index,
-  request: exportRequest,
-});
-export const checkpoint = z.object({ throughStep: z.number().int().min(-1) });
+export const ledgerSchema = z
+  .object({
+    version: z.literal(3),
+    importedThroughStep: z.number().int().min(-1),
+  })
+  .strict();
+export const deliverySchema = z
+  .object({
+    state: z.enum([
+      "ready",
+      "sending",
+      "accepted",
+      "confirmed",
+      "uncertain",
+      "rejected",
+    ]),
+    attempts: z.number().int().nonnegative(),
+    retryAt: z.number().nonnegative(),
+    error: z.string().optional(),
+  })
+  .strict();
+export type Delivery = z.infer<typeof deliverySchema>;
+export const outboxSchema = z
+  .object({ span: span, request: exportRequest })
+  .strict();

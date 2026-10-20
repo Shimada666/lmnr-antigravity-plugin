@@ -14200,11 +14200,25 @@ var eventRecord = external_exports.object({
   at: external_exports.iso.datetime(),
   payload: hookPayload
 });
+var transcriptEnvelope = external_exports.object({
+  step_index: index,
+  source: external_exports.string().min(1),
+  type: external_exports.string().min(1),
+  created_at: external_exports.iso.datetime()
+}).passthrough();
 var transcriptRow = external_exports.object({
   step_index: index,
   source: external_exports.string().min(1),
-  type: external_exports.enum(["USER_INPUT", "PLANNER_RESPONSE", "GENERIC", "SYSTEM_MESSAGE"]),
-  status: external_exports.literal("DONE"),
+  type: external_exports.enum([
+    "USER_INPUT",
+    "PLANNER_RESPONSE",
+    "GENERIC",
+    "SYSTEM_MESSAGE",
+    "CHECKPOINT",
+    "ERROR_MESSAGE"
+  ]),
+  status: external_exports.enum(["DONE", "RUNNING", "ERROR", "INVALID"]),
+  error: external_exports.string().optional(),
   created_at: external_exports.iso.datetime(),
   content: external_exports.string().optional(),
   input_tokens: index.optional(),
@@ -14212,6 +14226,17 @@ var transcriptRow = external_exports.object({
   cache_read_tokens: index.optional(),
   thinking_tokens: index.optional(),
   tool_calls: external_exports.array(toolCall).optional()
+}).superRefine((row, ctx) => {
+  if (row.status !== "DONE" && row.type !== "GENERIC")
+    ctx.addIssue({
+      code: "custom",
+      message: `Unsupported ${row.type} status ${row.status}`
+    });
+  if ((row.status === "ERROR" || row.status === "INVALID" || row.type === "ERROR_MESSAGE") && !row.error)
+    ctx.addIssue({
+      code: "custom",
+      message: "Failed step must retain its error"
+    });
 });
 var attribute = external_exports.object({
   key: external_exports.string(),
@@ -14230,6 +14255,13 @@ var span = external_exports.object({
   startTimeUnixNano: external_exports.string(),
   endTimeUnixNano: external_exports.string(),
   attributes: external_exports.array(attribute),
+  events: external_exports.array(
+    external_exports.object({
+      name: external_exports.literal("exception"),
+      timeUnixNano: external_exports.string(),
+      attributes: external_exports.array(attribute)
+    })
+  ).optional(),
   status: external_exports.object({
     code: external_exports.union([external_exports.literal(1), external_exports.literal(2)]),
     message: external_exports.string().optional()
@@ -14289,27 +14321,19 @@ function invocationForStep(step, events) {
   const post = events.find(
     (e) => e.payload.event === "PostInvocation" && e.payload.initialNumSteps === payload.initialNumSteps && e.payload.invocationNum === payload.invocationNum && e.at >= pre.at
   );
-  (0, import_strict.default)(post, `Missing PostInvocation for step ${step}`);
-  return { pre: { at: pre.at, payload }, post };
+  const terminal = events.find(
+    (e) => e.payload.event === "Stop" && e.payload.fullyIdle && e.at >= pre.at && ["ERROR", "USER_CANCELED"].includes(e.payload.terminationReason)
+  );
+  (0, import_strict.default)(post || terminal, `Missing PostInvocation for step ${step}`);
+  return {
+    pre: { at: pre.at, payload },
+    post: post ?? terminal,
+    interrupted: post === void 0
+  };
 }
 function buildExport(rows, events, stop, throughStep, maxChars) {
-  const firstInvocation = events.find(
-    (e) => e.payload.event === "PreInvocation"
-  );
-  (0, import_strict.default)(
-    firstInvocation?.payload.event === "PreInvocation",
-    "No recorded PreInvocation; refusing to export unobserved history"
-  );
-  const firstStep = firstInvocation.payload.initialNumSteps;
-  const observedUser = rows.findLast(
-    (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index < firstStep
-  );
-  (0, import_strict.default)(
-    observedUser,
-    "No explicit user turn before first observed invocation"
-  );
   const starts = rows.filter(
-    (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index >= observedUser.step_index && r.step_index > throughStep
+    (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index > throughStep
   );
   if (starts.length === 0) return null;
   const spans = [];
@@ -14320,23 +14344,31 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
       (r) => r.step_index >= user.step_index && (next === void 0 || r.step_index < next.step_index)
     );
     const last = turnRows.at(-1);
-    (0, import_strict.default)(
-      last && last.step_index > user.step_index,
-      "Transcript has no model output yet; retry this Stop after it flushes"
-    );
+    if (!last) break;
     const models = turnRows.filter((r) => r.type === "PLANNER_RESPONSE");
-    (0, import_strict.default)(models.length > 0, "Turn has no model response");
     const traceId = id(
       `antigravity:${stop.conversationId}:${user.step_index}`,
       32
     );
     const rootId = id(`${traceId}:root`, 16);
     const lastModel = models.at(-1);
-    const { post: lastPost } = invocationForStep(lastModel.step_index, events);
+    const turnInvocations = events.filter(
+      (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps > user.step_index && (next === void 0 || e.payload.initialNumSteps <= next.step_index)
+    );
+    const lastInvocation = turnInvocations.at(-1);
+    if (!lastInvocation) break;
+    const { post: lastPost } = lastModel ? invocationForStep(lastModel.step_index, events) : { post: lastInvocation };
     const finish = events.find(
-      (e) => e.payload.event === "Stop" && e.payload.fullyIdle && e.at >= lastPost.at
+      (e) => e.payload.event === "Stop" && e.payload.fullyIdle && e.at >= lastPost.at && e.at >= lastInvocation.at
     );
     (0, import_strict.default)(finish?.payload.event === "Stop", "Missing Stop event for turn");
+    const terminalError = finish.payload.error || ([
+      "ERROR",
+      "USER_CANCELED",
+      "MAX_INVOCATIONS",
+      "MAX_FORCED_INVOCATIONS",
+      "MAX_TOKEN_BUDGET_EXCEEDED"
+    ].includes(finish.payload.terminationReason) ? finish.payload.terminationReason : void 0);
     const session = {
       "lmnr.association.properties.session_id": stop.conversationId
     };
@@ -14351,6 +14383,15 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
         startTimeUnixNano: nano(start),
         endTimeUnixNano: nano(end),
         attributes: attributes({ ...session, ...attrs }),
+        events: error46 ? [
+          {
+            name: "exception",
+            timeUnixNano: nano(end),
+            attributes: attributes({
+              "exception.message": text(error46, maxChars)
+            })
+          }
+        ] : [],
         status: error46 ? { code: 2, message: text(error46, maxChars) } : { code: 1 }
       };
     };
@@ -14360,38 +14401,80 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
       { role: "user", content: text(prompt, maxChars) }
     ];
     const coveredTools = /* @__PURE__ */ new Set();
+    const coveredInvocations = /* @__PURE__ */ new Set();
     for (const model of models) {
-      const { pre, post } = invocationForStep(model.step_index, events);
+      const { pre, post, interrupted } = invocationForStep(
+        model.step_index,
+        events
+      );
+      const invocationKey = `${pre.at}:${pre.payload.initialNumSteps}`;
+      (0, import_strict.default)(
+        !coveredInvocations.has(invocationKey),
+        `Multiple model responses mapped to one invocation at step ${model.step_index}`
+      );
+      coveredInvocations.add(invocationKey);
       for (const system of turnRows.filter(
-        (r) => r.type === "SYSTEM_MESSAGE" && r.step_index >= pre.payload.initialNumSteps && r.step_index < model.step_index
+        (r) => ["SYSTEM_MESSAGE", "CHECKPOINT", "ERROR_MESSAGE"].includes(r.type) && r.step_index > (models[models.indexOf(model) - 1]?.step_index ?? user.step_index) && r.step_index < model.step_index
       )) {
         (0, import_strict.default)(
-          system.source === "SYSTEM" && system.content !== void 0,
+          system.source === "SYSTEM" && (system.content !== void 0 || system.error !== void 0),
           "Invalid SYSTEM_MESSAGE"
         );
         inputMessages.push({
           role: "system",
-          content: text(system.content, maxChars)
+          content: text(system.content ?? system.error, maxChars)
         });
       }
       const following = models.find((m) => m.step_index > model.step_index)?.step_index ?? last.step_index + 1;
-      const tools = events.filter(
-        (e) => e.payload.event === "PreToolUse" && e.payload.stepIdx > model.step_index && e.payload.stepIdx < following
+      const results = turnRows.filter(
+        (r) => r.type === "GENERIC" && r.step_index > model.step_index && r.step_index < following
       );
+      const calls = model.tool_calls ?? [];
       (0, import_strict.default)(
-        tools.length === (model.tool_calls?.length ?? 0),
-        `Tool-call/hook mismatch at step ${model.step_index}`
+        results.length === calls.length,
+        `Tool-call/result mismatch at step ${model.step_index}`
       );
-      const modelEnd = tools[0]?.at ?? post.at;
+      const tools = results.map((result, i) => {
+        const call = calls[i];
+        const preTool = events.find(
+          (e) => e.payload.event === "PreToolUse" && e.payload.stepIdx === result.step_index
+        );
+        const postTool = events.find(
+          (e) => e.payload.event === "PostToolUse" && e.payload.stepIdx === result.step_index
+        );
+        if (preTool) {
+          (0, import_strict.default)(preTool.payload.event === "PreToolUse");
+          import_strict.default.deepEqual(preTool.payload.toolCall, call);
+          if (postTool) {
+            (0, import_strict.default)(postTool.payload.event === "PostToolUse");
+            import_strict.default.deepEqual(postTool.payload.toolCall, call);
+            (0, import_strict.default)(postTool.at >= preTool.at, "Tool hook order is invalid");
+          } else
+            (0, import_strict.default)(
+              interrupted,
+              `Missing PostToolUse for step ${result.step_index}`
+            );
+        } else {
+          (0, import_strict.default)(
+            !postTool,
+            `PostToolUse without PreToolUse at step ${result.step_index}`
+          );
+          (0, import_strict.default)(
+            ["ERROR", "INVALID"].includes(result.status),
+            `Missing PreToolUse for step ${result.step_index}`
+          );
+        }
+        return { result, call, preTool, postTool };
+      });
+      const modelEnd = tools.flatMap((t) => t.preTool ? [t.preTool.at] : []).sort()[0] ?? post.at;
       const parts = [];
       if (model.content !== void 0)
         parts.push({ type: "text", content: text(model.content, maxChars) });
       for (const tool of tools) {
-        (0, import_strict.default)(tool.payload.event === "PreToolUse");
-        const call = tool.payload.toolCall;
+        const call = tool.call;
         parts.push({
           type: "tool_call",
-          id: `step-${tool.payload.stepIdx}`,
+          id: `step-${tool.result.step_index}`,
           name: call.name,
           arguments: JSON.stringify(call.args).length > maxChars ? { _truncated: text(JSON.stringify(call.args), maxChars) } : call.args
         });
@@ -14430,7 +14513,8 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
           `llm:${model.step_index}`,
           pre.at,
           modelEnd,
-          attrs
+          attrs,
+          interrupted ? "Invocation interrupted before PostInvocation" : void 0
         )
       );
       if (model.content !== void 0)
@@ -14439,42 +14523,64 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
           content: text(model.content, maxChars)
         });
       for (const tool of tools) {
-        (0, import_strict.default)(tool.payload.event === "PreToolUse");
-        const p = tool.payload;
-        const end = events.find(
-          (e) => e.payload.event === "PostToolUse" && e.payload.stepIdx === p.stepIdx && e.at >= tool.at
-        );
+        const { result, call, preTool, postTool } = tool;
         (0, import_strict.default)(
-          end?.payload.event === "PostToolUse",
-          `Missing PostToolUse for step ${p.stepIdx}`
+          result.content !== void 0 || result.error !== void 0,
+          `Tool result missing at step ${result.step_index}`
         );
-        import_strict.default.deepEqual(end.payload.toolCall, p.toolCall);
-        const result = turnRows.find((r) => r.step_index === p.stepIdx);
-        (0, import_strict.default)(
-          result?.type === "GENERIC" && result.content !== void 0,
-          `Unsupported tool result at step ${p.stepIdx}`
-        );
-        coveredTools.add(p.stepIdx);
+        const content = result.content ?? result.error;
+        coveredTools.add(result.step_index);
+        const hookError = postTool?.payload.event === "PostToolUse" ? postTool.payload.error : void 0;
         spans.push(
           makeSpan(
-            p.toolCall.name,
-            `tool:${p.stepIdx}`,
-            tool.at,
-            end.at,
+            call.name,
+            `tool:${result.step_index}`,
+            preTool?.at ?? result.created_at,
+            postTool?.at ?? (preTool ? post.at : result.created_at),
             {
               "lmnr.span.type": "TOOL",
-              "lmnr.span.input": json2(p.toolCall.args, maxChars),
-              "lmnr.span.output": json2(result.content, maxChars),
-              "antigravity.step_index": p.stepIdx
+              "lmnr.span.input": json2(call.args, maxChars),
+              "lmnr.span.output": json2(content, maxChars),
+              "antigravity.step_index": result.step_index,
+              "antigravity.transcript_status": result.status,
+              "antigravity.tool_scope": result.status === "RUNNING" ? "background_dispatch" : "tool_execution",
+              "antigravity.timing_source": preTool ? "hook_wall_clock" : "transcript_timestamp_only"
             },
-            end.payload.error
+            hookError || result.error || (preTool && !postTool ? "Tool interrupted before PostToolUse" : void 0)
           )
         );
-        inputMessages.push({
-          role: "tool",
-          content: text(result.content, maxChars)
-        });
+        inputMessages.push({ role: "tool", content: text(content, maxChars) });
       }
+    }
+    for (const invocation of turnInvocations) {
+      (0, import_strict.default)(invocation.payload.event === "PreInvocation");
+      const initial = invocation.payload.initialNumSteps;
+      const later = turnInvocations.find(
+        (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps > initial
+      );
+      const upper = later?.payload.event === "PreInvocation" ? later.payload.initialNumSteps : Infinity;
+      if (models.some((m) => m.step_index >= initial && m.step_index < upper))
+        continue;
+      (0, import_strict.default)(
+        terminalError,
+        `Invocation has no model response at step ${initial}`
+      );
+      spans.push(
+        makeSpan(
+          `LLM ${invocation.payload.invocationNum + 1}`,
+          `incomplete:${initial}`,
+          invocation.at,
+          finish.at,
+          {
+            "lmnr.span.type": "LLM",
+            "gen_ai.request.model": invocation.payload.modelName,
+            "antigravity.initial_num_steps": initial,
+            "antigravity.incomplete": true,
+            "antigravity.timing_source": "hook_wall_clock"
+          },
+          terminalError
+        )
+      );
     }
     for (const row of turnRows) {
       (0, import_strict.default)(
@@ -14500,7 +14606,7 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
         "lmnr.span.output": json2(
           {
             role: "assistant",
-            content: text(lastModel.content ?? "", maxChars)
+            content: text(lastModel?.content ?? "", maxChars)
           },
           maxChars
         ),
@@ -14509,12 +14615,13 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
         "antigravity.user_step": user.step_index,
         "antigravity.input_scope": "visible_transcript_not_full_model_request"
       },
-      finish.payload.error
+      terminalError
     );
     delete root.parentSpanId;
     spans.unshift(root);
     exportedThrough = last.step_index;
   }
+  if (spans.length === 0) return null;
   return {
     throughStep: exportedThrough,
     request: {
@@ -14527,7 +14634,7 @@ function buildExport(rows, events, stop, throughStep, maxChars) {
             })
           },
           scopeSpans: [
-            { scope: { name: "lmnr.antigravity", version: "0.1.0" }, spans }
+            { scope: { name: "lmnr.antigravity", version: "0.2.0" }, spans }
           ]
         }
       ]
@@ -14617,21 +14724,36 @@ ${config2.projectApiKey}`
   ).digest("hex");
   const directory = (0, import_node_path.join)(stateRoot, key);
   await (0, import_promises.mkdir)(directory, { recursive: true, mode: 448 });
+  const journalPath = (0, import_node_path.join)(directory, "events.jsonl");
+  const replay = process.argv[3] === "--retry";
+  (0, import_strict2.default)(process.argv[3] === void 0 || replay, "Unknown hook argument");
+  (0, import_strict2.default)(!replay || payload.event === "Stop", "Only Stop can be retried");
+  const journalLock = {
+    realpath: false,
+    retries: { retries: 40, minTimeout: 50, maxTimeout: 50 },
+    stale: 3e4
+  };
+  if (!replay) {
+    const releaseJournal = await import_proper_lockfile.default.lock(journalPath, journalLock);
+    try {
+      await (0, import_promises.appendFile)(
+        journalPath,
+        JSON.stringify({ at: (/* @__PURE__ */ new Date()).toISOString(), payload }) + "\n",
+        { mode: 384 }
+      );
+    } finally {
+      await releaseJournal();
+    }
+  }
+  if (payload.event !== "Stop" || !payload.fullyIdle) {
+    console.log(JSON.stringify(reply));
+    return;
+  }
   const release = await import_proper_lockfile.default.lock(directory, {
-    retries: { retries: 3, minTimeout: 50, maxTimeout: 250 },
+    retries: { retries: 200, minTimeout: 100, maxTimeout: 100 },
     stale: 3e4
   });
   try {
-    const journalPath = (0, import_node_path.join)(directory, "events.jsonl");
-    await (0, import_promises.appendFile)(
-      journalPath,
-      JSON.stringify({ at: (/* @__PURE__ */ new Date()).toISOString(), payload }) + "\n",
-      { mode: 384 }
-    );
-    if (payload.event !== "Stop" || !payload.fullyIdle) {
-      console.log(JSON.stringify(reply));
-      return;
-    }
     const checkpointPath = (0, import_node_path.join)(directory, "checkpoint.json");
     const pendingPath = (0, import_node_path.join)(directory, "pending.json");
     let throughStep = (0, import_node_fs.existsSync)(checkpointPath) ? checkpoint.parse(JSON.parse(await (0, import_promises.readFile)(checkpointPath, "utf8"))).throughStep : -1;
@@ -14646,19 +14768,43 @@ ${config2.projectApiKey}`
       }
       await (0, import_promises.rm)(pendingPath);
     }
+    const releaseJournal = await import_proper_lockfile.default.lock(journalPath, journalLock);
+    let journalText;
+    try {
+      journalText = await (0, import_promises.readFile)(journalPath, "utf8");
+    } finally {
+      await releaseJournal();
+    }
+    const journal = journalText.trimEnd().split("\n").map((line) => eventRecord.parse(JSON.parse(line)));
     const raw = await (0, import_promises.readFile)(payload.transcriptPath, "utf8");
     (0, import_strict2.default)(
       raw.endsWith("\n"),
       "Transcript has a partial trailing line; retry after it flushes"
     );
-    const rows = raw.trimEnd().split("\n").map((line) => transcriptRow.parse(JSON.parse(line)));
-    for (let i = 1; i < rows.length; i++) {
+    const stopIndex = journal.findLastIndex(
+      (e) => e.payload.event === "Stop" && e.payload.fullyIdle
+    );
+    (0, import_strict2.default)(stopIndex >= 0, "No recorded fully-idle Stop");
+    const events = journal.slice(0, stopIndex + 1);
+    const finish = events.at(-1);
+    const first = events.find((e) => e.payload.event === "PreInvocation");
+    (0, import_strict2.default)(first?.payload.event === "PreInvocation", "No observed invocation");
+    const firstStep = first.payload.initialNumSteps;
+    const envelopes = raw.trimEnd().split("\n").map((line) => transcriptEnvelope.parse(JSON.parse(line)));
+    for (let i = 1; i < envelopes.length; i++)
       (0, import_strict2.default)(
-        rows[i].step_index > rows[i - 1].step_index,
+        envelopes[i].step_index > envelopes[i - 1].step_index,
         "Transcript steps must be strictly increasing"
       );
-    }
-    const events = (await (0, import_promises.readFile)(journalPath, "utf8")).trimEnd().split("\n").map((line) => eventRecord.parse(JSON.parse(line)));
+    const user = envelopes.findLast(
+      (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index < firstStep
+    );
+    (0, import_strict2.default)(user, "No explicit user turn before first observed invocation");
+    const nextInvocation = journal.slice(stopIndex + 1).find((e) => e.payload.event === "PreInvocation");
+    const upper = nextInvocation?.payload.event === "PreInvocation" ? nextInvocation.payload.initialNumSteps : Infinity;
+    const rows = envelopes.filter(
+      (r) => r.step_index >= user.step_index && r.step_index > throughStep && r.step_index < upper && Date.parse(r.created_at) <= Date.parse(finish.at)
+    ).map((r) => transcriptRow.parse(r));
     const pending = buildExport(
       rows,
       events,

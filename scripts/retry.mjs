@@ -15,7 +15,11 @@ const stop = records.findLast(
 assert(stop, "No fully-idle Stop recorded");
 const child = spawn(
   process.execPath,
-  [fileURLToPath(new URL("../dist/hook.cjs", import.meta.url)), "Stop"],
+  [
+    fileURLToPath(new URL("../dist/hook.cjs", import.meta.url)),
+    "Stop",
+    "--retry",
+  ],
   { stdio: ["pipe", "inherit", "inherit"] },
 );
 child.stdin.end(JSON.stringify(stop.payload));

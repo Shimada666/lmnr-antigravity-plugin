@@ -1,8 +1,8 @@
 # Laminar Antigravity Plugin
 
-Experimental, independent plugin that exports **Antigravity CLI user turns to Laminar** through OTLP/HTTP JSON. Not an official Google or Laminar integration.
+Independent plugin that exports **Antigravity CLI user turns to Laminar** through OTLP/HTTP JSON. Not an official Google or Laminar integration.
 
-**Prototype target: Antigravity CLI 1.4.2 on Linux, Node.js 22+.** App and IDE support have not been validated.
+**Validated target: Antigravity CLI 1.4.2 on Linux, Node.js 22+.** App and IDE support have not been validated.
 
 ## What it records
 
@@ -13,7 +13,11 @@ Experimental, independent plugin that exports **Antigravity CLI user turns to La
 
 Model inputs are reconstructed from the **visible transcript within that turn**, not the exact provider request: hidden system instructions, previous-turn context, and internal reasoning are not reconstructed. Token counters use the observed CLI 1.4.2 convention: `input_tokens` is uncached input, while `cache_read_tokens` is separate. The OTLP total input is their sum, and both original counters are preserved as `antigravity.usage.*` attributes. Missing values are not invented, and the plugin does not calculate a cost.
 
-The format was observed from `transcript_full.jsonl` supplied by real CLI hooks, rather than assuming the example filename in the documentation. This first version supports `USER_INPUT`, `PLANNER_RESPONSE`, `SYSTEM_MESSAGE`, and `GENERIC` tool-result rows. Unsupported kinds/statuses, injected inputs, missing hook pairs, or incomplete transcript lines cause a visible error and leave the checkpoint unchanged.
+The format was observed from `transcript_full.jsonl` supplied by real CLI hooks. It supports `USER_INPUT`, `PLANNER_RESPONSE`, `SYSTEM_MESSAGE`, `CHECKPOINT`, `ERROR_MESSAGE`, and `GENERIC` tool-result rows. Only the observed, uncheckpointed part of the conversation is exported; installing into a long existing conversation does not require its older steps to use the current format.
+
+Background tools retain their `RUNNING` transcript status even after their dispatch hooks finish. These spans are labeled `background_dispatch`: their duration measures dispatch, not the background job's lifetime. Subsequent system messages carry the job completion output. `ERROR` and `INVALID` tool results produce error spans, including failures rejected before tool hooks fire; those use explicitly labeled transcript-only timing. Parallel tool results are paired by step and checked against the model's calls.
+
+Cancellation and terminal errors with a recorded fully-idle Stop produce error traces. An interrupted invocation without a model response is marked incomplete and has no invented token counts. Unknown current kinds/statuses, injected inputs, missing successful hook pairs, and incomplete transcript lines still fail visibly without advancing the checkpoint.
 
 ## Install
 
@@ -56,13 +60,13 @@ For persistent opt-in, put the file at `~/.config/lmnr/antigravity-plugin.json`.
 
 Pre/post hooks only journal events locally. `Stop` exports after `fullyIdle=true`. Tool authorization remains with Antigravity: the pre-tool hook returns `allow`, never `auto_approve`; stop hooks never force another agent turn.
 
-- Per-conversation locking serializes event capture and export.
+- Separate per-conversation locks protect journal writes and exports. Slow HTTP uploads do not block recording model/tool hooks.
 - The full request is persisted to `pending.json` before sending.
 - Only a successful response with no rejected spans advances `checkpoint.json`.
 - A repeated completed Stop is skipped. Failed exports retry on the next fully-idle Stop, using the same frozen request and deterministic trace/span IDs.
 - Delivery is **at least once**. A server accepting a request while its response is lost can cause re-delivery; no exactly-once claim is made.
 - Failures are surfaced as nonzero hook exits with their stack traces. They are not swallowed, and this prototype does not promise that host hook errors are invisible to the agent.
-- A standalone session that ends after an upload failure has no background retry daemon. To retry without another model call, replay its last recorded Stop payload:
+- A standalone session that ends after an upload failure has no background retry daemon. To retry without another model call, replay its last recorded fully-idle Stop. Replay does not append a synthetic Stop or finish a newer active turn:
 
 ```sh
 # Select the state directory for the failed conversation (contains events.jsonl).
@@ -73,8 +77,9 @@ Use the same configuration and state-directory environment overrides as the orig
 
 ## Current limits
 
-- New, ordinary CLI conversations only. Subagent parent/child linkage, browser/image artifacts, cancelled or compacted sessions, and arbitrary transcript row kinds are not yet supported.
-- Hooks must be enabled before the first model invocation of the turn. Earlier unobserved turns are not backfilled.
+- CLI sessions, including resumed long conversations, asynchronous/parallel tools, recorded cancellation, and observed compaction messages. Subagent parent/child linkage and browser/image artifacts are not implemented.
+- Hooks must be enabled before the first model invocation of the turn. Earlier unobserved turns are not backfilled. Transcript compaction that physically deletes earlier observed rows is not supported.
+- The CLI must emit its hooks. A process kill/crash, or a headless permission denial that exits without PostInvocation/Stop, leaves an incomplete journal; the plugin does not invent completion for it.
 - The complete transcript is parsed at Stop; very long sessions are not optimized yet.
 - Times are observed at hook execution, not provider-server timestamps. In CLI 1.4.2, `PostInvocation` occurs after tools, so the LLM span ends at the first pre-tool hook when tools are present.
 - Tool spans are siblings of LLM spans under the turn root. There is no guessed subagent hierarchy.
@@ -90,7 +95,7 @@ npm run smoke
 agy plugin validate . --strict
 ```
 
-The smoke exercise uses real hook subprocesses and a local OTLP receiver. It verifies trace hierarchy, tool output, model/tool timing boundaries, failed HTTP export, partial rejection, frozen retries, duplicate Stop, resumed turns, and unknown-schema rejection. It does not need credentials or call an LLM.
+The smoke and regression exercises use real hook subprocesses and a local OTLP receiver. CI runs both. It verifies trace hierarchy, tool output, model/tool timing boundaries, failed HTTP export, partial rejection, frozen retries, duplicate Stop, resumed turns, and unknown-schema rejection. The regression suite additionally covers background and failed tools, parallel calls, historical/compaction records, cancellations, live-turn boundaries, malformed responses, auth/rate-limit failures, timeouts, concurrent retries, and event capture during blocked uploads. Neither suite needs credentials or calls an LLM.
 
 See [VALIDATION.md](VALIDATION.md) for the live trial and its limitations.
 

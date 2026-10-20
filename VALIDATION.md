@@ -1,46 +1,53 @@
-# Prototype validation — 2026-10-20
+# Validation — 0.2.0 — 2026-10-20
 
-## Verified environment
+## Environment
 
-- Antigravity CLI 1.4.2, Linux.
-- Node.js 24.18.0 locally; CI targets Node.js 22.
+- Antigravity CLI 1.4.2 on Linux, Node.js 24.18.0 locally; CI runs Node.js 22.
 - Self-hosted Laminar app-server v0.3.1.
-- Project-local plugin only; no global tracing was enabled.
-- Only synthetic prompts and a synthetic local text file were sent to Laminar. Credentials, infrastructure addresses, and raw user sessions are not included in this repository.
+- The global plugin was updated and exercised through actual CLI hooks.
+- User transcripts and credentials remain private on the operator's machine. Only synthetic fixtures are committed.
 
-## Live end-to-end result
+## Why 0.1.0 failed
 
-A fresh conversation read one synthetic file and returned its contents, then was resumed for a second text-only turn. Both turns exported automatically through the plugin's actual Stop hook.
+The first version passed short synthetic conversations but parsed the entire transcript as DONE-only rows. Real background dispatches remain RUNNING in the transcript; completion arrives in later system messages. Old error/compaction records also blocked resumed conversations. Replay appended a new Stop, which could incorrectly consume a newer turn. A single short-wait lock also coupled hook capture to network uploads.
 
-Server-side SQL confirmed:
+These were implementation defects. Validation now covers the real lifecycle, not just a successful POST.
 
-- One session containing two distinct traces.
-- First turn: one root, two LLM spans, one `read_file` span.
-- Second turn: one root and one LLM span.
-- Six spans total, correct parent/child IDs, tool output present.
-- Each LLM's input/output counters matched the source transcript after normalizing cached input.
+## Automated checks
 
-Synthetic-session trace IDs for checking the trial instance:
+`npm test` runs real hook subprocesses against a local HTTP receiver:
 
-- `963bf01e-5e15-7b21-595c-0a5cfed1d190`
-- `fbe56a2f-802b-51d2-6948-d5487ff40977`
+- The original smoke suite: hierarchy, tool content, cached-token normalization, model/tool timing, HTTP 503, partial rejection, frozen retries, duplicate suppression, resumed turns, and unknown-schema failures.
+- 32 regression scenarios: background dispatch, ERROR/INVALID tools with and without hooks, 2,000 pre-install history rows, completion/system/compaction/error messages, active next-turn exclusion, queued input, non-idle Stops, cancellation/error/budget termination without a model response, interrupted tools, parallel completion order, strict mismatches, partial transcripts, missing error/token fields, HTTP 401/429/503, invalid responses, timeouts, eight simultaneous retries, and hook capture while HTTP is deliberately blocked.
+- Every error span must carry both an OTLP error status and an `exception` event. Laminar v0.3.1 derives stored error status from the event; checking only the outbound status code is insufficient.
+- Replaying an unchanged completed journal must send no additional requests or append fabricated Stops.
 
-## Wire details discovered through live runs
+`npm run check`, `npm run build`, `agy plugin validate . --strict`, and both test suites passed. CI runs type/format checks, reproducible bundle verification, and both test suites.
 
-1. Hooks supply `transcript_full.jsonl`, rather than the documentation's example `transcript.jsonl`.
-2. Plugin hooks execute from the plugin directory. Relative `node dist/hook.cjs ...` works without hard-coded installation paths.
-3. `PostInvocation` fires after tool execution. Model span duration must stop at the first pre-tool hook when applicable.
-4. On resume, a `SYSTEM_MESSAGE` may be inserted after `initialNumSteps`, before the next `PLANNER_RESPONSE`. Invocation numbering resets across execution attempts; step boundaries are used for association.
-5. CLI `input_tokens` and `cache_read_tokens` are separate counters. Laminar's OTLP input-token attribute expects their combined total. Original counters are retained separately.
+## Real-session recovery
 
-The initial exploratory run exposed items 4 and 5. Those early trial traces are not acceptance evidence. The fresh two-turn run above used the corrected implementation and was checked against persisted server data.
+Two existing CLI conversations were replayed locally before upload, then recovered into their configured Laminar project:
 
-## Repeatable local exercise
+| Conversation | Recovered turns | Spans | LLM spans | Tool spans |
+| ------------ | --------------: | ----: | --------: | ---------: |
+| futures      |               2 |    26 |        14 |         10 |
+| thesis       |               5 |    61 |        28 |         28 |
 
-`npm run smoke` executes real hook subprocesses against a local HTTP receiver. It checks normal spans, token normalization, tool timing, HTTP 503, OTLP partial rejection, persisted retries with stable IDs, duplicate Stop suppression, resume with a system-message insertion, and unknown-schema failure without checkpoint advancement.
+All 42 model input/output counters were compared with the original transcripts. Input counts include the separately reported cache reads. No unobserved older turns were fabricated. The first recovery exposed Laminar's exception-event requirement; the two affected real tool spans and their trace status metadata were corrected in place, without duplicating spans or changing token counts.
 
-`npm run check`, `npm run build`, and `agy plugin validate . --strict --json` passed locally. The strict plugin validator reported zero findings.
+## Fresh CLI integration checks
 
-## Not established
+A new synthetic conversation launched a background shell command, attempted a deliberately missing file read, received the background completion message, and returned the marker. A second turn resumed it successfully. Server queries checked parent IDs, normalized tokens, and span counts (two traces, eight spans).
 
-App/IDE behavior, subagent nesting, parallel/background tool execution, interrupted/compacted transcripts, a full provider prompt, hidden reasoning, pricing accuracy, Windows/macOS behavior, and long-session performance are not established by these trials. This is an experimental adapter for ordinary CLI sessions, not a general-purpose production exporter.
+After adding exception events, a separate fresh session repeated the background/error test:
+
+- Trace `175a3eab-03c5-cc09-4f32-0f037af00876`.
+- Six spans: root, three model calls, background command dispatch, failed file read.
+- Server-side command status: success; file-read status: error, with the actual `exception.message` retained.
+- Captured `RUNNING` status is labeled background_dispatch, not misrepresented as the full task runtime.
+
+Earlier exploratory traces are not acceptance evidence for corrected error-status handling.
+
+## Boundaries
+
+This validates the CLI lifecycle above. It does not establish App/IDE integration, nested subagent linkage, browser/image artifacts, Windows/macOS behavior, pricing, hidden reasoning, or an exact full provider prompt. Compaction messages are supported; physically deleting observed transcript rows is not. Cancellation tests require the CLI to emit a Stop. A live headless permission-denial probe exited without PostInvocation/Stop, leaving only an incomplete journal; process kills/crashes have the same observability limit. No successful trace is invented for those cases.

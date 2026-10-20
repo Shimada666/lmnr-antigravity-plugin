@@ -49,19 +49,54 @@ export type StopPayload = Extract<HookPayload, { event: "Stop" }>;
 
 // Observed wire schema: agy 1.4.2 transcript_full.jsonl. Unsupported row kinds
 // fail explicitly instead of quietly dropping part of the conversation.
-export const transcriptRow = z.object({
-  step_index: index,
-  source: z.string().min(1),
-  type: z.enum(["USER_INPUT", "PLANNER_RESPONSE", "GENERIC", "SYSTEM_MESSAGE"]),
-  status: z.literal("DONE"),
-  created_at: z.iso.datetime(),
-  content: z.string().optional(),
-  input_tokens: index.optional(),
-  output_tokens: index.optional(),
-  cache_read_tokens: index.optional(),
-  thinking_tokens: index.optional(),
-  tool_calls: z.array(toolCall).optional(),
-});
+export const transcriptEnvelope = z
+  .object({
+    step_index: index,
+    source: z.string().min(1),
+    type: z.string().min(1),
+    created_at: z.iso.datetime(),
+  })
+  .passthrough();
+
+export const transcriptRow = z
+  .object({
+    step_index: index,
+    source: z.string().min(1),
+    type: z.enum([
+      "USER_INPUT",
+      "PLANNER_RESPONSE",
+      "GENERIC",
+      "SYSTEM_MESSAGE",
+      "CHECKPOINT",
+      "ERROR_MESSAGE",
+    ]),
+    status: z.enum(["DONE", "RUNNING", "ERROR", "INVALID"]),
+    error: z.string().optional(),
+    created_at: z.iso.datetime(),
+    content: z.string().optional(),
+    input_tokens: index.optional(),
+    output_tokens: index.optional(),
+    cache_read_tokens: index.optional(),
+    thinking_tokens: index.optional(),
+    tool_calls: z.array(toolCall).optional(),
+  })
+  .superRefine((row, ctx) => {
+    if (row.status !== "DONE" && row.type !== "GENERIC")
+      ctx.addIssue({
+        code: "custom",
+        message: `Unsupported ${row.type} status ${row.status}`,
+      });
+    if (
+      (row.status === "ERROR" ||
+        row.status === "INVALID" ||
+        row.type === "ERROR_MESSAGE") &&
+      !row.error
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Failed step must retain its error",
+      });
+  });
 export type TranscriptRow = z.infer<typeof transcriptRow>;
 
 const attribute = z.object({
@@ -84,6 +119,15 @@ export const span = z.object({
   startTimeUnixNano: z.string(),
   endTimeUnixNano: z.string(),
   attributes: z.array(attribute),
+  events: z
+    .array(
+      z.object({
+        name: z.literal("exception"),
+        timeUnixNano: z.string(),
+        attributes: z.array(attribute),
+      }),
+    )
+    .optional(),
   status: z.object({
     code: z.union([z.literal(1), z.literal(2)]),
     message: z.string().optional(),

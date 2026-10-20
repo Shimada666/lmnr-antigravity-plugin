@@ -60,8 +60,19 @@ function invocationForStep(step: number, events: EventRecord[]) {
       e.payload.invocationNum === payload.invocationNum &&
       e.at >= pre.at,
   );
-  assert(post, `Missing PostInvocation for step ${step}`);
-  return { pre: { at: pre.at, payload }, post };
+  const terminal = events.find(
+    (e) =>
+      e.payload.event === "Stop" &&
+      e.payload.fullyIdle &&
+      e.at >= pre.at &&
+      ["ERROR", "USER_CANCELED"].includes(e.payload.terminationReason),
+  );
+  assert(post || terminal, `Missing PostInvocation for step ${step}`);
+  return {
+    pre: { at: pre.at, payload },
+    post: (post ?? terminal)!,
+    interrupted: post === undefined,
+  };
 }
 
 /** One trace per explicit user turn; model/tool spans are siblings below it. */
@@ -72,29 +83,10 @@ export function buildExport(
   throughStep: number,
   maxChars: number,
 ): { request: ExportRequest; throughStep: number } | null {
-  const firstInvocation = events.find(
-    (e) => e.payload.event === "PreInvocation",
-  );
-  assert(
-    firstInvocation?.payload.event === "PreInvocation",
-    "No recorded PreInvocation; refusing to export unobserved history",
-  );
-  const firstStep = firstInvocation.payload.initialNumSteps;
-  const observedUser = rows.findLast(
-    (r) =>
-      r.type === "USER_INPUT" &&
-      r.source === "USER_EXPLICIT" &&
-      r.step_index < firstStep,
-  );
-  assert(
-    observedUser,
-    "No explicit user turn before first observed invocation",
-  );
   const starts = rows.filter(
     (r) =>
       r.type === "USER_INPUT" &&
       r.source === "USER_EXPLICIT" &&
-      r.step_index >= observedUser.step_index &&
       r.step_index > throughStep,
   );
   if (starts.length === 0) return null;
@@ -108,26 +100,46 @@ export function buildExport(
         (next === undefined || r.step_index < next.step_index),
     );
     const last = turnRows.at(-1);
-    assert(
-      last && last.step_index > user.step_index,
-      "Transcript has no model output yet; retry this Stop after it flushes",
-    );
+    if (!last) break;
     const models = turnRows.filter((r) => r.type === "PLANNER_RESPONSE");
-    assert(models.length > 0, "Turn has no model response");
+
     const traceId = id(
       `antigravity:${stop.conversationId}:${user.step_index}`,
       32,
     );
     const rootId = id(`${traceId}:root`, 16);
-    const lastModel = models.at(-1)!;
-    const { post: lastPost } = invocationForStep(lastModel.step_index, events);
+    const lastModel = models.at(-1);
+    const turnInvocations = events.filter(
+      (e) =>
+        e.payload.event === "PreInvocation" &&
+        e.payload.initialNumSteps > user.step_index &&
+        (next === undefined || e.payload.initialNumSteps <= next.step_index),
+    );
+    const lastInvocation = turnInvocations.at(-1);
+    // A new queued user input can already be in the transcript during replay.
+    if (!lastInvocation) break;
+    const { post: lastPost } = lastModel
+      ? invocationForStep(lastModel.step_index, events)
+      : { post: lastInvocation };
     const finish = events.find(
       (e) =>
         e.payload.event === "Stop" &&
         e.payload.fullyIdle &&
-        e.at >= lastPost.at,
+        e.at >= lastPost.at &&
+        e.at >= lastInvocation.at,
     );
     assert(finish?.payload.event === "Stop", "Missing Stop event for turn");
+    const terminalError =
+      finish.payload.error ||
+      ([
+        "ERROR",
+        "USER_CANCELED",
+        "MAX_INVOCATIONS",
+        "MAX_FORCED_INVOCATIONS",
+        "MAX_TOKEN_BUDGET_EXCEEDED",
+      ].includes(finish.payload.terminationReason)
+        ? finish.payload.terminationReason
+        : undefined);
     const session = {
       "lmnr.association.properties.session_id": stop.conversationId,
     };
@@ -149,6 +161,17 @@ export function buildExport(
         startTimeUnixNano: nano(start),
         endTimeUnixNano: nano(end),
         attributes: attributes({ ...session, ...attrs }),
+        events: error
+          ? [
+              {
+                name: "exception",
+                timeUnixNano: nano(end),
+                attributes: attributes({
+                  "exception.message": text(error, maxChars),
+                }),
+              },
+            ]
+          : [],
         status: error
           ? { code: 2, message: text(error, maxChars) }
           : { code: 1 },
@@ -160,39 +183,91 @@ export function buildExport(
       { role: "user", content: text(prompt, maxChars) },
     ];
     const coveredTools = new Set<number>();
+    const coveredInvocations = new Set<string>();
     for (const model of models) {
-      const { pre, post } = invocationForStep(model.step_index, events);
+      const { pre, post, interrupted } = invocationForStep(
+        model.step_index,
+        events,
+      );
+      const invocationKey = `${pre.at}:${pre.payload.initialNumSteps}`;
+      assert(
+        !coveredInvocations.has(invocationKey),
+        `Multiple model responses mapped to one invocation at step ${model.step_index}`,
+      );
+      coveredInvocations.add(invocationKey);
       for (const system of turnRows.filter(
         (r) =>
-          r.type === "SYSTEM_MESSAGE" &&
-          r.step_index >= pre.payload.initialNumSteps &&
+          ["SYSTEM_MESSAGE", "CHECKPOINT", "ERROR_MESSAGE"].includes(r.type) &&
+          r.step_index >
+            (models[models.indexOf(model) - 1]?.step_index ??
+              user.step_index) &&
           r.step_index < model.step_index,
       )) {
         assert(
-          system.source === "SYSTEM" && system.content !== undefined,
+          system.source === "SYSTEM" &&
+            (system.content !== undefined || system.error !== undefined),
           "Invalid SYSTEM_MESSAGE",
         );
         inputMessages.push({
           role: "system",
-          content: text(system.content, maxChars),
+          content: text(system.content ?? system.error!, maxChars),
         });
       }
       const following: number =
         models.find((m) => m.step_index > model.step_index)?.step_index ??
         last.step_index + 1;
-      const tools: EventRecord[] = events.filter(
-        (e) =>
-          e.payload.event === "PreToolUse" &&
-          e.payload.stepIdx > model.step_index &&
-          e.payload.stepIdx < following,
+      const results = turnRows.filter(
+        (r) =>
+          r.type === "GENERIC" &&
+          r.step_index > model.step_index &&
+          r.step_index < following,
       );
+      const calls = model.tool_calls ?? [];
       assert(
-        tools.length === (model.tool_calls?.length ?? 0),
-        `Tool-call/hook mismatch at step ${model.step_index}`,
+        results.length === calls.length,
+        `Tool-call/result mismatch at step ${model.step_index}`,
       );
-      // In agy 1.4.2 PostInvocation follows tool execution. End the model span
-      // at the first tool hook, not after all tools have run.
-      const modelEnd = tools[0]?.at ?? post.at;
+      const tools = results.map((result, i) => {
+        const call = calls[i]!;
+        const preTool = events.find(
+          (e) =>
+            e.payload.event === "PreToolUse" &&
+            e.payload.stepIdx === result.step_index,
+        );
+        const postTool = events.find(
+          (e) =>
+            e.payload.event === "PostToolUse" &&
+            e.payload.stepIdx === result.step_index,
+        );
+        if (preTool) {
+          assert(preTool.payload.event === "PreToolUse");
+          assert.deepEqual(preTool.payload.toolCall, call);
+          if (postTool) {
+            assert(postTool.payload.event === "PostToolUse");
+            assert.deepEqual(postTool.payload.toolCall, call);
+            assert(postTool.at >= preTool.at, "Tool hook order is invalid");
+          } else
+            assert(
+              interrupted,
+              `Missing PostToolUse for step ${result.step_index}`,
+            );
+        } else {
+          assert(
+            !postTool,
+            `PostToolUse without PreToolUse at step ${result.step_index}`,
+          );
+          assert(
+            ["ERROR", "INVALID"].includes(result.status),
+            `Missing PreToolUse for step ${result.step_index}`,
+          );
+        }
+        return { result, call, preTool, postTool };
+      });
+      // A rejected call can fail before hooks run; preserve its transcript error
+      // and mark timestamp-only timing rather than inventing an execution time.
+      const modelEnd =
+        tools.flatMap((t) => (t.preTool ? [t.preTool.at] : [])).sort()[0] ??
+        post.at;
       const parts: (
         | { type: "text"; content: string }
         | {
@@ -205,11 +280,10 @@ export function buildExport(
       if (model.content !== undefined)
         parts.push({ type: "text", content: text(model.content, maxChars) });
       for (const tool of tools) {
-        assert(tool.payload.event === "PreToolUse");
-        const call = tool.payload.toolCall;
+        const call = tool.call;
         parts.push({
           type: "tool_call",
-          id: `step-${tool.payload.stepIdx}`,
+          id: `step-${tool.result.step_index}`,
           name: call.name,
           arguments:
             JSON.stringify(call.args).length > maxChars
@@ -255,6 +329,9 @@ export function buildExport(
           pre.at,
           modelEnd,
           attrs,
+          interrupted
+            ? "Invocation interrupted before PostInvocation"
+            : undefined,
         ),
       );
       if (model.content !== undefined)
@@ -263,45 +340,81 @@ export function buildExport(
           content: text(model.content, maxChars),
         });
       for (const tool of tools) {
-        assert(tool.payload.event === "PreToolUse");
-        const p = tool.payload;
-        const end = events.find(
-          (e) =>
-            e.payload.event === "PostToolUse" &&
-            e.payload.stepIdx === p.stepIdx &&
-            e.at >= tool.at,
-        );
+        const { result, call, preTool, postTool } = tool;
         assert(
-          end?.payload.event === "PostToolUse",
-          `Missing PostToolUse for step ${p.stepIdx}`,
+          result.content !== undefined || result.error !== undefined,
+          `Tool result missing at step ${result.step_index}`,
         );
-        assert.deepEqual(end.payload.toolCall, p.toolCall);
-        const result = turnRows.find((r) => r.step_index === p.stepIdx);
-        assert(
-          result?.type === "GENERIC" && result.content !== undefined,
-          `Unsupported tool result at step ${p.stepIdx}`,
-        );
-        coveredTools.add(p.stepIdx);
+        const content = result.content ?? result.error!;
+        coveredTools.add(result.step_index);
+        const hookError =
+          postTool?.payload.event === "PostToolUse"
+            ? postTool.payload.error
+            : undefined;
         spans.push(
           makeSpan(
-            p.toolCall.name,
-            `tool:${p.stepIdx}`,
-            tool.at,
-            end.at,
+            call.name,
+            `tool:${result.step_index}`,
+            preTool?.at ?? result.created_at,
+            postTool?.at ?? (preTool ? post.at : result.created_at),
             {
               "lmnr.span.type": "TOOL",
-              "lmnr.span.input": json(p.toolCall.args, maxChars),
-              "lmnr.span.output": json(result.content, maxChars),
-              "antigravity.step_index": p.stepIdx,
+              "lmnr.span.input": json(call.args, maxChars),
+              "lmnr.span.output": json(content, maxChars),
+              "antigravity.step_index": result.step_index,
+              "antigravity.transcript_status": result.status,
+              "antigravity.tool_scope":
+                result.status === "RUNNING"
+                  ? "background_dispatch"
+                  : "tool_execution",
+              "antigravity.timing_source": preTool
+                ? "hook_wall_clock"
+                : "transcript_timestamp_only",
             },
-            end.payload.error,
+            hookError ||
+              result.error ||
+              (preTool && !postTool
+                ? "Tool interrupted before PostToolUse"
+                : undefined),
           ),
         );
-        inputMessages.push({
-          role: "tool",
-          content: text(result.content, maxChars),
-        });
+        inputMessages.push({ role: "tool", content: text(content, maxChars) });
       }
+    }
+    for (const invocation of turnInvocations) {
+      assert(invocation.payload.event === "PreInvocation");
+      const initial = invocation.payload.initialNumSteps;
+      const later = turnInvocations.find(
+        (e) =>
+          e.payload.event === "PreInvocation" &&
+          e.payload.initialNumSteps > initial,
+      );
+      const upper =
+        later?.payload.event === "PreInvocation"
+          ? later.payload.initialNumSteps
+          : Infinity;
+      if (models.some((m) => m.step_index >= initial && m.step_index < upper))
+        continue;
+      assert(
+        terminalError,
+        `Invocation has no model response at step ${initial}`,
+      );
+      spans.push(
+        makeSpan(
+          `LLM ${invocation.payload.invocationNum + 1}`,
+          `incomplete:${initial}`,
+          invocation.at,
+          finish.at,
+          {
+            "lmnr.span.type": "LLM",
+            "gen_ai.request.model": invocation.payload.modelName,
+            "antigravity.initial_num_steps": initial,
+            "antigravity.incomplete": true,
+            "antigravity.timing_source": "hook_wall_clock",
+          },
+          terminalError,
+        ),
+      );
     }
     for (const row of turnRows) {
       assert(
@@ -327,7 +440,7 @@ export function buildExport(
         "lmnr.span.output": json(
           {
             role: "assistant",
-            content: text(lastModel.content ?? "", maxChars),
+            content: text(lastModel?.content ?? "", maxChars),
           },
           maxChars,
         ),
@@ -336,12 +449,13 @@ export function buildExport(
         "antigravity.user_step": user.step_index,
         "antigravity.input_scope": "visible_transcript_not_full_model_request",
       },
-      finish.payload.error,
+      terminalError,
     );
     delete root.parentSpanId;
     spans.unshift(root);
     exportedThrough = last.step_index;
   }
+  if (spans.length === 0) return null;
   return {
     throughStep: exportedThrough,
     request: {
@@ -354,7 +468,7 @@ export function buildExport(
             }),
           },
           scopeSpans: [
-            { scope: { name: "lmnr.antigravity", version: "0.1.0" }, spans },
+            { scope: { name: "lmnr.antigravity", version: "0.2.0" }, spans },
           ],
         },
       ],

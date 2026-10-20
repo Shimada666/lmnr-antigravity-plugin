@@ -19,6 +19,7 @@ import {
   hookPayload,
   pendingExport,
   transcriptRow,
+  transcriptEnvelope,
   type ExportRequest,
 } from "./schema.js";
 import { buildExport } from "./traces.js";
@@ -132,21 +133,37 @@ async function main(): Promise<void> {
     .digest("hex");
   const directory = join(stateRoot, key);
   await mkdir(directory, { recursive: true, mode: 0o700 });
+  const journalPath = join(directory, "events.jsonl");
+  const replay = process.argv[3] === "--retry";
+  assert(process.argv[3] === undefined || replay, "Unknown hook argument");
+  assert(!replay || payload.event === "Stop", "Only Stop can be retried");
+  const journalLock = {
+    realpath: false,
+    retries: { retries: 40, minTimeout: 50, maxTimeout: 50 },
+    stale: 30_000,
+  };
+  // Capture hooks never wait for HTTP. This short lock covers only journal IO.
+  if (!replay) {
+    const releaseJournal = await lockfile.lock(journalPath, journalLock);
+    try {
+      await appendFile(
+        journalPath,
+        JSON.stringify({ at: new Date().toISOString(), payload }) + "\n",
+        { mode: 0o600 },
+      );
+    } finally {
+      await releaseJournal();
+    }
+  }
+  if (payload.event !== "Stop" || !payload.fullyIdle) {
+    console.log(JSON.stringify(reply));
+    return;
+  }
   const release = await lockfile.lock(directory, {
-    retries: { retries: 3, minTimeout: 50, maxTimeout: 250 },
+    retries: { retries: 200, minTimeout: 100, maxTimeout: 100 },
     stale: 30_000,
   });
   try {
-    const journalPath = join(directory, "events.jsonl");
-    await appendFile(
-      journalPath,
-      JSON.stringify({ at: new Date().toISOString(), payload }) + "\n",
-      { mode: 0o600 },
-    );
-    if (payload.event !== "Stop" || !payload.fullyIdle) {
-      console.log(JSON.stringify(reply));
-      return;
-    }
     const checkpointPath = join(directory, "checkpoint.json");
     const pendingPath = join(directory, "pending.json");
     let throughStep = existsSync(checkpointPath)
@@ -166,25 +183,65 @@ async function main(): Promise<void> {
       }
       await rm(pendingPath);
     }
+    const releaseJournal = await lockfile.lock(journalPath, journalLock);
+    let journalText: string;
+    try {
+      journalText = await readFile(journalPath, "utf8");
+    } finally {
+      await releaseJournal();
+    }
+    const journal = journalText
+      .trimEnd()
+      .split("\n")
+      .map((line) => eventRecord.parse(JSON.parse(line)));
     const raw = await readFile(payload.transcriptPath, "utf8");
     assert(
       raw.endsWith("\n"),
       "Transcript has a partial trailing line; retry after it flushes",
     );
-    const rows = raw
+    const stopIndex = journal.findLastIndex(
+      (e) => e.payload.event === "Stop" && e.payload.fullyIdle,
+    );
+    assert(stopIndex >= 0, "No recorded fully-idle Stop");
+    const events = journal.slice(0, stopIndex + 1);
+    const finish = events.at(-1)!;
+    const first = events.find((e) => e.payload.event === "PreInvocation");
+    assert(first?.payload.event === "PreInvocation", "No observed invocation");
+    const firstStep = first.payload.initialNumSteps;
+    const envelopes = raw
       .trimEnd()
       .split("\n")
-      .map((line) => transcriptRow.parse(JSON.parse(line)));
-    for (let i = 1; i < rows.length; i++) {
+      .map((line) => transcriptEnvelope.parse(JSON.parse(line)));
+    for (let i = 1; i < envelopes.length; i++)
       assert(
-        rows[i]!.step_index > rows[i - 1]!.step_index,
+        envelopes[i]!.step_index > envelopes[i - 1]!.step_index,
         "Transcript steps must be strictly increasing",
       );
-    }
-    const events = (await readFile(journalPath, "utf8"))
-      .trimEnd()
-      .split("\n")
-      .map((line) => eventRecord.parse(JSON.parse(line)));
+    const user = envelopes.findLast(
+      (r) =>
+        r.type === "USER_INPUT" &&
+        r.source === "USER_EXPLICIT" &&
+        r.step_index < firstStep,
+    );
+    assert(user, "No explicit user turn before first observed invocation");
+    // Inspect only observed, uncheckpointed history up to an actual recorded Stop.
+    // Replay never manufactures a new Stop timestamp or consumes a live next turn.
+    const nextInvocation = journal
+      .slice(stopIndex + 1)
+      .find((e) => e.payload.event === "PreInvocation");
+    const upper =
+      nextInvocation?.payload.event === "PreInvocation"
+        ? nextInvocation.payload.initialNumSteps
+        : Infinity;
+    const rows = envelopes
+      .filter(
+        (r) =>
+          r.step_index >= user.step_index &&
+          r.step_index > throughStep &&
+          r.step_index < upper &&
+          Date.parse(r.created_at) <= Date.parse(finish.at),
+      )
+      .map((r) => transcriptRow.parse(r));
     const pending = buildExport(
       rows,
       events,

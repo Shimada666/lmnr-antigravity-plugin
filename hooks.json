@@ -1,0 +1,49 @@
+{
+  "lmnr-antigravity": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node dist/hook.cjs PreInvocation",
+        "timeout": 5
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "node dist/hook.cjs PostInvocation",
+        "timeout": 5
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node dist/hook.cjs PreToolUse",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node dist/hook.cjs PostToolUse",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node dist/hook.cjs Stop",
+        "timeout": 45
+      }
+    ]
+  }
+}

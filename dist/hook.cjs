@@ -14227,6 +14227,7 @@ var transcriptRow = external_exports.object({
   error: external_exports.string().optional(),
   created_at: external_exports.iso.datetime(),
   content: external_exports.string().optional(),
+  thinking: external_exports.string().optional(),
   input_tokens: index.optional(),
   output_tokens: index.optional(),
   cache_read_tokens: index.optional(),
@@ -14249,6 +14250,7 @@ var attribute = external_exports.object({
   value: external_exports.union([
     external_exports.object({ stringValue: external_exports.string() }),
     external_exports.object({ intValue: external_exports.string() }),
+    external_exports.object({ doubleValue: external_exports.number().finite() }),
     external_exports.object({ boolValue: external_exports.boolean() })
   ])
 });
@@ -14319,7 +14321,8 @@ var configSchema = external_exports.object({
   projectApiKey: external_exports.string().min(1),
   baseUrl: external_exports.url(),
   maxChars: external_exports.number().int().min(256).max(1e5).default(2e4),
-  timeoutMs: external_exports.number().int().min(100).max(15e3).default(5e3)
+  timeoutMs: external_exports.number().int().min(100).max(15e3).default(5e3),
+  captureNativeTiming: external_exports.boolean().default(true)
 }).strict();
 async function readConfig() {
   const config2 = configSchema.parse(

@@ -1,4 +1,4 @@
-# Validation — 0.3.0 — 2026-10-20
+# Validation — 0.3.1 — 2026-10-20
 
 ## Environment
 
@@ -12,6 +12,16 @@
 The first version passed short synthetic conversations but parsed the entire transcript as DONE-only rows. Real background dispatches remain RUNNING in the transcript; completion arrives in later system messages. Old error/compaction records also blocked resumed conversations. Replay appended a new Stop, which could incorrectly consume a newer turn. A single short-wait lock also coupled hook capture to network uploads.
 
 These were implementation defects. Validation now covers the real lifecycle, not just a successful POST.
+
+## 0.3.1 thinking and native timing
+
+- The native metadata reader was checked against an independent Python protobuf extraction for 1,038 real model records across two conversations. TTFT and streaming durations matched within one nanosecond. No prompt or credentials are included in the comparison artifact or committed fixtures.
+- The lifecycle suite adds a real SQLite fixture with delayed generator/timing persistence. It checks that LLM spans wait for timing while the owner is alive, preserves fractional and zero durations as OTLP doubles, marks only the first model call per user turn, retains thinking as a separate output part, excludes thinking from reconstructed input history, and sends no duplicate spans.
+- The reader uses exact field numbers and types from the CLI 1.4.2 embedded `exa.cortex_pb` descriptors. It does not treat HTTP response logs, hook duration, or time to first packet as TTFT. The metric is explicitly not time to first answer text.
+
+- Fresh installed-plugin test: session `1b353fc2-b874-49b5-99b8-75b8570309b7`, trace `b77cb7ae-116f-297a-c594-65983e78d397`. Laminar stored native TTFT `21.671801287` seconds and streaming duration `5.77141055` seconds as numbers, along with a distinct thinking part containing 759 characters. The thinking text and input/output token counts matched the source transcript; the trace contained two unique spans.
+- A separate simple arithmetic session had no thinking field. Laminar stored its TTFT `4.899759587` seconds and streaming duration `0.093617537` seconds without inventing thinking text. The documented project SQL average query was exercised against the stored native fields.
+- All 32 regression and 16 worker lifecycle scenarios, type/format checks, build, and strict CLI plugin validation passed. Installed runtime bundles match the repository build.
 
 ## 0.3.0 worker validation
 

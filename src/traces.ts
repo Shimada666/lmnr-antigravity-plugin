@@ -44,6 +44,7 @@ function json(value: unknown, limit: number): string {
 
 type Part =
   | { type: "text"; content: string }
+  | { type: "thinking"; content: string }
   | {
       type: "tool_call";
       id: string;
@@ -297,9 +298,24 @@ export function buildSpans(
           "gen_ai.response.model": prePayload.modelName,
           "gen_ai.input.messages": JSON.stringify(messages),
           "gen_ai.output.messages": JSON.stringify([
-            { role: "assistant", parts },
+            {
+              role: "assistant",
+              parts:
+                model.thinking === undefined
+                  ? parts
+                  : [
+                      {
+                        type: "thinking",
+                        content: text(model.thinking, maxChars),
+                      },
+                      ...parts,
+                    ],
+            },
           ]),
           "antigravity.step_index": model.step_index,
+          "antigravity.user_step": user.step_index,
+          "antigravity.user_turn_first_call": model === models[0],
+          "antigravity.thinking_source": "cli_visible_transcript",
           "antigravity.incomplete": !modelComplete,
           "antigravity.timing_source":
             toolHooks.length > 0 || post
@@ -535,7 +551,7 @@ export function pack(spans: Span[]): ExportRequest {
           }),
         },
         scopeSpans: [
-          { scope: { name: "lmnr.antigravity", version: "0.3.0" }, spans },
+          { scope: { name: "lmnr.antigravity", version: "0.3.1" }, spans },
         ],
       },
     ],

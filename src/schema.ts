@@ -87,6 +87,7 @@ export const transcriptRow = z
     error: z.string().optional(),
     created_at: z.iso.datetime(),
     content: z.string().optional(),
+    thinking: z.string().optional(),
     input_tokens: index.optional(),
     output_tokens: index.optional(),
     cache_read_tokens: index.optional(),
@@ -120,6 +121,7 @@ const attribute = z.object({
   value: z.union([
     z.object({ stringValue: z.string() }),
     z.object({ intValue: z.string() }),
+    z.object({ doubleValue: z.number().finite() }),
     z.object({ boolValue: z.boolean() }),
   ]),
 });

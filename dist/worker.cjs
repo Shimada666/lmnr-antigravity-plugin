@@ -330,7 +330,7 @@ var require_legacy_streams = __commonJS({
       function ReadStream(path, options) {
         if (!(this instanceof ReadStream)) return new ReadStream(path, options);
         Stream.call(this);
-        var self = this;
+        var self2 = this;
         this.path = path;
         this.fd = null;
         this.readable = true;
@@ -361,19 +361,19 @@ var require_legacy_streams = __commonJS({
         }
         if (this.fd !== null) {
           process.nextTick(function() {
-            self._read();
+            self2._read();
           });
           return;
         }
         fs.open(this.path, this.flags, this.mode, function(err, fd) {
           if (err) {
-            self.emit("error", err);
-            self.readable = false;
+            self2.emit("error", err);
+            self2.readable = false;
             return;
           }
-          self.fd = fd;
-          self.emit("open", fd);
-          self._read();
+          self2.fd = fd;
+          self2.emit("open", fd);
+          self2._read();
         });
       }
       function WriteStream(path, options) {
@@ -863,18 +863,18 @@ var require_retry_operation = __commonJS({
           return false;
         }
       }
-      var self = this;
+      var self2 = this;
       var timer = setTimeout(function() {
-        self._attempts++;
-        if (self._operationTimeoutCb) {
-          self._timeout = setTimeout(function() {
-            self._operationTimeoutCb(self._attempts);
-          }, self._operationTimeout);
-          if (self._options.unref) {
-            self._timeout.unref();
+        self2._attempts++;
+        if (self2._operationTimeoutCb) {
+          self2._timeout = setTimeout(function() {
+            self2._operationTimeoutCb(self2._attempts);
+          }, self2._operationTimeout);
+          if (self2._options.unref) {
+            self2._timeout.unref();
           }
         }
-        self._fn(self._attempts);
+        self2._fn(self2._attempts);
       }, timeout);
       if (this._options.unref) {
         timer.unref();
@@ -891,11 +891,11 @@ var require_retry_operation = __commonJS({
           this._operationTimeoutCb = timeoutOps.cb;
         }
       }
-      var self = this;
+      var self2 = this;
       if (this._operationTimeoutCb) {
         this._timeout = setTimeout(function() {
-          self._operationTimeoutCb();
-        }, self._operationTimeout);
+          self2._operationTimeoutCb();
+        }, self2._operationTimeout);
       }
       this._operationStart = (/* @__PURE__ */ new Date()).getTime();
       this._fn(this._attempts);
@@ -1080,7 +1080,7 @@ var require_signal_exit = __commonJS({
         };
       };
     } else {
-      assert6 = require("assert");
+      assert7 = require("assert");
       signals = require_signals();
       isWin = /^win/i.test(process2.platform);
       EE = require("events");
@@ -1103,7 +1103,7 @@ var require_signal_exit = __commonJS({
           return function() {
           };
         }
-        assert6.equal(typeof cb, "function", "a callback must be provided for exit handler");
+        assert7.equal(typeof cb, "function", "a callback must be provided for exit handler");
         if (loaded === false) {
           load();
         }
@@ -1209,7 +1209,7 @@ var require_signal_exit = __commonJS({
         }
       };
     }
-    var assert6;
+    var assert7;
     var signals;
     var isWin;
     var EE;
@@ -1528,12 +1528,12 @@ var require_adapter = __commonJS({
       return newFs;
     }
     function toPromise(method) {
-      return (...args) => new Promise((resolve2, reject) => {
+      return (...args) => new Promise((resolve3, reject) => {
         args.push((err, result) => {
           if (err) {
             reject(err);
           } else {
-            resolve2(result);
+            resolve3(result);
           }
         });
         method(...args);
@@ -1606,11 +1606,6180 @@ var require_proper_lockfile = __commonJS({
   }
 });
 
+// node_modules/protobufjs/src/util/aspromise.js
+var require_aspromise = __commonJS({
+  "node_modules/protobufjs/src/util/aspromise.js"(exports2, module2) {
+    "use strict";
+    module2.exports = asPromise;
+    function asPromise(fn, ctx) {
+      var params = new Array(arguments.length - 1), offset = 0, index2 = 2, pending = true;
+      while (index2 < arguments.length)
+        params[offset++] = arguments[index2++];
+      return new Promise(function executor(resolve3, reject) {
+        params[offset] = function callback(err) {
+          if (pending) {
+            pending = false;
+            if (err)
+              reject(err);
+            else {
+              var params2 = new Array(arguments.length - 1), offset2 = 0;
+              while (offset2 < params2.length)
+                params2[offset2++] = arguments[offset2];
+              resolve3.apply(null, params2);
+            }
+          }
+        };
+        try {
+          fn.apply(ctx || null, params);
+        } catch (err) {
+          if (pending) {
+            pending = false;
+            reject(err);
+          }
+        }
+      });
+    }
+  }
+});
+
+// node_modules/protobufjs/src/util/base64.js
+var require_base64 = __commonJS({
+  "node_modules/protobufjs/src/util/base64.js"(exports2) {
+    "use strict";
+    var base643 = exports2;
+    base643.length = function length(string4) {
+      var p = string4.length;
+      if (!p)
+        return 0;
+      while (p > 0 && string4.charAt(p - 1) === "=")
+        --p;
+      return Math.floor(p * 3 / 4);
+    };
+    var b64 = new Array(64);
+    var s64 = new Array(123);
+    for (i = 0; i < 64; )
+      s64[b64[i] = i < 26 ? i + 65 : i < 52 ? i + 71 : i < 62 ? i - 4 : i - 59 | 43] = i++;
+    var i;
+    s64[45] = 62;
+    s64[95] = 63;
+    base643.encode = function encode3(buffer, start, end) {
+      var parts = null, chunk = [];
+      var i2 = 0, j = 0, t;
+      while (start < end) {
+        var b = buffer[start++];
+        switch (j) {
+          case 0:
+            chunk[i2++] = b64[b >> 2];
+            t = (b & 3) << 4;
+            j = 1;
+            break;
+          case 1:
+            chunk[i2++] = b64[t | b >> 4];
+            t = (b & 15) << 2;
+            j = 2;
+            break;
+          case 2:
+            chunk[i2++] = b64[t | b >> 6];
+            chunk[i2++] = b64[b & 63];
+            j = 0;
+            break;
+        }
+        if (i2 > 8191) {
+          (parts || (parts = [])).push(String.fromCharCode.apply(String, chunk));
+          i2 = 0;
+        }
+      }
+      if (j) {
+        chunk[i2++] = b64[t];
+        chunk[i2++] = 61;
+        if (j === 1)
+          chunk[i2++] = 61;
+      }
+      if (parts) {
+        if (i2)
+          parts.push(String.fromCharCode.apply(String, chunk.slice(0, i2)));
+        return parts.join("");
+      }
+      return String.fromCharCode.apply(String, chunk.slice(0, i2));
+    };
+    var invalidEncoding = "invalid encoding";
+    base643.decode = function decode3(string4, buffer, offset) {
+      var start = offset;
+      var j = 0, t;
+      for (var i2 = 0; i2 < string4.length; ) {
+        var c = string4.charCodeAt(i2++);
+        if (c === 61 && j > 1)
+          break;
+        if ((c = s64[c]) === void 0)
+          throw Error(invalidEncoding);
+        switch (j) {
+          case 0:
+            t = c;
+            j = 1;
+            break;
+          case 1:
+            buffer[offset++] = t << 2 | (c & 48) >> 4;
+            t = c;
+            j = 2;
+            break;
+          case 2:
+            buffer[offset++] = (t & 15) << 4 | (c & 60) >> 2;
+            t = c;
+            j = 3;
+            break;
+          case 3:
+            buffer[offset++] = (t & 3) << 6 | c;
+            j = 0;
+            break;
+        }
+      }
+      if (j === 1)
+        throw Error(invalidEncoding);
+      return offset - start;
+    };
+    var base64Re = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+    var base64UrlRe = /[-_]/;
+    var base64UrlNoPaddingRe = /^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2}(?:==)?|[A-Za-z0-9_-]{3}=?)?$/;
+    base643.test = function test(string4) {
+      return base64Re.test(string4) || base64UrlRe.test(string4) && base64UrlNoPaddingRe.test(string4);
+    };
+  }
+});
+
+// node_modules/protobufjs/src/util/eventemitter.js
+var require_eventemitter = __commonJS({
+  "node_modules/protobufjs/src/util/eventemitter.js"(exports2, module2) {
+    "use strict";
+    module2.exports = EventEmitter;
+    function EventEmitter() {
+      this._listeners = /* @__PURE__ */ Object.create(null);
+    }
+    EventEmitter.prototype.on = function on(evt, fn, ctx) {
+      (this._listeners[evt] || (this._listeners[evt] = [])).push({
+        fn,
+        ctx: ctx || this
+      });
+      return this;
+    };
+    EventEmitter.prototype.off = function off(evt, fn) {
+      if (evt === void 0)
+        this._listeners = /* @__PURE__ */ Object.create(null);
+      else {
+        if (fn === void 0)
+          this._listeners[evt] = [];
+        else {
+          var listeners = this._listeners[evt];
+          if (!listeners)
+            return this;
+          for (var i = 0; i < listeners.length; )
+            if (listeners[i].fn === fn)
+              listeners.splice(i, 1);
+            else
+              ++i;
+        }
+      }
+      return this;
+    };
+    EventEmitter.prototype.emit = function emit(evt) {
+      var listeners = this._listeners[evt];
+      if (listeners) {
+        var args = [], i = 1;
+        for (; i < arguments.length; )
+          args.push(arguments[i++]);
+        for (i = 0; i < listeners.length; )
+          listeners[i].fn.apply(listeners[i++].ctx, args);
+      }
+      return this;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/util/float.js
+var require_float = __commonJS({
+  "node_modules/protobufjs/src/util/float.js"(exports2, module2) {
+    "use strict";
+    module2.exports = factory(factory);
+    function factory(exports3) {
+      if (typeof Float32Array !== "undefined") (function() {
+        var f32 = new Float32Array([-0]), f8b = new Uint8Array(f32.buffer), le = f8b[3] === 128;
+        function writeFloat_f32_cpy(val, buf, pos) {
+          f32[0] = val;
+          buf[pos] = f8b[0];
+          buf[pos + 1] = f8b[1];
+          buf[pos + 2] = f8b[2];
+          buf[pos + 3] = f8b[3];
+        }
+        function writeFloat_f32_rev(val, buf, pos) {
+          f32[0] = val;
+          buf[pos] = f8b[3];
+          buf[pos + 1] = f8b[2];
+          buf[pos + 2] = f8b[1];
+          buf[pos + 3] = f8b[0];
+        }
+        exports3.writeFloatLE = le ? writeFloat_f32_cpy : writeFloat_f32_rev;
+        exports3.writeFloatBE = le ? writeFloat_f32_rev : writeFloat_f32_cpy;
+        function readFloat_f32_cpy(buf, pos) {
+          f8b[0] = buf[pos];
+          f8b[1] = buf[pos + 1];
+          f8b[2] = buf[pos + 2];
+          f8b[3] = buf[pos + 3];
+          return f32[0];
+        }
+        function readFloat_f32_rev(buf, pos) {
+          f8b[3] = buf[pos];
+          f8b[2] = buf[pos + 1];
+          f8b[1] = buf[pos + 2];
+          f8b[0] = buf[pos + 3];
+          return f32[0];
+        }
+        exports3.readFloatLE = le ? readFloat_f32_cpy : readFloat_f32_rev;
+        exports3.readFloatBE = le ? readFloat_f32_rev : readFloat_f32_cpy;
+      })();
+      else (function() {
+        function writeFloat_ieee754(writeUint, val, buf, pos) {
+          var sign = val < 0 ? 1 : 0;
+          if (sign)
+            val = -val;
+          if (val === 0)
+            writeUint(1 / val > 0 ? (
+              /* positive */
+              0
+            ) : (
+              /* negative 0 */
+              2147483648
+            ), buf, pos);
+          else if (isNaN(val))
+            writeUint(2143289344, buf, pos);
+          else if (val > 34028234663852886e22)
+            writeUint((sign << 31 | 2139095040) >>> 0, buf, pos);
+          else if (val < 11754943508222875e-54)
+            writeUint((sign << 31 | Math.round(val / 1401298464324817e-60)) >>> 0, buf, pos);
+          else {
+            var exponent = Math.floor(Math.log(val) / Math.LN2), mantissa = Math.round(val * Math.pow(2, -exponent) * 8388608) & 8388607;
+            writeUint((sign << 31 | exponent + 127 << 23 | mantissa) >>> 0, buf, pos);
+          }
+        }
+        exports3.writeFloatLE = writeFloat_ieee754.bind(null, writeUintLE);
+        exports3.writeFloatBE = writeFloat_ieee754.bind(null, writeUintBE);
+        function readFloat_ieee754(readUint, buf, pos) {
+          var uint = readUint(buf, pos), sign = (uint >> 31) * 2 + 1, exponent = uint >>> 23 & 255, mantissa = uint & 8388607;
+          return exponent === 255 ? mantissa ? NaN : sign * Infinity : exponent === 0 ? sign * 1401298464324817e-60 * mantissa : sign * Math.pow(2, exponent - 150) * (mantissa + 8388608);
+        }
+        exports3.readFloatLE = readFloat_ieee754.bind(null, readUintLE);
+        exports3.readFloatBE = readFloat_ieee754.bind(null, readUintBE);
+      })();
+      if (typeof Float64Array !== "undefined") (function() {
+        var f64 = new Float64Array([-0]), f8b = new Uint8Array(f64.buffer), le = f8b[7] === 128;
+        function writeDouble_f64_cpy(val, buf, pos) {
+          f64[0] = val;
+          buf[pos] = f8b[0];
+          buf[pos + 1] = f8b[1];
+          buf[pos + 2] = f8b[2];
+          buf[pos + 3] = f8b[3];
+          buf[pos + 4] = f8b[4];
+          buf[pos + 5] = f8b[5];
+          buf[pos + 6] = f8b[6];
+          buf[pos + 7] = f8b[7];
+        }
+        function writeDouble_f64_rev(val, buf, pos) {
+          f64[0] = val;
+          buf[pos] = f8b[7];
+          buf[pos + 1] = f8b[6];
+          buf[pos + 2] = f8b[5];
+          buf[pos + 3] = f8b[4];
+          buf[pos + 4] = f8b[3];
+          buf[pos + 5] = f8b[2];
+          buf[pos + 6] = f8b[1];
+          buf[pos + 7] = f8b[0];
+        }
+        exports3.writeDoubleLE = le ? writeDouble_f64_cpy : writeDouble_f64_rev;
+        exports3.writeDoubleBE = le ? writeDouble_f64_rev : writeDouble_f64_cpy;
+        function readDouble_f64_cpy(buf, pos) {
+          f8b[0] = buf[pos];
+          f8b[1] = buf[pos + 1];
+          f8b[2] = buf[pos + 2];
+          f8b[3] = buf[pos + 3];
+          f8b[4] = buf[pos + 4];
+          f8b[5] = buf[pos + 5];
+          f8b[6] = buf[pos + 6];
+          f8b[7] = buf[pos + 7];
+          return f64[0];
+        }
+        function readDouble_f64_rev(buf, pos) {
+          f8b[7] = buf[pos];
+          f8b[6] = buf[pos + 1];
+          f8b[5] = buf[pos + 2];
+          f8b[4] = buf[pos + 3];
+          f8b[3] = buf[pos + 4];
+          f8b[2] = buf[pos + 5];
+          f8b[1] = buf[pos + 6];
+          f8b[0] = buf[pos + 7];
+          return f64[0];
+        }
+        exports3.readDoubleLE = le ? readDouble_f64_cpy : readDouble_f64_rev;
+        exports3.readDoubleBE = le ? readDouble_f64_rev : readDouble_f64_cpy;
+      })();
+      else (function() {
+        function writeDouble_ieee754(writeUint, off0, off1, val, buf, pos) {
+          var sign = val < 0 ? 1 : 0;
+          if (sign)
+            val = -val;
+          if (val === 0) {
+            writeUint(0, buf, pos + off0);
+            writeUint(1 / val > 0 ? (
+              /* positive */
+              0
+            ) : (
+              /* negative 0 */
+              2147483648
+            ), buf, pos + off1);
+          } else if (isNaN(val)) {
+            writeUint(0, buf, pos + off0);
+            writeUint(2146959360, buf, pos + off1);
+          } else if (val > 17976931348623157e292) {
+            writeUint(0, buf, pos + off0);
+            writeUint((sign << 31 | 2146435072) >>> 0, buf, pos + off1);
+          } else {
+            var mantissa;
+            if (val < 22250738585072014e-324) {
+              mantissa = val / 5e-324;
+              writeUint(mantissa >>> 0, buf, pos + off0);
+              writeUint((sign << 31 | mantissa / 4294967296) >>> 0, buf, pos + off1);
+            } else {
+              var exponent = Math.floor(Math.log(val) / Math.LN2);
+              if (exponent === 1024)
+                exponent = 1023;
+              mantissa = val * Math.pow(2, -exponent);
+              writeUint(mantissa * 4503599627370496 >>> 0, buf, pos + off0);
+              writeUint((sign << 31 | exponent + 1023 << 20 | mantissa * 1048576 & 1048575) >>> 0, buf, pos + off1);
+            }
+          }
+        }
+        exports3.writeDoubleLE = writeDouble_ieee754.bind(null, writeUintLE, 0, 4);
+        exports3.writeDoubleBE = writeDouble_ieee754.bind(null, writeUintBE, 4, 0);
+        function readDouble_ieee754(readUint, off0, off1, buf, pos) {
+          var lo = readUint(buf, pos + off0), hi = readUint(buf, pos + off1);
+          var sign = (hi >> 31) * 2 + 1, exponent = hi >>> 20 & 2047, mantissa = 4294967296 * (hi & 1048575) + lo;
+          return exponent === 2047 ? mantissa ? NaN : sign * Infinity : exponent === 0 ? sign * 5e-324 * mantissa : sign * Math.pow(2, exponent - 1075) * (mantissa + 4503599627370496);
+        }
+        exports3.readDoubleLE = readDouble_ieee754.bind(null, readUintLE, 0, 4);
+        exports3.readDoubleBE = readDouble_ieee754.bind(null, readUintBE, 4, 0);
+      })();
+      return exports3;
+    }
+    function writeUintLE(val, buf, pos) {
+      buf[pos] = val & 255;
+      buf[pos + 1] = val >>> 8 & 255;
+      buf[pos + 2] = val >>> 16 & 255;
+      buf[pos + 3] = val >>> 24;
+    }
+    function writeUintBE(val, buf, pos) {
+      buf[pos] = val >>> 24;
+      buf[pos + 1] = val >>> 16 & 255;
+      buf[pos + 2] = val >>> 8 & 255;
+      buf[pos + 3] = val & 255;
+    }
+    function readUintLE(buf, pos) {
+      return (buf[pos] | buf[pos + 1] << 8 | buf[pos + 2] << 16 | buf[pos + 3] << 24) >>> 0;
+    }
+    function readUintBE(buf, pos) {
+      return (buf[pos] << 24 | buf[pos + 1] << 16 | buf[pos + 2] << 8 | buf[pos + 3]) >>> 0;
+    }
+  }
+});
+
+// node_modules/protobufjs/src/util/utf8.js
+var require_utf8 = __commonJS({
+  "node_modules/protobufjs/src/util/utf8.js"(exports2) {
+    "use strict";
+    var utf8 = exports2;
+    var looseDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
+    var strictDecoder;
+    var TEXT_DECODER_MIN_LENGTH = 64;
+    try {
+      strictDecoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+    } catch (err) {
+      strictDecoder = looseDecoder;
+    }
+    utf8.length = function utf8_length(string4) {
+      var len = 0, c = 0;
+      for (var i = 0; i < string4.length; ++i) {
+        c = string4.charCodeAt(i);
+        if (c < 128)
+          len += 1;
+        else if (c < 2048)
+          len += 2;
+        else if ((c & 64512) === 55296 && (string4.charCodeAt(i + 1) & 64512) === 56320) {
+          ++i;
+          len += 4;
+        } else
+          len += 3;
+      }
+      return len;
+    };
+    function utf8_read_decoder(decoder, buffer, start, end) {
+      var source = start === 0 && end === buffer.length ? buffer : buffer.subarray(start, end);
+      return decoder.decode(source);
+    }
+    utf8.read = function utf8_read_loose(buffer, start, end) {
+      if (end - start < 1)
+        return "";
+      if (end - start >= TEXT_DECODER_MIN_LENGTH)
+        return utf8_read_decoder(looseDecoder, buffer, start, end);
+      var str = "", i = start, c1, c2, c3, c4, c5, c6, c7, c8;
+      for (; i + 7 < end; i += 8) {
+        c1 = buffer[i];
+        c2 = buffer[i + 1];
+        c3 = buffer[i + 2];
+        c4 = buffer[i + 3];
+        c5 = buffer[i + 4];
+        c6 = buffer[i + 5];
+        c7 = buffer[i + 6];
+        c8 = buffer[i + 7];
+        if ((c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8) & 128)
+          return str + utf8_read_decoder(looseDecoder, buffer, i, end);
+        str += String.fromCharCode(c1, c2, c3, c4, c5, c6, c7, c8);
+      }
+      for (; i < end; ++i) {
+        c1 = buffer[i];
+        if (c1 & 128)
+          return str + utf8_read_decoder(looseDecoder, buffer, i, end);
+        str += String.fromCharCode(c1);
+      }
+      return str;
+    };
+    utf8.readStrict = function utf8_read_strict(buffer, start, end) {
+      if (end - start < 1)
+        return "";
+      if (end - start >= TEXT_DECODER_MIN_LENGTH)
+        return utf8_read_decoder(strictDecoder, buffer, start, end);
+      var str = "", i = start, c1, c2, c3, c4, c5, c6, c7, c8;
+      for (; i + 7 < end; i += 8) {
+        c1 = buffer[i];
+        c2 = buffer[i + 1];
+        c3 = buffer[i + 2];
+        c4 = buffer[i + 3];
+        c5 = buffer[i + 4];
+        c6 = buffer[i + 5];
+        c7 = buffer[i + 6];
+        c8 = buffer[i + 7];
+        if ((c1 | c2 | c3 | c4 | c5 | c6 | c7 | c8) & 128)
+          return str + utf8_read_decoder(strictDecoder, buffer, i, end);
+        str += String.fromCharCode(c1, c2, c3, c4, c5, c6, c7, c8);
+      }
+      for (; i < end; ++i) {
+        c1 = buffer[i];
+        if (c1 & 128)
+          return str + utf8_read_decoder(strictDecoder, buffer, i, end);
+        str += String.fromCharCode(c1);
+      }
+      return str;
+    };
+    utf8.write = function utf8_write(string4, buffer, offset) {
+      var start = offset, c1, c2;
+      for (var i = 0; i < string4.length; ++i) {
+        c1 = string4.charCodeAt(i);
+        if (c1 < 128) {
+          buffer[offset++] = c1;
+        } else if (c1 < 2048) {
+          buffer[offset++] = c1 >> 6 | 192;
+          buffer[offset++] = c1 & 63 | 128;
+        } else if ((c1 & 64512) === 55296 && ((c2 = string4.charCodeAt(i + 1)) & 64512) === 56320) {
+          c1 = 65536 + ((c1 & 1023) << 10) + (c2 & 1023);
+          ++i;
+          buffer[offset++] = c1 >> 18 | 240;
+          buffer[offset++] = c1 >> 12 & 63 | 128;
+          buffer[offset++] = c1 >> 6 & 63 | 128;
+          buffer[offset++] = c1 & 63 | 128;
+        } else {
+          buffer[offset++] = c1 >> 12 | 224;
+          buffer[offset++] = c1 >> 6 & 63 | 128;
+          buffer[offset++] = c1 & 63 | 128;
+        }
+      }
+      return offset - start;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/util/pool.js
+var require_pool = __commonJS({
+  "node_modules/protobufjs/src/util/pool.js"(exports2, module2) {
+    "use strict";
+    module2.exports = pool;
+    function pool(alloc, slice, size) {
+      var SIZE = size || 8192;
+      var MAX = SIZE >>> 1;
+      var slab = null;
+      var offset = SIZE;
+      return function pool_alloc(size2) {
+        if (size2 < 1 || size2 > MAX)
+          return alloc(size2);
+        if (offset + size2 > SIZE) {
+          slab = alloc(SIZE);
+          offset = 0;
+        }
+        var buf = slice.call(slab, offset, offset += size2);
+        if (offset & 7)
+          offset = (offset | 7) + 1;
+        return buf;
+      };
+    }
+  }
+});
+
+// node_modules/protobufjs/src/util/longbits.js
+var require_longbits = __commonJS({
+  "node_modules/protobufjs/src/util/longbits.js"(exports2, module2) {
+    "use strict";
+    module2.exports = LongBits;
+    var Long;
+    function LongBits(lo, hi) {
+      this.lo = lo >>> 0;
+      this.hi = hi >>> 0;
+    }
+    var zero = LongBits.zero = new LongBits(0, 0);
+    zero.toNumber = function() {
+      return 0;
+    };
+    zero.zzEncode = zero.zzDecode = function() {
+      return this;
+    };
+    zero.length = function() {
+      return 1;
+    };
+    var zeroHash = LongBits.zeroHash = "\0\0\0\0\0\0\0\0";
+    LongBits.fromNumber = function fromNumber(value) {
+      if (value === 0)
+        return zero;
+      var sign = value < 0;
+      if (sign)
+        value = -value;
+      var lo = value >>> 0, hi = (value - lo) / 4294967296 >>> 0;
+      if (sign) {
+        hi = ~hi >>> 0;
+        lo = ~lo >>> 0;
+        if (++lo > 4294967295) {
+          lo = 0;
+          if (++hi > 4294967295)
+            hi = 0;
+        }
+      }
+      return new LongBits(lo, hi);
+    };
+    LongBits.from = function from(value) {
+      if (typeof value === "number")
+        return LongBits.fromNumber(value);
+      if (typeof value === "string" || value instanceof String) {
+        if (Long)
+          value = Long.fromString(value);
+        else
+          return LongBits.fromNumber(parseInt(value, 10));
+      }
+      return value.low || value.high ? new LongBits(value.low >>> 0, value.high >>> 0) : zero;
+    };
+    LongBits.prototype.toNumber = function toNumber(unsigned) {
+      if (!unsigned && this.hi >>> 31) {
+        var lo = ~this.lo + 1 >>> 0, hi = ~this.hi >>> 0;
+        if (!lo)
+          hi = hi + 1 >>> 0;
+        return -(lo + hi * 4294967296);
+      }
+      return this.lo + this.hi * 4294967296;
+    };
+    LongBits.prototype.toLong = function toLong(unsigned) {
+      return Long ? new Long(this.lo | 0, this.hi | 0, Boolean(unsigned)) : { low: this.lo | 0, high: this.hi | 0, unsigned: Boolean(unsigned) };
+    };
+    var charCodeAt = String.prototype.charCodeAt;
+    LongBits.fromHash = function fromHash(hash2) {
+      if (hash2 === zeroHash)
+        return zero;
+      return new LongBits(
+        (charCodeAt.call(hash2, 0) | charCodeAt.call(hash2, 1) << 8 | charCodeAt.call(hash2, 2) << 16 | charCodeAt.call(hash2, 3) << 24) >>> 0,
+        (charCodeAt.call(hash2, 4) | charCodeAt.call(hash2, 5) << 8 | charCodeAt.call(hash2, 6) << 16 | charCodeAt.call(hash2, 7) << 24) >>> 0
+      );
+    };
+    LongBits.prototype.toHash = function toHash() {
+      return String.fromCharCode(
+        this.lo & 255,
+        this.lo >>> 8 & 255,
+        this.lo >>> 16 & 255,
+        this.lo >>> 24,
+        this.hi & 255,
+        this.hi >>> 8 & 255,
+        this.hi >>> 16 & 255,
+        this.hi >>> 24
+      );
+    };
+    LongBits.prototype.zzEncode = function zzEncode() {
+      var mask = this.hi >> 31;
+      this.hi = ((this.hi << 1 | this.lo >>> 31) ^ mask) >>> 0;
+      this.lo = (this.lo << 1 ^ mask) >>> 0;
+      return this;
+    };
+    LongBits.prototype.zzDecode = function zzDecode() {
+      var mask = -(this.lo & 1);
+      this.lo = ((this.lo >>> 1 | this.hi << 31) ^ mask) >>> 0;
+      this.hi = (this.hi >>> 1 ^ mask) >>> 0;
+      return this;
+    };
+    LongBits.prototype.length = function length() {
+      var part0 = this.lo, part1 = (this.lo >>> 28 | this.hi << 4) >>> 0, part2 = this.hi >>> 24;
+      return part2 === 0 ? part1 === 0 ? part0 < 16384 ? part0 < 128 ? 1 : 2 : part0 < 2097152 ? 3 : 4 : part1 < 16384 ? part1 < 128 ? 5 : 6 : part1 < 2097152 ? 7 : 8 : part2 < 128 ? 9 : 10;
+    };
+    LongBits._configure = function(Long_) {
+      Long = Long_;
+    };
+  }
+});
+
+// node_modules/long/umd/index.js
+var require_umd = __commonJS({
+  "node_modules/long/umd/index.js"(exports2, module2) {
+    (function(global2, factory) {
+      function preferDefault(exports3) {
+        return exports3.default || exports3;
+      }
+      if (typeof define === "function" && define.amd) {
+        define([], function() {
+          var exports3 = {};
+          factory(exports3);
+          return preferDefault(exports3);
+        });
+      } else if (typeof exports2 === "object") {
+        factory(exports2);
+        if (typeof module2 === "object") module2.exports = preferDefault(exports2);
+      } else {
+        (function() {
+          var exports3 = {};
+          factory(exports3);
+          global2.Long = preferDefault(exports3);
+        })();
+      }
+    })(
+      typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : exports2,
+      function(_exports) {
+        "use strict";
+        Object.defineProperty(_exports, "__esModule", {
+          value: true
+        });
+        _exports.default = void 0;
+        var wasm = null;
+        try {
+          wasm = new WebAssembly.Instance(
+            new WebAssembly.Module(
+              new Uint8Array([
+                // \0asm
+                0,
+                97,
+                115,
+                109,
+                // version 1
+                1,
+                0,
+                0,
+                0,
+                // section "type"
+                1,
+                13,
+                2,
+                // 0, () => i32
+                96,
+                0,
+                1,
+                127,
+                // 1, (i32, i32, i32, i32) => i32
+                96,
+                4,
+                127,
+                127,
+                127,
+                127,
+                1,
+                127,
+                // section "function"
+                3,
+                7,
+                6,
+                // 0, type 0
+                0,
+                // 1, type 1
+                1,
+                // 2, type 1
+                1,
+                // 3, type 1
+                1,
+                // 4, type 1
+                1,
+                // 5, type 1
+                1,
+                // section "global"
+                6,
+                6,
+                1,
+                // 0, "high", mutable i32
+                127,
+                1,
+                65,
+                0,
+                11,
+                // section "export"
+                7,
+                50,
+                6,
+                // 0, "mul"
+                3,
+                109,
+                117,
+                108,
+                0,
+                1,
+                // 1, "div_s"
+                5,
+                100,
+                105,
+                118,
+                95,
+                115,
+                0,
+                2,
+                // 2, "div_u"
+                5,
+                100,
+                105,
+                118,
+                95,
+                117,
+                0,
+                3,
+                // 3, "rem_s"
+                5,
+                114,
+                101,
+                109,
+                95,
+                115,
+                0,
+                4,
+                // 4, "rem_u"
+                5,
+                114,
+                101,
+                109,
+                95,
+                117,
+                0,
+                5,
+                // 5, "get_high"
+                8,
+                103,
+                101,
+                116,
+                95,
+                104,
+                105,
+                103,
+                104,
+                0,
+                0,
+                // section "code"
+                10,
+                191,
+                1,
+                6,
+                // 0, "get_high"
+                4,
+                0,
+                35,
+                0,
+                11,
+                // 1, "mul"
+                36,
+                1,
+                1,
+                126,
+                32,
+                0,
+                173,
+                32,
+                1,
+                173,
+                66,
+                32,
+                134,
+                132,
+                32,
+                2,
+                173,
+                32,
+                3,
+                173,
+                66,
+                32,
+                134,
+                132,
+                126,
+                34,
+                4,
+                66,
+                32,
+                135,
+                167,
+                36,
+                0,
+                32,
+                4,
+                167,
+                11,
+                // 2, "div_s"
+                36,
+                1,
+                1,
+                126,
+                32,
+                0,
+                173,
+                32,
+                1,
+                173,
+                66,
+                32,
+                134,
+                132,
+                32,
+                2,
+                173,
+                32,
+                3,
+                173,
+                66,
+                32,
+                134,
+                132,
+                127,
+                34,
+                4,
+                66,
+                32,
+                135,
+                167,
+                36,
+                0,
+                32,
+                4,
+                167,
+                11,
+                // 3, "div_u"
+                36,
+                1,
+                1,
+                126,
+                32,
+                0,
+                173,
+                32,
+                1,
+                173,
+                66,
+                32,
+                134,
+                132,
+                32,
+                2,
+                173,
+                32,
+                3,
+                173,
+                66,
+                32,
+                134,
+                132,
+                128,
+                34,
+                4,
+                66,
+                32,
+                135,
+                167,
+                36,
+                0,
+                32,
+                4,
+                167,
+                11,
+                // 4, "rem_s"
+                36,
+                1,
+                1,
+                126,
+                32,
+                0,
+                173,
+                32,
+                1,
+                173,
+                66,
+                32,
+                134,
+                132,
+                32,
+                2,
+                173,
+                32,
+                3,
+                173,
+                66,
+                32,
+                134,
+                132,
+                129,
+                34,
+                4,
+                66,
+                32,
+                135,
+                167,
+                36,
+                0,
+                32,
+                4,
+                167,
+                11,
+                // 5, "rem_u"
+                36,
+                1,
+                1,
+                126,
+                32,
+                0,
+                173,
+                32,
+                1,
+                173,
+                66,
+                32,
+                134,
+                132,
+                32,
+                2,
+                173,
+                32,
+                3,
+                173,
+                66,
+                32,
+                134,
+                132,
+                130,
+                34,
+                4,
+                66,
+                32,
+                135,
+                167,
+                36,
+                0,
+                32,
+                4,
+                167,
+                11
+              ])
+            ),
+            {}
+          ).exports;
+        } catch {
+        }
+        function Long(low, high, unsigned) {
+          this.low = low | 0;
+          this.high = high | 0;
+          this.unsigned = !!unsigned;
+        }
+        Long.prototype.__isLong__;
+        Object.defineProperty(Long.prototype, "__isLong__", {
+          value: true
+        });
+        function isLong(obj) {
+          return (obj && obj["__isLong__"]) === true;
+        }
+        function ctz32(value) {
+          var c = Math.clz32(value & -value);
+          return value ? 31 - c : c;
+        }
+        Long.isLong = isLong;
+        var INT_CACHE = {};
+        var UINT_CACHE = {};
+        function fromInt(value, unsigned) {
+          var obj, cachedObj, cache;
+          if (unsigned) {
+            value >>>= 0;
+            if (cache = 0 <= value && value < 256) {
+              cachedObj = UINT_CACHE[value];
+              if (cachedObj) return cachedObj;
+            }
+            obj = fromBits(value, 0, true);
+            if (cache) UINT_CACHE[value] = obj;
+            return obj;
+          } else {
+            value |= 0;
+            if (cache = -128 <= value && value < 128) {
+              cachedObj = INT_CACHE[value];
+              if (cachedObj) return cachedObj;
+            }
+            obj = fromBits(value, value < 0 ? -1 : 0, false);
+            if (cache) INT_CACHE[value] = obj;
+            return obj;
+          }
+        }
+        Long.fromInt = fromInt;
+        function fromNumber(value, unsigned) {
+          if (isNaN(value)) return unsigned ? UZERO : ZERO;
+          if (unsigned) {
+            if (value < 0) return UZERO;
+            if (value >= TWO_PWR_64_DBL) return MAX_UNSIGNED_VALUE;
+          } else {
+            if (value <= -TWO_PWR_63_DBL) return MIN_VALUE;
+            if (value + 1 >= TWO_PWR_63_DBL) return MAX_VALUE;
+          }
+          if (value < 0) return fromNumber(-value, unsigned).neg();
+          return fromBits(
+            value % TWO_PWR_32_DBL | 0,
+            value / TWO_PWR_32_DBL | 0,
+            unsigned
+          );
+        }
+        Long.fromNumber = fromNumber;
+        function fromBits(lowBits, highBits, unsigned) {
+          return new Long(lowBits, highBits, unsigned);
+        }
+        Long.fromBits = fromBits;
+        var pow_dbl = Math.pow;
+        function fromString(str, unsigned, radix) {
+          if (str.length === 0) throw Error("empty string");
+          if (typeof unsigned === "number") {
+            radix = unsigned;
+            unsigned = false;
+          } else {
+            unsigned = !!unsigned;
+          }
+          if (str === "NaN" || str === "Infinity" || str === "+Infinity" || str === "-Infinity")
+            return unsigned ? UZERO : ZERO;
+          radix = radix || 10;
+          if (radix < 2 || 36 < radix) throw RangeError("radix");
+          var p;
+          if ((p = str.indexOf("-")) > 0) throw Error("interior hyphen");
+          else if (p === 0) {
+            return fromString(str.substring(1), unsigned, radix).neg();
+          }
+          var radixToPower = fromNumber(pow_dbl(radix, 8));
+          var result = ZERO;
+          for (var i = 0; i < str.length; i += 8) {
+            var size = Math.min(8, str.length - i), value = parseInt(str.substring(i, i + size), radix);
+            if (size < 8) {
+              var power = fromNumber(pow_dbl(radix, size));
+              result = result.mul(power).add(fromNumber(value));
+            } else {
+              result = result.mul(radixToPower);
+              result = result.add(fromNumber(value));
+            }
+          }
+          result.unsigned = unsigned;
+          return result;
+        }
+        Long.fromString = fromString;
+        function fromValue(val, unsigned) {
+          if (typeof val === "number") return fromNumber(val, unsigned);
+          if (typeof val === "string") return fromString(val, unsigned);
+          return fromBits(
+            val.low,
+            val.high,
+            typeof unsigned === "boolean" ? unsigned : val.unsigned
+          );
+        }
+        Long.fromValue = fromValue;
+        var TWO_PWR_16_DBL = 1 << 16;
+        var TWO_PWR_24_DBL = 1 << 24;
+        var TWO_PWR_32_DBL = TWO_PWR_16_DBL * TWO_PWR_16_DBL;
+        var TWO_PWR_64_DBL = TWO_PWR_32_DBL * TWO_PWR_32_DBL;
+        var TWO_PWR_63_DBL = TWO_PWR_64_DBL / 2;
+        var TWO_PWR_24 = fromInt(TWO_PWR_24_DBL);
+        var ZERO = fromInt(0);
+        Long.ZERO = ZERO;
+        var UZERO = fromInt(0, true);
+        Long.UZERO = UZERO;
+        var ONE = fromInt(1);
+        Long.ONE = ONE;
+        var UONE = fromInt(1, true);
+        Long.UONE = UONE;
+        var NEG_ONE = fromInt(-1);
+        Long.NEG_ONE = NEG_ONE;
+        var MAX_VALUE = fromBits(4294967295 | 0, 2147483647 | 0, false);
+        Long.MAX_VALUE = MAX_VALUE;
+        var MAX_UNSIGNED_VALUE = fromBits(4294967295 | 0, 4294967295 | 0, true);
+        Long.MAX_UNSIGNED_VALUE = MAX_UNSIGNED_VALUE;
+        var MIN_VALUE = fromBits(0, 2147483648 | 0, false);
+        Long.MIN_VALUE = MIN_VALUE;
+        var LongPrototype = Long.prototype;
+        LongPrototype.toInt = function toInt() {
+          return this.unsigned ? this.low >>> 0 : this.low;
+        };
+        LongPrototype.toNumber = function toNumber() {
+          if (this.unsigned)
+            return (this.high >>> 0) * TWO_PWR_32_DBL + (this.low >>> 0);
+          return this.high * TWO_PWR_32_DBL + (this.low >>> 0);
+        };
+        LongPrototype.toString = function toString(radix) {
+          radix = radix || 10;
+          if (radix < 2 || 36 < radix) throw RangeError("radix");
+          if (this.isZero()) return "0";
+          if (this.isNegative()) {
+            if (this.eq(MIN_VALUE)) {
+              var radixLong = fromNumber(radix), div = this.div(radixLong), rem1 = div.mul(radixLong).sub(this);
+              return div.toString(radix) + rem1.toInt().toString(radix);
+            } else return "-" + this.neg().toString(radix);
+          }
+          var radixToPower = fromNumber(pow_dbl(radix, 6), this.unsigned), rem = this;
+          var result = "";
+          while (true) {
+            var remDiv = rem.div(radixToPower), intval = rem.sub(remDiv.mul(radixToPower)).toInt() >>> 0, digits = intval.toString(radix);
+            rem = remDiv;
+            if (rem.isZero()) return digits + result;
+            else {
+              while (digits.length < 6) digits = "0" + digits;
+              result = "" + digits + result;
+            }
+          }
+        };
+        LongPrototype.getHighBits = function getHighBits() {
+          return this.high;
+        };
+        LongPrototype.getHighBitsUnsigned = function getHighBitsUnsigned() {
+          return this.high >>> 0;
+        };
+        LongPrototype.getLowBits = function getLowBits() {
+          return this.low;
+        };
+        LongPrototype.getLowBitsUnsigned = function getLowBitsUnsigned() {
+          return this.low >>> 0;
+        };
+        LongPrototype.getNumBitsAbs = function getNumBitsAbs() {
+          if (this.isNegative())
+            return this.eq(MIN_VALUE) ? 64 : this.neg().getNumBitsAbs();
+          var val = this.high != 0 ? this.high : this.low;
+          for (var bit = 31; bit > 0; bit--) if ((val & 1 << bit) != 0) break;
+          return this.high != 0 ? bit + 33 : bit + 1;
+        };
+        LongPrototype.isSafeInteger = function isSafeInteger() {
+          var top11Bits = this.high >> 21;
+          if (!top11Bits) return true;
+          if (this.unsigned) return false;
+          return top11Bits === -1 && !(this.low === 0 && this.high === -2097152);
+        };
+        LongPrototype.isZero = function isZero() {
+          return this.high === 0 && this.low === 0;
+        };
+        LongPrototype.eqz = LongPrototype.isZero;
+        LongPrototype.isNegative = function isNegative() {
+          return !this.unsigned && this.high < 0;
+        };
+        LongPrototype.isPositive = function isPositive() {
+          return this.unsigned || this.high >= 0;
+        };
+        LongPrototype.isOdd = function isOdd() {
+          return (this.low & 1) === 1;
+        };
+        LongPrototype.isEven = function isEven() {
+          return (this.low & 1) === 0;
+        };
+        LongPrototype.equals = function equals(other) {
+          if (!isLong(other)) other = fromValue(other);
+          if (this.unsigned !== other.unsigned && this.high >>> 31 === 1 && other.high >>> 31 === 1)
+            return false;
+          return this.high === other.high && this.low === other.low;
+        };
+        LongPrototype.eq = LongPrototype.equals;
+        LongPrototype.notEquals = function notEquals(other) {
+          return !this.eq(
+            /* validates */
+            other
+          );
+        };
+        LongPrototype.neq = LongPrototype.notEquals;
+        LongPrototype.ne = LongPrototype.notEquals;
+        LongPrototype.lessThan = function lessThan(other) {
+          return this.comp(
+            /* validates */
+            other
+          ) < 0;
+        };
+        LongPrototype.lt = LongPrototype.lessThan;
+        LongPrototype.lessThanOrEqual = function lessThanOrEqual(other) {
+          return this.comp(
+            /* validates */
+            other
+          ) <= 0;
+        };
+        LongPrototype.lte = LongPrototype.lessThanOrEqual;
+        LongPrototype.le = LongPrototype.lessThanOrEqual;
+        LongPrototype.greaterThan = function greaterThan(other) {
+          return this.comp(
+            /* validates */
+            other
+          ) > 0;
+        };
+        LongPrototype.gt = LongPrototype.greaterThan;
+        LongPrototype.greaterThanOrEqual = function greaterThanOrEqual(other) {
+          return this.comp(
+            /* validates */
+            other
+          ) >= 0;
+        };
+        LongPrototype.gte = LongPrototype.greaterThanOrEqual;
+        LongPrototype.ge = LongPrototype.greaterThanOrEqual;
+        LongPrototype.compare = function compare(other) {
+          if (!isLong(other)) other = fromValue(other);
+          if (this.eq(other)) return 0;
+          var thisNeg = this.isNegative(), otherNeg = other.isNegative();
+          if (thisNeg && !otherNeg) return -1;
+          if (!thisNeg && otherNeg) return 1;
+          if (!this.unsigned) return this.sub(other).isNegative() ? -1 : 1;
+          return other.high >>> 0 > this.high >>> 0 || other.high === this.high && other.low >>> 0 > this.low >>> 0 ? -1 : 1;
+        };
+        LongPrototype.comp = LongPrototype.compare;
+        LongPrototype.negate = function negate() {
+          if (!this.unsigned && this.eq(MIN_VALUE)) return MIN_VALUE;
+          return this.not().add(ONE);
+        };
+        LongPrototype.neg = LongPrototype.negate;
+        LongPrototype.add = function add(addend) {
+          if (!isLong(addend)) addend = fromValue(addend);
+          var a48 = this.high >>> 16;
+          var a32 = this.high & 65535;
+          var a16 = this.low >>> 16;
+          var a00 = this.low & 65535;
+          var b48 = addend.high >>> 16;
+          var b32 = addend.high & 65535;
+          var b16 = addend.low >>> 16;
+          var b00 = addend.low & 65535;
+          var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
+          c00 += a00 + b00;
+          c16 += c00 >>> 16;
+          c00 &= 65535;
+          c16 += a16 + b16;
+          c32 += c16 >>> 16;
+          c16 &= 65535;
+          c32 += a32 + b32;
+          c48 += c32 >>> 16;
+          c32 &= 65535;
+          c48 += a48 + b48;
+          c48 &= 65535;
+          return fromBits(c16 << 16 | c00, c48 << 16 | c32, this.unsigned);
+        };
+        LongPrototype.subtract = function subtract(subtrahend) {
+          if (!isLong(subtrahend)) subtrahend = fromValue(subtrahend);
+          return this.add(subtrahend.neg());
+        };
+        LongPrototype.sub = LongPrototype.subtract;
+        LongPrototype.multiply = function multiply(multiplier) {
+          if (this.isZero()) return this;
+          if (!isLong(multiplier)) multiplier = fromValue(multiplier);
+          if (wasm) {
+            var low = wasm["mul"](
+              this.low,
+              this.high,
+              multiplier.low,
+              multiplier.high
+            );
+            return fromBits(low, wasm["get_high"](), this.unsigned);
+          }
+          if (multiplier.isZero()) return this.unsigned ? UZERO : ZERO;
+          if (this.eq(MIN_VALUE)) return multiplier.isOdd() ? MIN_VALUE : ZERO;
+          if (multiplier.eq(MIN_VALUE)) return this.isOdd() ? MIN_VALUE : ZERO;
+          if (this.isNegative()) {
+            if (multiplier.isNegative()) return this.neg().mul(multiplier.neg());
+            else return this.neg().mul(multiplier).neg();
+          } else if (multiplier.isNegative())
+            return this.mul(multiplier.neg()).neg();
+          if (this.lt(TWO_PWR_24) && multiplier.lt(TWO_PWR_24))
+            return fromNumber(
+              this.toNumber() * multiplier.toNumber(),
+              this.unsigned
+            );
+          var a48 = this.high >>> 16;
+          var a32 = this.high & 65535;
+          var a16 = this.low >>> 16;
+          var a00 = this.low & 65535;
+          var b48 = multiplier.high >>> 16;
+          var b32 = multiplier.high & 65535;
+          var b16 = multiplier.low >>> 16;
+          var b00 = multiplier.low & 65535;
+          var c48 = 0, c32 = 0, c16 = 0, c00 = 0;
+          c00 += a00 * b00;
+          c16 += c00 >>> 16;
+          c00 &= 65535;
+          c16 += a16 * b00;
+          c32 += c16 >>> 16;
+          c16 &= 65535;
+          c16 += a00 * b16;
+          c32 += c16 >>> 16;
+          c16 &= 65535;
+          c32 += a32 * b00;
+          c48 += c32 >>> 16;
+          c32 &= 65535;
+          c32 += a16 * b16;
+          c48 += c32 >>> 16;
+          c32 &= 65535;
+          c32 += a00 * b32;
+          c48 += c32 >>> 16;
+          c32 &= 65535;
+          c48 += a48 * b00 + a32 * b16 + a16 * b32 + a00 * b48;
+          c48 &= 65535;
+          return fromBits(c16 << 16 | c00, c48 << 16 | c32, this.unsigned);
+        };
+        LongPrototype.mul = LongPrototype.multiply;
+        LongPrototype.divide = function divide(divisor) {
+          if (!isLong(divisor)) divisor = fromValue(divisor);
+          if (divisor.isZero()) throw Error("division by zero");
+          if (wasm) {
+            if (!this.unsigned && this.high === -2147483648 && divisor.low === -1 && divisor.high === -1) {
+              return this;
+            }
+            var low = (this.unsigned ? wasm["div_u"] : wasm["div_s"])(
+              this.low,
+              this.high,
+              divisor.low,
+              divisor.high
+            );
+            return fromBits(low, wasm["get_high"](), this.unsigned);
+          }
+          if (this.isZero()) return this.unsigned ? UZERO : ZERO;
+          var approx, rem, res;
+          if (!this.unsigned) {
+            if (this.eq(MIN_VALUE)) {
+              if (divisor.eq(ONE) || divisor.eq(NEG_ONE))
+                return MIN_VALUE;
+              else if (divisor.eq(MIN_VALUE)) return ONE;
+              else {
+                var halfThis = this.shr(1);
+                approx = halfThis.div(divisor).shl(1);
+                if (approx.eq(ZERO)) {
+                  return divisor.isNegative() ? ONE : NEG_ONE;
+                } else {
+                  rem = this.sub(divisor.mul(approx));
+                  res = approx.add(rem.div(divisor));
+                  return res;
+                }
+              }
+            } else if (divisor.eq(MIN_VALUE)) return this.unsigned ? UZERO : ZERO;
+            if (this.isNegative()) {
+              if (divisor.isNegative()) return this.neg().div(divisor.neg());
+              return this.neg().div(divisor).neg();
+            } else if (divisor.isNegative()) return this.div(divisor.neg()).neg();
+            res = ZERO;
+          } else {
+            if (!divisor.unsigned) divisor = divisor.toUnsigned();
+            if (divisor.gt(this)) return UZERO;
+            if (divisor.gt(this.shru(1)))
+              return UONE;
+            res = UZERO;
+          }
+          rem = this;
+          while (rem.gte(divisor)) {
+            approx = Math.max(1, Math.floor(rem.toNumber() / divisor.toNumber()));
+            var log2 = Math.ceil(Math.log(approx) / Math.LN2), delta = log2 <= 48 ? 1 : pow_dbl(2, log2 - 48), approxRes = fromNumber(approx), approxRem = approxRes.mul(divisor);
+            while (approxRem.isNegative() || approxRem.gt(rem)) {
+              approx -= delta;
+              approxRes = fromNumber(approx, this.unsigned);
+              approxRem = approxRes.mul(divisor);
+            }
+            if (approxRes.isZero()) approxRes = ONE;
+            res = res.add(approxRes);
+            rem = rem.sub(approxRem);
+          }
+          return res;
+        };
+        LongPrototype.div = LongPrototype.divide;
+        LongPrototype.modulo = function modulo(divisor) {
+          if (!isLong(divisor)) divisor = fromValue(divisor);
+          if (wasm) {
+            var low = (this.unsigned ? wasm["rem_u"] : wasm["rem_s"])(
+              this.low,
+              this.high,
+              divisor.low,
+              divisor.high
+            );
+            return fromBits(low, wasm["get_high"](), this.unsigned);
+          }
+          return this.sub(this.div(divisor).mul(divisor));
+        };
+        LongPrototype.mod = LongPrototype.modulo;
+        LongPrototype.rem = LongPrototype.modulo;
+        LongPrototype.not = function not() {
+          return fromBits(~this.low, ~this.high, this.unsigned);
+        };
+        LongPrototype.countLeadingZeros = function countLeadingZeros() {
+          return this.high ? Math.clz32(this.high) : Math.clz32(this.low) + 32;
+        };
+        LongPrototype.clz = LongPrototype.countLeadingZeros;
+        LongPrototype.countTrailingZeros = function countTrailingZeros() {
+          return this.low ? ctz32(this.low) : ctz32(this.high) + 32;
+        };
+        LongPrototype.ctz = LongPrototype.countTrailingZeros;
+        LongPrototype.and = function and(other) {
+          if (!isLong(other)) other = fromValue(other);
+          return fromBits(
+            this.low & other.low,
+            this.high & other.high,
+            this.unsigned
+          );
+        };
+        LongPrototype.or = function or(other) {
+          if (!isLong(other)) other = fromValue(other);
+          return fromBits(
+            this.low | other.low,
+            this.high | other.high,
+            this.unsigned
+          );
+        };
+        LongPrototype.xor = function xor(other) {
+          if (!isLong(other)) other = fromValue(other);
+          return fromBits(
+            this.low ^ other.low,
+            this.high ^ other.high,
+            this.unsigned
+          );
+        };
+        LongPrototype.shiftLeft = function shiftLeft(numBits) {
+          if (isLong(numBits)) numBits = numBits.toInt();
+          if ((numBits &= 63) === 0) return this;
+          else if (numBits < 32)
+            return fromBits(
+              this.low << numBits,
+              this.high << numBits | this.low >>> 32 - numBits,
+              this.unsigned
+            );
+          else return fromBits(0, this.low << numBits - 32, this.unsigned);
+        };
+        LongPrototype.shl = LongPrototype.shiftLeft;
+        LongPrototype.shiftRight = function shiftRight(numBits) {
+          if (isLong(numBits)) numBits = numBits.toInt();
+          if ((numBits &= 63) === 0) return this;
+          else if (numBits < 32)
+            return fromBits(
+              this.low >>> numBits | this.high << 32 - numBits,
+              this.high >> numBits,
+              this.unsigned
+            );
+          else
+            return fromBits(
+              this.high >> numBits - 32,
+              this.high >= 0 ? 0 : -1,
+              this.unsigned
+            );
+        };
+        LongPrototype.shr = LongPrototype.shiftRight;
+        LongPrototype.shiftRightUnsigned = function shiftRightUnsigned(numBits) {
+          if (isLong(numBits)) numBits = numBits.toInt();
+          if ((numBits &= 63) === 0) return this;
+          if (numBits < 32)
+            return fromBits(
+              this.low >>> numBits | this.high << 32 - numBits,
+              this.high >>> numBits,
+              this.unsigned
+            );
+          if (numBits === 32) return fromBits(this.high, 0, this.unsigned);
+          return fromBits(this.high >>> numBits - 32, 0, this.unsigned);
+        };
+        LongPrototype.shru = LongPrototype.shiftRightUnsigned;
+        LongPrototype.shr_u = LongPrototype.shiftRightUnsigned;
+        LongPrototype.rotateLeft = function rotateLeft(numBits) {
+          var b;
+          if (isLong(numBits)) numBits = numBits.toInt();
+          if ((numBits &= 63) === 0) return this;
+          if (numBits === 32) return fromBits(this.high, this.low, this.unsigned);
+          if (numBits < 32) {
+            b = 32 - numBits;
+            return fromBits(
+              this.low << numBits | this.high >>> b,
+              this.high << numBits | this.low >>> b,
+              this.unsigned
+            );
+          }
+          numBits -= 32;
+          b = 32 - numBits;
+          return fromBits(
+            this.high << numBits | this.low >>> b,
+            this.low << numBits | this.high >>> b,
+            this.unsigned
+          );
+        };
+        LongPrototype.rotl = LongPrototype.rotateLeft;
+        LongPrototype.rotateRight = function rotateRight(numBits) {
+          var b;
+          if (isLong(numBits)) numBits = numBits.toInt();
+          if ((numBits &= 63) === 0) return this;
+          if (numBits === 32) return fromBits(this.high, this.low, this.unsigned);
+          if (numBits < 32) {
+            b = 32 - numBits;
+            return fromBits(
+              this.high << b | this.low >>> numBits,
+              this.low << b | this.high >>> numBits,
+              this.unsigned
+            );
+          }
+          numBits -= 32;
+          b = 32 - numBits;
+          return fromBits(
+            this.low << b | this.high >>> numBits,
+            this.high << b | this.low >>> numBits,
+            this.unsigned
+          );
+        };
+        LongPrototype.rotr = LongPrototype.rotateRight;
+        LongPrototype.toSigned = function toSigned() {
+          if (!this.unsigned) return this;
+          return fromBits(this.low, this.high, false);
+        };
+        LongPrototype.toUnsigned = function toUnsigned() {
+          if (this.unsigned) return this;
+          return fromBits(this.low, this.high, true);
+        };
+        LongPrototype.toBytes = function toBytes(le) {
+          return le ? this.toBytesLE() : this.toBytesBE();
+        };
+        LongPrototype.toBytesLE = function toBytesLE() {
+          var hi = this.high, lo = this.low;
+          return [
+            lo & 255,
+            lo >>> 8 & 255,
+            lo >>> 16 & 255,
+            lo >>> 24,
+            hi & 255,
+            hi >>> 8 & 255,
+            hi >>> 16 & 255,
+            hi >>> 24
+          ];
+        };
+        LongPrototype.toBytesBE = function toBytesBE() {
+          var hi = this.high, lo = this.low;
+          return [
+            hi >>> 24,
+            hi >>> 16 & 255,
+            hi >>> 8 & 255,
+            hi & 255,
+            lo >>> 24,
+            lo >>> 16 & 255,
+            lo >>> 8 & 255,
+            lo & 255
+          ];
+        };
+        Long.fromBytes = function fromBytes(bytes, unsigned, le) {
+          return le ? Long.fromBytesLE(bytes, unsigned) : Long.fromBytesBE(bytes, unsigned);
+        };
+        Long.fromBytesLE = function fromBytesLE(bytes, unsigned) {
+          return new Long(
+            bytes[0] | bytes[1] << 8 | bytes[2] << 16 | bytes[3] << 24,
+            bytes[4] | bytes[5] << 8 | bytes[6] << 16 | bytes[7] << 24,
+            unsigned
+          );
+        };
+        Long.fromBytesBE = function fromBytesBE(bytes, unsigned) {
+          return new Long(
+            bytes[4] << 24 | bytes[5] << 16 | bytes[6] << 8 | bytes[7],
+            bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3],
+            unsigned
+          );
+        };
+        if (typeof BigInt === "function") {
+          Long.fromBigInt = function fromBigInt(value, unsigned) {
+            var lowBits = Number(BigInt.asIntN(32, value));
+            var highBits = Number(BigInt.asIntN(32, value >> BigInt(32)));
+            return fromBits(lowBits, highBits, unsigned);
+          };
+          Long.fromValue = function fromValueWithBigInt(value, unsigned) {
+            if (typeof value === "bigint") return Long.fromBigInt(value, unsigned);
+            return fromValue(value, unsigned);
+          };
+          LongPrototype.toBigInt = function toBigInt() {
+            var lowBigInt = BigInt(this.low >>> 0);
+            var highBigInt = BigInt(this.unsigned ? this.high >>> 0 : this.high);
+            return highBigInt << BigInt(32) | lowBigInt;
+          };
+        }
+        var _default3 = _exports.default = Long;
+      }
+    );
+  }
+});
+
+// node_modules/protobufjs/src/util/minimal.js
+var require_minimal = __commonJS({
+  "node_modules/protobufjs/src/util/minimal.js"(exports2) {
+    "use strict";
+    var util = exports2;
+    util.asPromise = require_aspromise();
+    util.base64 = require_base64();
+    util.EventEmitter = require_eventemitter();
+    util.float = require_float();
+    util.utf8 = require_utf8();
+    util.pool = require_pool();
+    util.LongBits = require_longbits();
+    function isUnsafeProperty(key) {
+      return key === "__proto__" || key === "prototype" || key === "constructor";
+    }
+    util.isUnsafeProperty = isUnsafeProperty;
+    util.isNode = Boolean(typeof global !== "undefined" && global && global.process && global.process.versions && global.process.versions.node);
+    util.global = util.isNode && global || typeof window !== "undefined" && window || typeof self !== "undefined" && self || typeof globalThis !== "undefined" && globalThis || exports2;
+    util.emptyArray = Object.freeze ? Object.freeze([]) : (
+      /* istanbul ignore next */
+      []
+    );
+    util.emptyObject = Object.freeze ? Object.freeze({}) : (
+      /* istanbul ignore next */
+      {}
+    );
+    util.isInteger = Number.isInteger || /* istanbul ignore next */
+    function isInteger(value) {
+      return typeof value === "number" && isFinite(value) && Math.floor(value) === value;
+    };
+    util.isString = function isString(value) {
+      return typeof value === "string" || value instanceof String;
+    };
+    util.isObject = function isObject2(value) {
+      return value && typeof value === "object";
+    };
+    util.isset = /**
+     * Checks if a property on a message is considered to be present.
+     * @param {Object} obj Plain object or message instance
+     * @param {string} prop Property name
+     * @returns {boolean} `true` if considered to be present, otherwise `false`
+     */
+    util.isSet = function isSet(obj, prop) {
+      var value = obj[prop];
+      if (value != null && Object.hasOwnProperty.call(obj, prop))
+        return typeof value !== "object" || (Array.isArray(value) ? value.length : Object.keys(value).length) > 0;
+      return false;
+    };
+    util.Buffer = (function() {
+      try {
+        var Buffer2 = util.global.Buffer;
+        return Buffer2.prototype.utf8Write || util.isNode ? Buffer2 : (
+          /* istanbul ignore next */
+          null
+        );
+      } catch (e) {
+        return null;
+      }
+    })();
+    util.newBuffer = function newBuffer(sizeOrArray) {
+      var Buffer2 = util.Buffer;
+      return typeof sizeOrArray === "number" ? Buffer2 ? Buffer2.allocUnsafe(sizeOrArray) : new Uint8Array(sizeOrArray) : Buffer2 ? Buffer2.from(sizeOrArray) : new Uint8Array(sizeOrArray);
+    };
+    util.rawField = function rawField(id2, wireType, data) {
+      var out = [], tag = id2 << 3 | wireType;
+      tag >>>= 0;
+      while (tag > 127) {
+        out.push(tag & 127 | 128);
+        tag >>>= 7;
+      }
+      out.push(tag);
+      for (var i = 0; i < data.length; ++i)
+        out.push(data[i]);
+      return util.newBuffer(out);
+    };
+    util.Array = Uint8Array;
+    util.Long = /* istanbul ignore next */
+    util.global.dcodeIO && /* istanbul ignore next */
+    util.global.dcodeIO.Long || /* istanbul ignore next */
+    util.global.Long || (function() {
+      try {
+        var Long = require_umd();
+        return Long && Long.isLong ? Long : null;
+      } catch (e) {
+        return null;
+      }
+    })();
+    util.key2Re = /^(?:true|false|0|1)$/;
+    util.key32Re = /^-?(?:0|[1-9][0-9]*)$/;
+    util.key64Re = /^(?:[\x00-\xff]{8}|-?(?:0|[1-9][0-9]*))$/;
+    util.longToHash = function longToHash(value) {
+      return value ? util.LongBits.from(value).toHash() : util.LongBits.zeroHash;
+    };
+    util.longFromHash = function longFromHash(hash2, unsigned) {
+      var bits = util.LongBits.fromHash(hash2);
+      if (util.Long)
+        return util.Long.fromBits(bits.lo, bits.hi, unsigned);
+      return bits.toNumber(Boolean(unsigned));
+    };
+    util.longFromKey = function longFromKey(key, unsigned) {
+      return util.key64Re.test(key) && !util.key32Re.test(key) ? util.longFromHash(key, unsigned) : key;
+    };
+    util.boolFromKey = function boolFromKey(key) {
+      return key === "true" || key === "1";
+    };
+    function merge2(dst) {
+      var ifNotSet = typeof arguments[arguments.length - 1] === "boolean", limit = ifNotSet ? arguments.length - 1 : arguments.length;
+      ifNotSet = ifNotSet && arguments[arguments.length - 1];
+      for (var a = 1; a < limit; ++a) {
+        var src = arguments[a];
+        if (!src)
+          continue;
+        for (var keys = Object.keys(src), i = 0; i < keys.length; ++i)
+          if (!isUnsafeProperty(keys[i]) && (!ifNotSet || !Object.prototype.hasOwnProperty.call(dst, keys[i]) || dst[keys[i]] === void 0))
+            dst[keys[i]] = src[keys[i]];
+      }
+      return dst;
+    }
+    util.merge = merge2;
+    util.nestingLimit = 32;
+    util.recursionLimit = 100;
+    util.makeProp = function makeProp(obj, key, enumerable) {
+      if (Object.prototype.hasOwnProperty.call(obj, key))
+        return;
+      Object.defineProperty(obj, key, {
+        enumerable: enumerable === void 0 ? true : enumerable,
+        configurable: true,
+        writable: true
+      });
+    };
+    util.lcFirst = function lcFirst(str) {
+      return str.charAt(0).toLowerCase() + str.substring(1);
+    };
+    function newError(name) {
+      function CustomError(message, properties) {
+        if (!(this instanceof CustomError))
+          return new CustomError(message, properties);
+        Object.defineProperty(this, "message", { get: function() {
+          return message;
+        } });
+        if (Error.captureStackTrace)
+          Error.captureStackTrace(this, CustomError);
+        else
+          Object.defineProperty(this, "stack", { value: new Error().stack || "" });
+        if (properties)
+          merge2(this, properties);
+      }
+      CustomError.prototype = Object.create(Error.prototype, {
+        constructor: {
+          value: CustomError,
+          writable: true,
+          enumerable: false,
+          configurable: true
+        },
+        name: {
+          get: function get() {
+            return name;
+          },
+          set: void 0,
+          enumerable: false,
+          // configurable: false would accurately preserve the behavior of
+          // the original, but I'm guessing that was not intentional.
+          // For an actual error subclass, this property would
+          // be configurable.
+          configurable: true
+        },
+        toString: {
+          value: function value() {
+            return this.name + ": " + this.message;
+          },
+          writable: true,
+          enumerable: false,
+          configurable: true
+        }
+      });
+      return CustomError;
+    }
+    util.newError = newError;
+    util.ProtocolError = newError("ProtocolError");
+    util.oneOfGetter = function getOneOf(fieldNames) {
+      var fieldMap = {};
+      for (var i = 0; i < fieldNames.length; ++i)
+        fieldMap[fieldNames[i]] = 1;
+      return function() {
+        for (var keys = Object.keys(this), i2 = keys.length - 1; i2 > -1; --i2)
+          if (fieldMap[keys[i2]] === 1 && this[keys[i2]] !== void 0 && this[keys[i2]] !== null)
+            return keys[i2];
+      };
+    };
+    util.oneOfSetter = function setOneOf(fieldNames) {
+      return function(name) {
+        for (var i = 0; i < fieldNames.length; ++i)
+          if (fieldNames[i] !== name)
+            delete this[fieldNames[i]];
+      };
+    };
+    util.toJSONOptions = {
+      longs: String,
+      enums: String,
+      bytes: String,
+      json: true
+    };
+  }
+});
+
+// node_modules/protobufjs/src/writer.js
+var require_writer = __commonJS({
+  "node_modules/protobufjs/src/writer.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Writer;
+    var util = require_minimal();
+    var BufferWriter;
+    var LongBits = util.LongBits;
+    var base643 = util.base64;
+    var utf8 = util.utf8;
+    function Writer() {
+      this.pos = 0;
+      this.buf = this.constructor.alloc(Writer.initialBufferSize);
+      this.view = null;
+      this.states = null;
+    }
+    Writer.initialBufferSize = 128;
+    Object.defineProperty(Writer.prototype, "len", {
+      configurable: true,
+      enumerable: true,
+      get: function get_len() {
+        return this.pos;
+      }
+    });
+    var create = function create2() {
+      return util.Buffer ? function create_buffer_setup() {
+        return (Writer.create = function create_buffer() {
+          return new BufferWriter();
+        })();
+      } : function create_array() {
+        return new Writer();
+      };
+    };
+    Writer.create = create();
+    Writer.alloc = function alloc(size) {
+      return new Uint8Array(size);
+    };
+    Writer.alloc = util.pool(Writer.alloc, Uint8Array.prototype.subarray);
+    function sizeVarint32(value) {
+      return value < 128 ? 1 : value < 16384 ? 2 : value < 2097152 ? 3 : value < 268435456 ? 4 : 5;
+    }
+    Writer.prototype._reserve = function _reserve(n) {
+      var need = this.pos + n;
+      if (need > this.buf.length) {
+        var size = this.buf.length << 1;
+        if (size < need)
+          size = need;
+        var buf = this.constructor.alloc(size);
+        buf.set(this.buf.subarray(0, this.pos), 0);
+        this.buf = buf;
+        this.view = null;
+      }
+    };
+    function writeStringAscii(val, buf, pos) {
+      for (var i = 0; i < val.length; )
+        buf[pos++] = val.charCodeAt(i++);
+    }
+    function writeVarint32(val, buf, pos) {
+      while (val > 127) {
+        buf[pos++] = val & 127 | 128;
+        val >>>= 7;
+      }
+      buf[pos] = val;
+      return pos + 1;
+    }
+    Writer.prototype.uint32 = function write_uint32(value) {
+      value = value >>> 0;
+      this._reserve(5);
+      var pos = this.pos;
+      this.pos = writeVarint32(value, this.buf, pos);
+      return this;
+    };
+    Writer.prototype.int32 = function write_int32(value) {
+      if ((value |= 0) < 0) {
+        this._reserve(10);
+        writeVarint64(LongBits.fromNumber(value), this.buf, this.pos);
+        this.pos += 10;
+        return this;
+      }
+      return this.uint32(value);
+    };
+    Writer.prototype.sint32 = function write_sint32(value) {
+      return this.uint32((value << 1 ^ value >> 31) >>> 0);
+    };
+    function writeVarint64(val, buf, pos) {
+      var lo = val.lo, hi = val.hi;
+      while (hi) {
+        buf[pos++] = lo & 127 | 128;
+        lo = (lo >>> 7 | hi << 25) >>> 0;
+        hi >>>= 7;
+      }
+      while (lo > 127) {
+        buf[pos++] = lo & 127 | 128;
+        lo = lo >>> 7;
+      }
+      buf[pos] = lo;
+      return pos + 1;
+    }
+    Writer.prototype.uint64 = function write_uint64(value) {
+      var bits = LongBits.from(value);
+      this._reserve(10);
+      var pos = this.pos;
+      this.pos = writeVarint64(bits, this.buf, pos);
+      return this;
+    };
+    Writer.prototype.int64 = Writer.prototype.uint64;
+    Writer.prototype.sint64 = function write_sint64(value) {
+      var bits = LongBits.from(value).zzEncode();
+      this._reserve(10);
+      var pos = this.pos;
+      this.pos = writeVarint64(bits, this.buf, pos);
+      return this;
+    };
+    Writer.prototype.bool = function write_bool(value) {
+      this._reserve(1);
+      this.buf[this.pos++] = value ? 1 : 0;
+      return this;
+    };
+    function writeFixed32(val, buf, pos) {
+      buf[pos] = val & 255;
+      buf[pos + 1] = val >>> 8 & 255;
+      buf[pos + 2] = val >>> 16 & 255;
+      buf[pos + 3] = val >>> 24;
+    }
+    Writer.prototype.fixed32 = function write_fixed32(value) {
+      this._reserve(4);
+      writeFixed32(value >>> 0, this.buf, this.pos);
+      this.pos += 4;
+      return this;
+    };
+    Writer.prototype.sfixed32 = Writer.prototype.fixed32;
+    Writer.prototype.fixed64 = function write_fixed64(value) {
+      var bits = LongBits.from(value);
+      this._reserve(8);
+      writeFixed32(bits.lo, this.buf, this.pos);
+      writeFixed32(bits.hi, this.buf, this.pos + 4);
+      this.pos += 8;
+      return this;
+    };
+    Writer.prototype.sfixed64 = Writer.prototype.fixed64;
+    Writer.prototype.float = function write_float(value) {
+      this._reserve(4);
+      util.float.writeFloatLE(value, this.buf, this.pos);
+      this.pos += 4;
+      return this;
+    };
+    Writer.prototype.double = function write_double(value) {
+      this._reserve(8);
+      util.float.writeDoubleLE(value, this.buf, this.pos);
+      this.pos += 8;
+      return this;
+    };
+    Writer.prototype.bytes = function write_bytes(value) {
+      var len = value.length >>> 0;
+      if (!len) {
+        this._reserve(1);
+        this.buf[this.pos++] = 0;
+        return this;
+      }
+      if (util.isString(value)) {
+        var buf = Writer.alloc(len = base643.length(value));
+        base643.decode(value, buf, 0);
+        value = buf;
+      }
+      this.uint32(len);
+      this._reserve(len);
+      this.buf.set(value, this.pos);
+      this.pos += len;
+      return this;
+    };
+    Writer.prototype.raw = function write_raw(value) {
+      var len = value.length >>> 0;
+      if (!len)
+        return this;
+      this._reserve(len);
+      this.buf.set(value, this.pos);
+      this.pos += len;
+      return this;
+    };
+    Writer.prototype._delim = function _delim(pos, len) {
+      var n = sizeVarint32(len);
+      if (n > 1)
+        this.buf.copyWithin(pos + n, pos + 1, pos + 1 + len);
+      writeVarint32(len, this.buf, pos);
+      this.pos = pos + n + len;
+      return this;
+    };
+    Writer.prototype.string = function write_string(value) {
+      var n = value.length;
+      if (!n) {
+        this._reserve(1);
+        this.buf[this.pos++] = 0;
+        return this;
+      }
+      if (n < 128) {
+        this._reserve(n * 3 + 5);
+        var lenPos = this.pos;
+        return this._delim(lenPos, utf8.write(value, this.buf, lenPos + 1));
+      }
+      var len = utf8.length(value);
+      this.uint32(len);
+      this._reserve(len);
+      if (len === value.length)
+        writeStringAscii(value, this.buf, this.pos);
+      else
+        utf8.write(value, this.buf, this.pos);
+      this.pos += len;
+      return this;
+    };
+    Writer.prototype.uint32s = function write_uint32s(value) {
+      var n = value.length;
+      this._reserve(n * 5 + 5);
+      var buf = this.buf, lenPos = this.pos, p = lenPos + 1;
+      for (var i = 0; i < n; ++i)
+        p = writeVarint32(value[i] >>> 0, buf, p);
+      return this._delim(lenPos, p - lenPos - 1);
+    };
+    Writer.prototype.int32s = function write_int32s(value) {
+      var n = value.length;
+      this._reserve(n * 10 + 5);
+      var buf = this.buf, lenPos = this.pos, pos = lenPos + 1, val;
+      for (var i = 0; i < n; ++i) {
+        if ((val = value[i] | 0) < 0) {
+          pos = writeVarint64(LongBits.fromNumber(val), buf, pos);
+        } else {
+          pos = writeVarint32(val, buf, pos);
+        }
+      }
+      return this._delim(lenPos, pos - lenPos - 1);
+    };
+    Writer.prototype.sint32s = function write_sint32s(value) {
+      var n = value.length;
+      this._reserve(n * 5 + 5);
+      var buf = this.buf, lenPos = this.pos, pos = lenPos + 1;
+      for (var i = 0; i < n; ++i)
+        pos = writeVarint32((value[i] << 1 ^ value[i] >> 31) >>> 0, buf, pos);
+      return this._delim(lenPos, pos - lenPos - 1);
+    };
+    Writer.prototype.uint64s = function write_uint64s(value) {
+      var n = value.length;
+      this._reserve(n * 10 + 5);
+      var buf = this.buf, lenPos = this.pos, pos = lenPos + 1;
+      for (var i = 0; i < n; ++i) {
+        pos = writeVarint64(LongBits.from(value[i]), buf, pos);
+      }
+      return this._delim(lenPos, pos - lenPos - 1);
+    };
+    Writer.prototype.int64s = Writer.prototype.uint64s;
+    Writer.prototype.sint64s = function write_sint64s(value) {
+      var n = value.length;
+      this._reserve(n * 10 + 5);
+      var buf = this.buf, lenPos = this.pos, pos = lenPos + 1;
+      for (var i = 0; i < n; ++i) {
+        pos = writeVarint64(LongBits.from(value[i]).zzEncode(), buf, pos);
+      }
+      return this._delim(lenPos, pos - lenPos - 1);
+    };
+    Writer.prototype.bools = function write_bools(value) {
+      var n = value.length;
+      this.uint32(n);
+      this._reserve(n);
+      var buf = this.buf, p = this.pos;
+      for (var i = 0; i < n; ++i)
+        buf[p++] = value[i] ? 1 : 0;
+      this.pos += n;
+      return this;
+    };
+    var VIEW_THRESHOLD_FLOAT = 16;
+    var VIEW_THRESHOLD_INT = 128;
+    function getLazyView(writer, count, threshold) {
+      var view = writer.view;
+      if (view || count < threshold)
+        return view;
+      var buf = writer.buf;
+      return writer.view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    }
+    Writer.prototype.fixed32s = function write_fixed32s(value) {
+      var n = value.length, bytes = n * 4;
+      this.uint32(bytes);
+      this._reserve(bytes);
+      var p = this.pos, i, dv = getLazyView(this, n, VIEW_THRESHOLD_INT);
+      if (dv)
+        for (i = 0; i < n; ++i) {
+          dv.setUint32(p, value[i] >>> 0, true);
+          p += 4;
+        }
+      else {
+        var buf = this.buf;
+        for (i = 0; i < n; ++i) {
+          writeFixed32(value[i] >>> 0, buf, p);
+          p += 4;
+        }
+      }
+      this.pos += bytes;
+      return this;
+    };
+    Writer.prototype.sfixed32s = Writer.prototype.fixed32s;
+    Writer.prototype.fixed64s = function write_fixed64s(value) {
+      var n = value.length, bytes = n * 8;
+      this.uint32(bytes);
+      this._reserve(bytes);
+      var p = this.pos, i, bits, dv = getLazyView(this, n, VIEW_THRESHOLD_INT);
+      if (dv)
+        for (i = 0; i < n; ++i) {
+          bits = LongBits.from(value[i]);
+          dv.setUint32(p, bits.lo, true);
+          dv.setUint32(p + 4, bits.hi, true);
+          p += 8;
+        }
+      else {
+        var buf = this.buf;
+        for (i = 0; i < n; ++i) {
+          bits = LongBits.from(value[i]);
+          writeFixed32(bits.lo, buf, p);
+          writeFixed32(bits.hi, buf, p + 4);
+          p += 8;
+        }
+      }
+      this.pos += bytes;
+      return this;
+    };
+    Writer.prototype.sfixed64s = Writer.prototype.fixed64s;
+    Writer.prototype.floats = function write_floats(value) {
+      var n = value.length, bytes = n * 4;
+      this.uint32(bytes);
+      this._reserve(bytes);
+      var p = this.pos, i, dv = getLazyView(this, n, VIEW_THRESHOLD_FLOAT);
+      if (dv)
+        for (i = 0; i < n; ++i) {
+          dv.setFloat32(p, value[i], true);
+          p += 4;
+        }
+      else {
+        var buf = this.buf;
+        for (i = 0; i < n; ++i) {
+          util.float.writeFloatLE(value[i], buf, p);
+          p += 4;
+        }
+      }
+      this.pos += bytes;
+      return this;
+    };
+    Writer.prototype.doubles = function write_doubles(value) {
+      var n = value.length, bytes = n * 8;
+      this.uint32(bytes);
+      this._reserve(bytes);
+      var p = this.pos, i, dv = getLazyView(this, n, VIEW_THRESHOLD_FLOAT);
+      if (dv)
+        for (i = 0; i < n; ++i) {
+          dv.setFloat64(p, value[i], true);
+          p += 8;
+        }
+      else {
+        var buf = this.buf;
+        for (i = 0; i < n; ++i) {
+          util.float.writeDoubleLE(value[i], buf, p);
+          p += 8;
+        }
+      }
+      this.pos += bytes;
+      return this;
+    };
+    Writer.prototype.fork = function fork() {
+      this._reserve(1);
+      (this.states || (this.states = [])).push(this.pos);
+      this.pos += 1;
+      return this;
+    };
+    Writer.prototype.reset = function reset() {
+      var states = this.states;
+      if (states && states.length) {
+        this.pos = states.pop();
+      } else {
+        this.pos = 0;
+      }
+      return this;
+    };
+    Writer.prototype.ldelim = function ldelim() {
+      var states = this.states, len, vlen;
+      if (states && states.length) {
+        var lenPos = states.pop();
+        len = this.pos - lenPos - 1;
+        vlen = sizeVarint32(len);
+        if (vlen > 1) {
+          this._reserve(vlen - 1);
+          this.buf.copyWithin(lenPos + vlen, lenPos + 1, lenPos + 1 + len);
+          this.pos += vlen - 1;
+          writeVarint32(len, this.buf, lenPos);
+        } else {
+          this.buf[lenPos] = len;
+        }
+      } else {
+        len = this.pos;
+        vlen = sizeVarint32(len);
+        this._reserve(vlen);
+        this.buf.copyWithin(vlen, 0, len);
+        writeVarint32(len, this.buf, 0);
+        this.pos += vlen;
+      }
+      return this;
+    };
+    Writer.prototype.finish = function finish(shared) {
+      if (shared)
+        return this.buf.subarray(0, this.pos);
+      var buf = this.constructor.alloc(this.pos);
+      buf.set(this.buf.subarray(0, this.pos), 0);
+      return buf;
+    };
+    Writer.prototype.finishInto = function finishInto(buf, offset) {
+      if (offset === void 0)
+        offset = 0;
+      buf.set(this.buf.subarray(0, this.pos), offset);
+      return buf;
+    };
+    Writer._configure = function(BufferWriter_) {
+      BufferWriter = BufferWriter_;
+      Writer.create = create();
+      BufferWriter._configure();
+    };
+  }
+});
+
+// node_modules/protobufjs/src/writer_buffer.js
+var require_writer_buffer = __commonJS({
+  "node_modules/protobufjs/src/writer_buffer.js"(exports2, module2) {
+    "use strict";
+    module2.exports = BufferWriter;
+    var Writer = require_writer();
+    BufferWriter.prototype = Object.create(Writer.prototype, {
+      constructor: {
+        value: BufferWriter,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    var util = require_minimal();
+    function BufferWriter() {
+      Writer.call(this);
+    }
+    var writeStringBuffer;
+    BufferWriter._configure = function() {
+      BufferWriter.alloc = util.Buffer && util.Buffer.allocUnsafe;
+      writeStringBuffer = util.Buffer && util.Buffer.prototype.utf8Write ? function writeStringBuffer_utf8Write(val, buf, pos) {
+        return buf.utf8Write(val, pos);
+      } : function writeStringBuffer_write(val, buf, pos) {
+        return buf.write(val, pos);
+      };
+    };
+    BufferWriter.prototype.bytes = function write_bytes_buffer(value) {
+      if (util.isString(value))
+        value = util.Buffer.from(value, "base64");
+      var len = value.length >>> 0;
+      this.uint32(len);
+      if (len) {
+        this._reserve(len);
+        this.buf.set(value, this.pos);
+        this.pos += len;
+      }
+      return this;
+    };
+    BufferWriter.prototype.string = function write_string_buffer(value) {
+      var n = value.length;
+      if (!n) {
+        this._reserve(1);
+        this.buf[this.pos++] = 0;
+        return this;
+      }
+      if (n < 128) {
+        this._reserve(n * 3 + 5);
+        var pos = this.pos, buf = this.buf;
+        return this._delim(
+          pos,
+          n < 40 ? util.utf8.write(value, buf, pos + 1) : writeStringBuffer(value, buf, pos + 1)
+        );
+      }
+      var len = util.Buffer.byteLength(value);
+      this.uint32(len);
+      this._reserve(len);
+      writeStringBuffer(value, this.buf, this.pos);
+      this.pos += len;
+      return this;
+    };
+    BufferWriter._configure();
+  }
+});
+
+// node_modules/protobufjs/src/reader.js
+var require_reader = __commonJS({
+  "node_modules/protobufjs/src/reader.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Reader;
+    var util = require_minimal();
+    var BufferReader;
+    var LongBits = util.LongBits;
+    var utf8 = util.utf8;
+    function indexOutOfRange(reader, writeLength) {
+      return RangeError("index out of range: " + reader.pos + " + " + (writeLength || 1) + " > " + reader.len);
+    }
+    function Reader(buffer) {
+      this.buf = buffer;
+      this.pos = 0;
+      this.len = buffer.length;
+      this.view = null;
+      this.discardUnknown = Reader.discardUnknown;
+    }
+    function create_array(buffer) {
+      if (Array.isArray(buffer))
+        buffer = new Uint8Array(buffer);
+      if (buffer instanceof Uint8Array)
+        return new Reader(buffer);
+      throw Error("illegal buffer");
+    }
+    var create = function create2() {
+      return util.Buffer ? function create_buffer_setup(buffer) {
+        return (Reader.create = function create_buffer(buffer2) {
+          return util.Buffer.isBuffer(buffer2) ? new BufferReader(buffer2) : create_array(buffer2);
+        })(buffer);
+      } : create_array;
+    };
+    Reader.create = create();
+    Reader.prototype.raw = function read_raw(start, end) {
+      return this.buf.subarray(start, end);
+    };
+    function readVarint32NearEnd(reader) {
+      var value = 0;
+      for (var i = 0; i < 4; ++i) {
+        if (reader.pos >= reader.len)
+          throw indexOutOfRange(reader);
+        var b = reader.buf[reader.pos++];
+        value = (value | (b & 127) << i * 7) >>> 0;
+        if (b < 128)
+          return value;
+      }
+      throw indexOutOfRange(reader);
+    }
+    Reader.prototype.uint32 = function read_uint32() {
+      if (this.len - this.pos < 5) {
+        if (this.pos >= this.len)
+          throw indexOutOfRange(this);
+        if (this.buf[this.pos] >= 128)
+          return readVarint32NearEnd(this);
+      }
+      var buf = this.buf, pos = this.pos, value = (buf[pos] & 127) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 7) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 14) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 21) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 15) << 28) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      for (var i = 0; i < 5; ++i) {
+        if (pos >= this.len) {
+          this.pos = pos;
+          throw indexOutOfRange(this);
+        }
+        if (buf[pos++] < 128) {
+          this.pos = pos;
+          return value;
+        }
+      }
+      this.pos = pos;
+      throw Error("invalid varint encoding");
+    };
+    Reader.prototype.tag = function read_tag() {
+      if (this.len - this.pos < 5) {
+        if (this.pos >= this.len)
+          throw indexOutOfRange(this);
+        if (this.buf[this.pos] >= 128)
+          return readVarint32NearEnd(this);
+      }
+      var buf = this.buf, pos = this.pos, value = (buf[pos] & 127) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 7) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 14) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 21) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 15) << 28) >>> 0;
+      if (buf[pos] < 128 && (buf[pos] & 112) === 0) {
+        this.pos = pos + 1;
+        return value;
+      }
+      this.pos = pos + 1;
+      throw Error("invalid tag encoding");
+    };
+    Reader.prototype.size = function read_size() {
+      if (this.len - this.pos < 5) {
+        if (this.pos >= this.len)
+          throw indexOutOfRange(this);
+        if (this.buf[this.pos] >= 128)
+          return readVarint32NearEnd(this);
+      }
+      var buf = this.buf, pos = this.pos, value = (buf[pos] & 127) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 7) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 14) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      value = (value | (buf[pos] & 127) << 21) >>> 0;
+      if (buf[pos++] < 128) {
+        this.pos = pos;
+        return value;
+      }
+      this.pos = pos + 1;
+      if (buf[pos] > 7)
+        throw Error("invalid length encoding");
+      return (value | buf[pos] << 28) >>> 0;
+    };
+    Reader.prototype.int32 = function read_int32() {
+      return this.uint32() | 0;
+    };
+    Reader.prototype.sint32 = function read_sint32() {
+      var value = this.uint32();
+      return value >>> 1 ^ -(value & 1) | 0;
+    };
+    function readLongVarint() {
+      var bits = new LongBits(0, 0);
+      var i = 0;
+      if (this.len - this.pos > 4) {
+        for (; i < 4; ++i) {
+          bits.lo = (bits.lo | (this.buf[this.pos] & 127) << i * 7) >>> 0;
+          if (this.buf[this.pos++] < 128)
+            return bits;
+        }
+        bits.lo = (bits.lo | (this.buf[this.pos] & 127) << 28) >>> 0;
+        bits.hi = (bits.hi | (this.buf[this.pos] & 127) >> 4) >>> 0;
+        if (this.buf[this.pos++] < 128)
+          return bits;
+        i = 0;
+      } else {
+        for (; i < 4; ++i) {
+          if (this.pos >= this.len)
+            throw indexOutOfRange(this);
+          bits.lo = (bits.lo | (this.buf[this.pos] & 127) << i * 7) >>> 0;
+          if (this.buf[this.pos++] < 128)
+            return bits;
+        }
+        throw indexOutOfRange(this);
+      }
+      if (this.len - this.pos > 4) {
+        for (; i < 5; ++i) {
+          bits.hi = (bits.hi | (this.buf[this.pos] & 127) << i * 7 + 3) >>> 0;
+          if (this.buf[this.pos++] < 128)
+            return bits;
+        }
+      } else {
+        for (; i < 5; ++i) {
+          if (this.pos >= this.len)
+            throw indexOutOfRange(this);
+          bits.hi = (bits.hi | (this.buf[this.pos] & 127) << i * 7 + 3) >>> 0;
+          if (this.buf[this.pos++] < 128)
+            return bits;
+        }
+      }
+      throw Error("invalid varint encoding");
+    }
+    Reader.prototype.bool = function read_bool() {
+      var value = false, b;
+      for (var i = 0; i < 10; ++i) {
+        if (this.pos >= this.len)
+          throw indexOutOfRange(this);
+        b = this.buf[this.pos++];
+        if (b & 127)
+          value = true;
+        if (b < 128)
+          return value;
+      }
+      throw Error("invalid varint encoding");
+    };
+    function readFixed32_end(buf, end) {
+      return (buf[end - 4] | buf[end - 3] << 8 | buf[end - 2] << 16 | buf[end - 1] << 24) >>> 0;
+    }
+    Reader.prototype.fixed32 = function read_fixed32() {
+      if (this.pos + 4 > this.len)
+        throw indexOutOfRange(this, 4);
+      return readFixed32_end(this.buf, this.pos += 4);
+    };
+    Reader.prototype.sfixed32 = function read_sfixed32() {
+      if (this.pos + 4 > this.len)
+        throw indexOutOfRange(this, 4);
+      return readFixed32_end(this.buf, this.pos += 4) | 0;
+    };
+    function readFixed64() {
+      if (this.pos + 8 > this.len)
+        throw indexOutOfRange(this, 8);
+      return new LongBits(readFixed32_end(this.buf, this.pos += 4), readFixed32_end(this.buf, this.pos += 4));
+    }
+    Reader.prototype.float = function read_float() {
+      if (this.pos + 4 > this.len)
+        throw indexOutOfRange(this, 4);
+      var value = util.float.readFloatLE(this.buf, this.pos);
+      this.pos += 4;
+      return value;
+    };
+    Reader.prototype.double = function read_double() {
+      if (this.pos + 8 > this.len)
+        throw indexOutOfRange(this, 4);
+      var value = util.float.readDoubleLE(this.buf, this.pos);
+      this.pos += 8;
+      return value;
+    };
+    Reader.prototype.uint32s = function read_uint32s(array2) {
+      if (array2 === void 0) array2 = [];
+      var end = this.size() + this.pos, len = this.len, buf = this.buf, pos = this.pos, value;
+      if (end > len) throw indexOutOfRange(this, end - this.pos);
+      this.len = end;
+      while (pos < end) {
+        value = buf[pos++];
+        if (value < 128)
+          array2.push(value);
+        else {
+          this.pos = pos - 1;
+          array2.push(this.uint32());
+          pos = this.pos;
+        }
+      }
+      this.pos = pos;
+      if (pos !== end) throw RangeError("index out of range");
+      this.len = len;
+      return array2;
+    };
+    Reader.prototype.int32s = function read_int32s(array2) {
+      if (array2 === void 0) array2 = [];
+      var end = this.size() + this.pos, len = this.len, buf = this.buf, pos = this.pos, value;
+      if (end > len) throw indexOutOfRange(this, end - this.pos);
+      this.len = end;
+      while (pos < end) {
+        value = buf[pos++];
+        if (value < 128)
+          array2.push(value);
+        else {
+          this.pos = pos - 1;
+          array2.push(this.int32());
+          pos = this.pos;
+        }
+      }
+      this.pos = pos;
+      if (pos !== end) throw RangeError("index out of range");
+      this.len = len;
+      return array2;
+    };
+    Reader.prototype.sint32s = function read_sint32s(array2) {
+      if (array2 === void 0) array2 = [];
+      var end = this.size() + this.pos, len = this.len;
+      if (end > len) throw indexOutOfRange(this, end - this.pos);
+      this.len = end;
+      while (this.pos < end)
+        array2.push(this.sint32());
+      if (this.pos !== end) throw RangeError("index out of range");
+      this.len = len;
+      return array2;
+    };
+    Reader.prototype.bools = function read_bools(array2) {
+      if (array2 === void 0) array2 = [];
+      var end = this.size() + this.pos, len = this.len, buf = this.buf, pos = this.pos, value;
+      if (end > len) throw indexOutOfRange(this, end - this.pos);
+      this.len = end;
+      while (pos < end) {
+        value = buf[pos++];
+        if (value < 128)
+          array2.push(value !== 0);
+        else {
+          this.pos = pos - 1;
+          array2.push(this.bool());
+          pos = this.pos;
+        }
+      }
+      this.pos = pos;
+      if (pos !== end) throw RangeError("index out of range");
+      this.len = len;
+      return array2;
+    };
+    var VIEW_THRESHOLD_FLOAT = 8;
+    var VIEW_THRESHOLD_INT = 128;
+    function getLazyView(reader, count, threshold) {
+      var view = reader.view;
+      if (view || count < threshold)
+        return view;
+      var buf = reader.buf;
+      return reader.view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    }
+    Reader.prototype.fixed32s = function read_fixed32s(array2) {
+      if (array2 === void 0) array2 = [];
+      var len = this.size(), end = this.pos + len;
+      if (end > this.len) throw indexOutOfRange(this, len);
+      var count = len >>> 2, i = array2.length, pos = this.pos;
+      array2.length = i + count;
+      var dv = getLazyView(this, count, VIEW_THRESHOLD_INT);
+      if (dv)
+        for (var k = 0; k < count; ++k, pos += 4) array2[i++] = dv.getUint32(pos, true);
+      else {
+        var buf = this.buf;
+        for (var j = 0; j < count; ++j, pos += 4) array2[i++] = readFixed32_end(buf, pos + 4);
+      }
+      this.pos = pos;
+      if (pos !== end) throw indexOutOfRange(this, 4);
+      return array2;
+    };
+    Reader.prototype.sfixed32s = function read_sfixed32s(array2) {
+      if (array2 === void 0) array2 = [];
+      var len = this.size(), end = this.pos + len;
+      if (end > this.len) throw indexOutOfRange(this, len);
+      var count = len >>> 2, i = array2.length, pos = this.pos;
+      array2.length = i + count;
+      var dv = getLazyView(this, count, VIEW_THRESHOLD_INT);
+      if (dv)
+        for (var k = 0; k < count; ++k, pos += 4) array2[i++] = dv.getInt32(pos, true);
+      else {
+        var buf = this.buf;
+        for (var j = 0; j < count; ++j, pos += 4) array2[i++] = readFixed32_end(buf, pos + 4) | 0;
+      }
+      this.pos = pos;
+      if (pos !== end) throw indexOutOfRange(this, 4);
+      return array2;
+    };
+    Reader.prototype.floats = function read_floats(array2) {
+      if (array2 === void 0) array2 = [];
+      var len = this.size(), end = this.pos + len;
+      if (end > this.len) throw indexOutOfRange(this, len);
+      var count = len >>> 2, i = array2.length, pos = this.pos;
+      array2.length = i + count;
+      var dv = getLazyView(this, count, VIEW_THRESHOLD_FLOAT);
+      if (dv)
+        for (var k = 0; k < count; ++k, pos += 4) array2[i++] = dv.getFloat32(pos, true);
+      else {
+        var buf = this.buf;
+        for (var j = 0; j < count; ++j, pos += 4) array2[i++] = util.float.readFloatLE(buf, pos);
+      }
+      this.pos = pos;
+      if (pos !== end) throw indexOutOfRange(this, 4);
+      return array2;
+    };
+    Reader.prototype.doubles = function read_doubles(array2) {
+      if (array2 === void 0) array2 = [];
+      var len = this.size(), end = this.pos + len;
+      if (end > this.len) throw indexOutOfRange(this, len);
+      var count = len >>> 3, i = array2.length, pos = this.pos;
+      array2.length = i + count;
+      var dv = getLazyView(this, count, VIEW_THRESHOLD_FLOAT);
+      if (dv)
+        for (var k = 0; k < count; ++k, pos += 8) array2[i++] = dv.getFloat64(pos, true);
+      else {
+        var buf = this.buf;
+        for (var j = 0; j < count; ++j, pos += 8) array2[i++] = util.float.readDoubleLE(buf, pos);
+      }
+      this.pos = pos;
+      if (pos !== end) throw indexOutOfRange(this, 8);
+      return array2;
+    };
+    Reader.prototype.uint64s = function read_uint64s(array2) {
+      if (array2 === void 0) array2 = [];
+      var end = this.size() + this.pos, len = this.len;
+      if (end > len) throw indexOutOfRange(this, end - this.pos);
+      this.len = end;
+      while (this.pos < end)
+        array2.push(this.uint64());
+      if (this.pos !== end) throw RangeError("index out of range");
+      this.len = len;
+      return array2;
+    };
+    Reader.prototype.int64s = function read_int64s(array2) {
+      if (array2 === void 0) array2 = [];
+      var end = this.size() + this.pos, len = this.len;
+      if (end > len) throw indexOutOfRange(this, end - this.pos);
+      this.len = end;
+      while (this.pos < end)
+        array2.push(this.int64());
+      if (this.pos !== end) throw RangeError("index out of range");
+      this.len = len;
+      return array2;
+    };
+    Reader.prototype.sint64s = function read_sint64s(array2) {
+      if (array2 === void 0) array2 = [];
+      var end = this.size() + this.pos, len = this.len;
+      if (end > len) throw indexOutOfRange(this, end - this.pos);
+      this.len = end;
+      while (this.pos < end)
+        array2.push(this.sint64());
+      if (this.pos !== end) throw RangeError("index out of range");
+      this.len = len;
+      return array2;
+    };
+    Reader.prototype.fixed64s = function read_fixed64s(array2) {
+      if (array2 === void 0) array2 = [];
+      var len = this.size(), end = this.pos + len, i = array2.length;
+      if (end > this.len) throw indexOutOfRange(this, len);
+      var count = len >>> 3;
+      array2.length = i + count;
+      for (var j = 0; j < count; ++j)
+        array2[i++] = this.fixed64();
+      if (this.pos !== end) throw indexOutOfRange(this, 8);
+      return array2;
+    };
+    Reader.prototype.sfixed64s = function read_sfixed64s(array2) {
+      if (array2 === void 0) array2 = [];
+      var len = this.size(), end = this.pos + len, i = array2.length;
+      if (end > this.len) throw indexOutOfRange(this, len);
+      var count = len >>> 3;
+      array2.length = i + count;
+      for (var j = 0; j < count; ++j)
+        array2[i++] = this.sfixed64();
+      if (this.pos !== end) throw indexOutOfRange(this, 8);
+      return array2;
+    };
+    Reader.prototype.bytes = function read_bytes() {
+      var length = this.size(), start = this.pos, end = this.pos + length;
+      if (end > this.len)
+        throw indexOutOfRange(this, length);
+      this.pos = end;
+      return this.raw(start, end);
+    };
+    Reader.prototype.string = function read_string() {
+      var length = this.size(), start = this.pos, end = this.pos + length;
+      if (end > this.len)
+        throw indexOutOfRange(this, length);
+      this.pos = end;
+      return utf8.read(this.buf, start, end);
+    };
+    Reader.prototype.stringVerify = function read_string_verify() {
+      var length = this.size(), start = this.pos, end = this.pos + length;
+      if (end > this.len)
+        throw indexOutOfRange(this, length);
+      this.pos = end;
+      return utf8.readStrict(this.buf, start, end);
+    };
+    Reader.prototype.skip = function skip(length) {
+      if (typeof length === "number") {
+        if (this.pos + length > this.len)
+          throw indexOutOfRange(this, length);
+        this.pos += length;
+      } else {
+        do {
+          if (this.pos >= this.len)
+            throw indexOutOfRange(this);
+        } while (this.buf[this.pos++] & 128);
+      }
+      return this;
+    };
+    Reader.recursionLimit = util.recursionLimit;
+    Reader.discardUnknown = true;
+    Reader.prototype.skipType = function(wireType, depth, fieldNumber) {
+      if (depth === void 0) depth = 0;
+      if (depth > Reader.recursionLimit)
+        throw Error("max depth exceeded");
+      if (fieldNumber === 0)
+        throw Error("illegal tag: field number 0");
+      switch (wireType) {
+        case 0:
+          this.skip();
+          break;
+        case 1:
+          this.skip(8);
+          break;
+        case 2:
+          this.skip(this.size());
+          break;
+        case 3:
+          while (true) {
+            var tag = this.tag();
+            var nestedField = tag >>> 3;
+            wireType = tag & 7;
+            if (!nestedField)
+              throw Error("illegal tag: field number 0");
+            if (wireType === 4) {
+              if (fieldNumber !== void 0 && nestedField !== fieldNumber)
+                throw Error("invalid end group tag");
+              break;
+            }
+            this.skipType(wireType, depth + 1, nestedField);
+          }
+          break;
+        case 5:
+          this.skip(4);
+          break;
+        /* istanbul ignore next */
+        default:
+          throw Error("invalid wire type " + wireType + " at offset " + this.pos);
+      }
+      return this;
+    };
+    Reader._configure = function(BufferReader_) {
+      BufferReader = BufferReader_;
+      Reader.create = create();
+      BufferReader._configure();
+      var fn = util.Long ? "toLong" : (
+        /* istanbul ignore next */
+        "toNumber"
+      );
+      util.merge(Reader.prototype, {
+        int64: function read_int64() {
+          return readLongVarint.call(this)[fn](false);
+        },
+        uint64: function read_uint64() {
+          return readLongVarint.call(this)[fn](true);
+        },
+        sint64: function read_sint64() {
+          return readLongVarint.call(this).zzDecode()[fn](false);
+        },
+        fixed64: function read_fixed64() {
+          return readFixed64.call(this)[fn](true);
+        },
+        sfixed64: function read_sfixed64() {
+          return readFixed64.call(this)[fn](false);
+        }
+      });
+    };
+  }
+});
+
+// node_modules/protobufjs/src/reader_buffer.js
+var require_reader_buffer = __commonJS({
+  "node_modules/protobufjs/src/reader_buffer.js"(exports2, module2) {
+    "use strict";
+    module2.exports = BufferReader;
+    var Reader = require_reader();
+    BufferReader.prototype = Object.create(Reader.prototype, {
+      constructor: {
+        value: BufferReader,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    var util = require_minimal();
+    function BufferReader(buffer) {
+      Reader.call(this, buffer);
+    }
+    BufferReader._configure = function() {
+      if (util.Buffer)
+        BufferReader.prototype._slice = util.Buffer.prototype.slice;
+    };
+    BufferReader.prototype.raw = function read_raw_buffer(start, end) {
+      return this._slice.call(this.buf, start, end);
+    };
+    BufferReader.prototype.string = function read_string_buffer() {
+      var len = this.size(), start = this.pos, end = this.pos + len;
+      if (end > this.len)
+        throw RangeError("index out of range: " + this.pos + " + " + len + " > " + this.len);
+      this.pos = end;
+      return this.buf.utf8Slice ? this.buf.utf8Slice(start, end) : this.buf.toString("utf-8", start, end);
+    };
+    BufferReader._configure();
+  }
+});
+
+// node_modules/protobufjs/src/rpc/service.js
+var require_service = __commonJS({
+  "node_modules/protobufjs/src/rpc/service.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Service;
+    var util = require_minimal();
+    Service.prototype = Object.create(util.EventEmitter.prototype, {
+      constructor: {
+        value: Service,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    function Service(rpcImpl, requestDelimited, responseDelimited) {
+      if (typeof rpcImpl !== "function")
+        throw TypeError("rpcImpl must be a function");
+      util.EventEmitter.call(this);
+      this.rpcImpl = rpcImpl;
+      this.requestDelimited = Boolean(requestDelimited);
+      this.responseDelimited = Boolean(responseDelimited);
+    }
+    Service.prototype.rpcCall = function rpcCall(method, requestCtor, responseCtor, request, callback) {
+      if (!request)
+        throw TypeError("request must be specified");
+      var self2 = this;
+      if (!callback)
+        return util.asPromise(rpcCall, self2, method, requestCtor, responseCtor, request);
+      if (!self2.rpcImpl) {
+        setTimeout(function() {
+          callback(Error("already ended"));
+        }, 0);
+        return void 0;
+      }
+      try {
+        return self2.rpcImpl(
+          method,
+          requestCtor[self2.requestDelimited ? "encodeDelimited" : "encode"](request).finish(),
+          function rpcCallback(err, response) {
+            if (err) {
+              self2.emit("error", err, method);
+              return callback(err);
+            }
+            if (response === null) {
+              self2.end(
+                /* endedByRPC */
+                true
+              );
+              return void 0;
+            }
+            if (!(response instanceof responseCtor)) {
+              try {
+                response = responseCtor[self2.responseDelimited ? "decodeDelimited" : "decode"](response);
+              } catch (err2) {
+                self2.emit("error", err2, method);
+                return callback(err2);
+              }
+            }
+            self2.emit("data", response, method);
+            return callback(null, response);
+          }
+        );
+      } catch (err) {
+        self2.emit("error", err, method);
+        setTimeout(function() {
+          callback(err);
+        }, 0);
+        return void 0;
+      }
+    };
+    Service.prototype.end = function end(endedByRPC) {
+      if (this.rpcImpl) {
+        if (!endedByRPC)
+          this.rpcImpl(null, null, null);
+        this.rpcImpl = null;
+        this.emit("end").off();
+      }
+      return this;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/rpc.js
+var require_rpc = __commonJS({
+  "node_modules/protobufjs/src/rpc.js"(exports2) {
+    "use strict";
+    var rpc = exports2;
+    rpc.Service = require_service();
+  }
+});
+
+// node_modules/protobufjs/src/roots.js
+var require_roots = __commonJS({
+  "node_modules/protobufjs/src/roots.js"(exports2, module2) {
+    "use strict";
+    module2.exports = /* @__PURE__ */ Object.create(null);
+  }
+});
+
+// node_modules/protobufjs/src/index-minimal.js
+var require_index_minimal = __commonJS({
+  "node_modules/protobufjs/src/index-minimal.js"(exports2) {
+    "use strict";
+    exports2.build = "minimal";
+    exports2.Writer = require_writer();
+    exports2.BufferWriter = require_writer_buffer();
+    exports2.Reader = require_reader();
+    exports2.BufferReader = require_reader_buffer();
+    exports2.util = require_minimal();
+    exports2.rpc = require_rpc();
+    exports2.roots = require_roots();
+    exports2.configure = configure;
+    function configure() {
+      exports2.util.LongBits._configure(exports2.util.Long);
+      exports2.Writer._configure(exports2.BufferWriter);
+      exports2.Reader._configure(exports2.BufferReader);
+    }
+    configure();
+  }
+});
+
+// node_modules/protobufjs/src/util/patterns.js
+var require_patterns = __commonJS({
+  "node_modules/protobufjs/src/util/patterns.js"(exports2) {
+    "use strict";
+    var patterns = exports2;
+    patterns.numberRe = /^(?![eE])[0-9]*(?:\.[0-9]*)?(?:[eE][+-]?[0-9]+)?$/;
+    patterns.typeRefRe = /^(?:\.?[a-zA-Z_][a-zA-Z_0-9]*)(?:\.[a-zA-Z_][a-zA-Z_0-9]*)*$/;
+    patterns.reservedRe = /^(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$/;
+  }
+});
+
+// node_modules/protobufjs/src/util/codegen.js
+var require_codegen = __commonJS({
+  "node_modules/protobufjs/src/util/codegen.js"(exports2, module2) {
+    "use strict";
+    module2.exports = codegen;
+    var patterns = require_patterns();
+    var reservedRe = patterns.reservedRe;
+    function codegen(functionParams, functionName) {
+      if (typeof functionParams === "string") {
+        functionName = functionParams;
+        functionParams = void 0;
+      }
+      var body = [];
+      function Codegen(formatStringOrScope) {
+        if (typeof formatStringOrScope !== "string") {
+          var source = toString();
+          if (codegen.verbose)
+            console.log("codegen: " + source);
+          source = "return " + source;
+          if (formatStringOrScope) {
+            var scopeKeys = Object.keys(formatStringOrScope), scopeParams = new Array(scopeKeys.length + 1), scopeValues = new Array(scopeKeys.length), scopeOffset = 0;
+            while (scopeOffset < scopeKeys.length) {
+              scopeParams[scopeOffset] = scopeKeys[scopeOffset];
+              scopeValues[scopeOffset] = formatStringOrScope[scopeKeys[scopeOffset++]];
+            }
+            scopeParams[scopeOffset] = source;
+            return Function.apply(null, scopeParams).apply(null, scopeValues);
+          }
+          return Function(source)();
+        }
+        var formatParams = new Array(arguments.length - 1), formatOffset = 0;
+        while (formatOffset < formatParams.length)
+          formatParams[formatOffset] = arguments[++formatOffset];
+        formatOffset = 0;
+        formatStringOrScope = formatStringOrScope.replace(/%([%dfijs])/g, function replace($0, $1) {
+          var value = formatParams[formatOffset++];
+          switch ($1) {
+            case "d":
+            case "f":
+              value = Number(value);
+              return Object.is(value, -0) ? "-0" : String(value);
+            case "i":
+              return String(Math.floor(value));
+            case "j":
+              return JSON.stringify(value);
+            case "s":
+              return String(value);
+          }
+          return "%";
+        });
+        if (formatOffset !== formatParams.length)
+          throw Error("parameter count mismatch");
+        body.push(formatStringOrScope);
+        return Codegen;
+      }
+      function toString(functionNameOverride) {
+        return "function " + safeFunctionName(functionNameOverride || functionName) + "(" + (functionParams && functionParams.join(",") || "") + "){\n  " + body.join("\n  ") + "\n}";
+      }
+      Object.defineProperty(Codegen, "toString", {
+        value: toString,
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+      return Codegen;
+    }
+    codegen.verbose = false;
+    function safeFunctionName(name) {
+      if (!name)
+        return "";
+      name = String(name).replace(/[^\w$]/g, "");
+      if (!name)
+        return "";
+      if (/^\d/.test(name))
+        name = "_" + name;
+      return reservedRe.test(name) ? name + "_" : name;
+    }
+  }
+});
+
+// node_modules/protobufjs/src/util/fs.js
+var require_fs = __commonJS({
+  "node_modules/protobufjs/src/util/fs.js"(exports2, module2) {
+    "use strict";
+    var fs = null;
+    try {
+      fs = require(
+        /* webpackIgnore: true */
+        "fs"
+      );
+      if (!fs || !fs.readFile || !fs.readFileSync)
+        fs = null;
+    } catch (e) {
+    }
+    module2.exports = fs;
+  }
+});
+
+// node_modules/protobufjs/src/util/fetch.js
+var require_fetch = __commonJS({
+  "node_modules/protobufjs/src/util/fetch.js"(exports2, module2) {
+    "use strict";
+    module2.exports = fetch2;
+    var asPromise = require_aspromise();
+    var fs = require_fs();
+    function fetch2(filename, options, callback) {
+      if (typeof options === "function") {
+        callback = options;
+        options = {};
+      } else if (!options)
+        options = {};
+      if (!callback)
+        return asPromise(fetch2, this, filename, options);
+      if (!options.xhr && fs && fs.readFile)
+        return fs.readFile(filename, function fetchReadFileCallback(err, contents) {
+          return err && typeof XMLHttpRequest !== "undefined" ? fetch2.xhr(filename, options, callback) : err ? callback(err) : callback(null, options.binary ? contents : contents.toString("utf8"));
+        });
+      return fetch2.xhr(filename, options, callback);
+    }
+    fetch2.xhr = function fetch_xhr(filename, options, callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function fetchOnReadyStateChange() {
+        if (xhr.readyState !== 4)
+          return void 0;
+        if (xhr.status !== 0 && xhr.status !== 200)
+          return callback(Error("status " + xhr.status));
+        if (options.binary) {
+          var buffer = xhr.response;
+          if (!buffer) {
+            buffer = [];
+            for (var i = 0; i < xhr.responseText.length; ++i)
+              buffer.push(xhr.responseText.charCodeAt(i) & 255);
+          }
+          return callback(null, typeof Uint8Array !== "undefined" ? new Uint8Array(buffer) : buffer);
+        }
+        return callback(null, xhr.responseText);
+      };
+      if (options.binary) {
+        if ("overrideMimeType" in xhr)
+          xhr.overrideMimeType("text/plain; charset=x-user-defined");
+        xhr.responseType = "arraybuffer";
+      }
+      xhr.open("GET", filename);
+      xhr.send();
+    };
+  }
+});
+
+// node_modules/protobufjs/src/util/path.js
+var require_path = __commonJS({
+  "node_modules/protobufjs/src/util/path.js"(exports2) {
+    "use strict";
+    var path = exports2;
+    var urlRe = /^[a-zA-Z][a-zA-Z0-9+.-]+:\/\//;
+    function normalizeUrl(path2) {
+      if (typeof URL === "undefined" || !urlRe.test(path2))
+        return null;
+      try {
+        return new URL(path2).href;
+      } catch (e) {
+        return null;
+      }
+    }
+    function resolveUrl(originPath, includePath) {
+      if (typeof URL === "undefined" || !urlRe.test(originPath) || urlRe.test(includePath))
+        return null;
+      try {
+        return new URL(includePath, originPath).href;
+      } catch (e) {
+        return null;
+      }
+    }
+    var isAbsolute = (
+      /**
+       * Tests if the specified path is absolute.
+       * @param {string} path Path to test
+       * @returns {boolean} `true` if path is absolute
+       */
+      path.isAbsolute = function isAbsolute2(path2) {
+        return /^(?:\/|\w+:|\\\\\w+)/.test(path2);
+      }
+    );
+    var normalize = (
+      /**
+       * Normalizes the specified path.
+       * @param {string} path Path to normalize
+       * @returns {string} Normalized path
+       */
+      path.normalize = function normalize2(path2) {
+        var normalizedUrl = normalizeUrl(path2);
+        if (normalizedUrl)
+          return normalizedUrl;
+        var firstTwoCharacters = path2.substring(0, 2);
+        var uncPrefix = "";
+        if (firstTwoCharacters === "\\\\") {
+          uncPrefix = firstTwoCharacters;
+          path2 = path2.substring(2);
+        }
+        path2 = path2.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+        var parts = path2.split("/"), absolute = isAbsolute(path2), prefix = "";
+        if (absolute)
+          prefix = parts.shift() + "/";
+        for (var i = 0; i < parts.length; ) {
+          if (parts[i] === "..") {
+            if (i > 0 && parts[i - 1] !== "..")
+              parts.splice(--i, 2);
+            else if (absolute)
+              parts.splice(i, 1);
+            else
+              ++i;
+          } else if (parts[i] === ".")
+            parts.splice(i, 1);
+          else
+            ++i;
+        }
+        return uncPrefix + prefix + parts.join("/");
+      }
+    );
+    path.resolve = function resolve3(originPath, includePath, alreadyNormalized) {
+      var resolvedUrl = resolveUrl(originPath, includePath);
+      if (resolvedUrl)
+        return resolvedUrl;
+      if (!alreadyNormalized)
+        includePath = normalize(includePath);
+      if (isAbsolute(includePath))
+        return includePath;
+      if (!alreadyNormalized)
+        originPath = normalize(originPath);
+      return (originPath = originPath.replace(/(?:\/|^)[^/]+$/, "")).length ? normalize(originPath + "/" + includePath) : includePath;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/namespace.js
+var require_namespace = __commonJS({
+  "node_modules/protobufjs/src/namespace.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Namespace;
+    var ReflectionObject = require_object();
+    Namespace.prototype = Object.create(ReflectionObject.prototype, {
+      constructor: {
+        value: Namespace,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    Namespace.className = "Namespace";
+    var Field = require_field();
+    var util = require_util();
+    var OneOf = require_oneof();
+    var Type;
+    var Service;
+    var Enum;
+    Namespace.fromJSON = function fromJSON(name, json3, depth) {
+      if (depth === void 0)
+        depth = 0;
+      if (depth > util.recursionLimit)
+        throw Error("max depth exceeded");
+      return new Namespace(name, json3.options).addJSON(json3.nested, depth);
+    };
+    function arrayToJSON(array2, toJSONOptions) {
+      if (!(array2 && array2.length))
+        return void 0;
+      var obj = {};
+      for (var i = 0; i < array2.length; ++i)
+        obj[array2[i].name] = array2[i].toJSON(toJSONOptions);
+      return obj;
+    }
+    Namespace.arrayToJSON = arrayToJSON;
+    Namespace.isReservedId = function isReservedId(reserved, id2) {
+      if (reserved) {
+        for (var i = 0; i < reserved.length; ++i)
+          if (typeof reserved[i] !== "string" && reserved[i][0] <= id2 && reserved[i][1] >= id2)
+            return true;
+      }
+      return false;
+    };
+    Namespace.isReservedName = function isReservedName(reserved, name) {
+      if (reserved) {
+        for (var i = 0; i < reserved.length; ++i)
+          if (reserved[i] === name)
+            return true;
+      }
+      return false;
+    };
+    function Namespace(name, options) {
+      ReflectionObject.call(this, name, options);
+      this.nested = void 0;
+      this._nestedArray = null;
+      this._lookupCache = /* @__PURE__ */ Object.create(null);
+      this._needsRecursiveFeatureResolution = true;
+      this._needsRecursiveResolve = true;
+    }
+    function clearCache(namespace) {
+      namespace._nestedArray = null;
+      namespace._lookupCache = /* @__PURE__ */ Object.create(null);
+      var parent = namespace;
+      while (parent = parent.parent) {
+        parent._lookupCache = /* @__PURE__ */ Object.create(null);
+      }
+      return namespace;
+    }
+    Object.defineProperty(Namespace.prototype, "nestedArray", {
+      get: function() {
+        return this._nestedArray || (this._nestedArray = util.toArray(this.nested));
+      }
+    });
+    Namespace.prototype.toJSON = function toJSON(toJSONOptions) {
+      return util.toObject([
+        "options",
+        this.options,
+        "nested",
+        arrayToJSON(this.nestedArray, toJSONOptions)
+      ]);
+    };
+    Namespace.prototype.addJSON = function addJSON(nestedJson, depth) {
+      if (depth === void 0)
+        depth = 0;
+      if (depth > util.recursionLimit)
+        throw Error("max depth exceeded");
+      var ns = this;
+      if (nestedJson) {
+        for (var names = Object.keys(nestedJson), i = 0, nested; i < names.length; ++i) {
+          nested = nestedJson[names[i]];
+          ns.add(
+            // most to least likely
+            (nested.fields !== void 0 ? Type.fromJSON : nested.values !== void 0 ? Enum.fromJSON : nested.methods !== void 0 ? Service.fromJSON : nested.id !== void 0 ? Field.fromJSON : Namespace.fromJSON)(names[i], nested, depth + 1)
+          );
+        }
+      }
+      return this;
+    };
+    Namespace.prototype.get = function get(name) {
+      return this.nested && Object.prototype.hasOwnProperty.call(this.nested, name) ? this.nested[name] : null;
+    };
+    Namespace.prototype.getEnum = function getEnum(name) {
+      if (this.nested && Object.prototype.hasOwnProperty.call(this.nested, name) && this.nested[name] instanceof Enum)
+        return this.nested[name].values;
+      throw Error("no such enum: " + name);
+    };
+    Namespace.prototype.add = function add(object2) {
+      if (!(object2 instanceof Field && object2.extend !== void 0 || object2 instanceof Type || object2 instanceof OneOf || object2 instanceof Enum || object2 instanceof Service || object2 instanceof Namespace))
+        throw TypeError("object must be a valid nested object");
+      if (object2.name === "__proto__")
+        return this;
+      if (!this.nested)
+        this.nested = {};
+      else {
+        var prev = this.get(object2.name);
+        if (prev) {
+          if (prev instanceof Namespace && object2 instanceof Namespace && !(prev instanceof Type || prev instanceof Service)) {
+            var nested = prev.nestedArray;
+            for (var i = 0; i < nested.length; ++i)
+              object2.add(nested[i]);
+            this.remove(prev);
+            if (!this.nested)
+              this.nested = {};
+            object2.setOptions(prev.options, true);
+          } else
+            throw Error("duplicate name '" + object2.name + "' in " + this);
+        }
+      }
+      this.nested[object2.name] = object2;
+      if (!(this instanceof Type || this instanceof Service || this instanceof Enum || this instanceof Field)) {
+        if (!object2._edition) {
+          object2._edition = object2._defaultEdition;
+        }
+      }
+      this._needsRecursiveFeatureResolution = true;
+      this._needsRecursiveResolve = true;
+      var parent = this;
+      while (parent = parent.parent) {
+        parent._needsRecursiveFeatureResolution = true;
+        parent._needsRecursiveResolve = true;
+      }
+      object2.onAdd(this);
+      return clearCache(this);
+    };
+    Namespace.prototype.remove = function remove(object2) {
+      if (!(object2 instanceof ReflectionObject))
+        throw TypeError("object must be a ReflectionObject");
+      if (object2.parent !== this)
+        throw Error(object2 + " is not a member of " + this);
+      if (!util.remove(this.nested, object2, object2.name))
+        throw Error(object2 + " is not a member of " + this);
+      if (!Object.keys(this.nested).length)
+        this.nested = void 0;
+      object2.onRemove(this);
+      return clearCache(this);
+    };
+    Namespace.prototype.define = function define2(path, json3) {
+      if (util.isString(path))
+        path = path.split(".");
+      else if (!Array.isArray(path))
+        throw TypeError("illegal path");
+      if (path && path.length && path[0] === "")
+        throw Error("path must be relative");
+      if (path.length > util.recursionLimit)
+        throw Error("max depth exceeded");
+      var ptr = this;
+      while (path.length > 0) {
+        var part = path.shift();
+        if (ptr.nested && ptr.nested[part]) {
+          ptr = ptr.nested[part];
+          if (!(ptr instanceof Namespace))
+            throw Error("path conflicts with non-namespace objects");
+        } else
+          ptr.add(ptr = new Namespace(part));
+      }
+      if (json3)
+        ptr.addJSON(json3);
+      return ptr;
+    };
+    Namespace.prototype.resolveAll = function resolveAll() {
+      if (!this._needsRecursiveResolve) return this;
+      if (this._needsRecursiveFeatureResolution)
+        this._resolveFeaturesRecursive(this._edition);
+      var nested = this.nestedArray, i = 0;
+      this.resolve();
+      while (i < nested.length)
+        if (nested[i] instanceof Namespace)
+          nested[i++].resolveAll();
+        else
+          nested[i++].resolve();
+      this._needsRecursiveResolve = false;
+      return this;
+    };
+    Namespace.prototype._resolveFeaturesRecursive = function _resolveFeaturesRecursive(edition) {
+      if (!this._needsRecursiveFeatureResolution) return this;
+      this._needsRecursiveFeatureResolution = false;
+      edition = this._edition || edition;
+      ReflectionObject.prototype._resolveFeaturesRecursive.call(this, edition);
+      this.nestedArray.forEach((nested) => {
+        nested._resolveFeaturesRecursive(edition);
+      });
+      return this;
+    };
+    Namespace.prototype.lookup = function lookup(path, filterTypes, parentAlreadyChecked) {
+      if (typeof filterTypes === "boolean") {
+        parentAlreadyChecked = filterTypes;
+        filterTypes = void 0;
+      } else if (filterTypes && !Array.isArray(filterTypes))
+        filterTypes = [filterTypes];
+      if (util.isString(path) && path.length) {
+        if (path === ".")
+          return this.root;
+        path = path.split(".");
+      } else if (!path.length)
+        return this;
+      var flatPath = path.join(".");
+      if (path[0] === "")
+        return this.root.lookup(path.slice(1), filterTypes);
+      var found = this._lookupImpl(path, flatPath);
+      if (found && (!filterTypes || filterTypes.indexOf(found.constructor) > -1)) {
+        return found;
+      }
+      found = this.root._fullyQualifiedObjects && this.root._fullyQualifiedObjects["." + flatPath];
+      if (found && (!filterTypes || filterTypes.indexOf(found.constructor) > -1)) {
+        return found;
+      }
+      if (parentAlreadyChecked)
+        return null;
+      var current = this;
+      while (current.parent) {
+        found = current.parent._lookupImpl(path, flatPath);
+        if (found && (!filterTypes || filterTypes.indexOf(found.constructor) > -1)) {
+          return found;
+        }
+        current = current.parent;
+      }
+      return null;
+    };
+    Namespace.prototype._lookupImpl = function lookup(path, flatPath) {
+      if (Object.prototype.hasOwnProperty.call(this._lookupCache, flatPath)) {
+        return this._lookupCache[flatPath];
+      }
+      var found = this.get(path[0]);
+      var exact = null;
+      if (found) {
+        if (path.length === 1) {
+          exact = found;
+        } else if (found instanceof Namespace) {
+          path = path.slice(1);
+          exact = found._lookupImpl(path, path.join("."));
+        }
+      } else {
+        for (var i = 0; i < this.nestedArray.length; ++i)
+          if (this._nestedArray[i] instanceof Namespace && (found = this._nestedArray[i]._lookupImpl(path, flatPath))) {
+            exact = found;
+            break;
+          }
+      }
+      this._lookupCache[flatPath] = exact;
+      return exact;
+    };
+    Namespace.prototype.lookupType = function lookupType(path) {
+      var found = this.lookup(path, [Type]);
+      if (!found)
+        throw Error("no such type: " + path);
+      return found;
+    };
+    Namespace.prototype.lookupEnum = function lookupEnum(path) {
+      var found = this.lookup(path, [Enum]);
+      if (!found)
+        throw Error("no such Enum '" + path + "' in " + this);
+      return found;
+    };
+    Namespace.prototype.lookupTypeOrEnum = function lookupTypeOrEnum(path) {
+      var found = this.lookup(path, [Type, Enum]);
+      if (!found)
+        throw Error("no such Type or Enum '" + path + "' in " + this);
+      return found;
+    };
+    Namespace.prototype.lookupService = function lookupService(path) {
+      var found = this.lookup(path, [Service]);
+      if (!found)
+        throw Error("no such Service '" + path + "' in " + this);
+      return found;
+    };
+    Namespace._configure = function(Type_, Service_, Enum_) {
+      Type = Type_;
+      Service = Service_;
+      Enum = Enum_;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/mapfield.js
+var require_mapfield = __commonJS({
+  "node_modules/protobufjs/src/mapfield.js"(exports2, module2) {
+    "use strict";
+    module2.exports = MapField;
+    var Field = require_field();
+    MapField.prototype = Object.create(Field.prototype, {
+      constructor: {
+        value: MapField,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    MapField.className = "MapField";
+    var types = require_types();
+    var util = require_util();
+    function MapField(name, id2, keyType, type, options, comment) {
+      Field.call(this, name, id2, type, void 0, void 0, options, comment);
+      if (!util.isString(keyType))
+        throw TypeError("keyType must be a string");
+      this.keyType = keyType;
+      this.resolvedKeyType = null;
+      this.map = true;
+    }
+    MapField.fromJSON = function fromJSON(name, json3) {
+      var field = new MapField(name, json3.id, json3.keyType, json3.type, json3.options, json3.comment);
+      if (json3.protoName)
+        field.protoName = json3.protoName;
+      if (json3.jsonName !== void 0)
+        field.jsonName = json3.jsonName;
+      else if (json3.options && json3.options.json_name !== void 0)
+        field.jsonName = json3.options.json_name;
+      return field;
+    };
+    MapField.prototype.toJSON = function toJSON(toJSONOptions) {
+      var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
+      return util.toObject([
+        "keyType",
+        this.keyType,
+        "type",
+        this.type,
+        "id",
+        this.id,
+        "extend",
+        this.extend,
+        "protoName",
+        this.protoName !== this.name ? this.protoName : void 0,
+        "jsonName",
+        this.jsonName !== util.jsonName(this.protoName || this.name) ? this.jsonName : void 0,
+        "options",
+        this.options,
+        "comment",
+        keepComments ? this.comment : void 0
+      ]);
+    };
+    MapField.prototype.resolve = function resolve3() {
+      if (this.resolved)
+        return this;
+      if (types.mapKey[this.keyType] === void 0)
+        throw Error("invalid key type: " + this.keyType);
+      return Field.prototype.resolve.call(this);
+    };
+    MapField.d = function decorateMapField(fieldId, fieldKeyType, fieldValueType) {
+      if (typeof fieldValueType === "function")
+        fieldValueType = util.decorateType(fieldValueType).name;
+      else if (fieldValueType && typeof fieldValueType === "object")
+        fieldValueType = util.decorateEnum(fieldValueType).name;
+      return function mapFieldDecorator(prototype, fieldName) {
+        util.decorateType(prototype.constructor).add(new MapField(fieldName, fieldId, fieldKeyType, fieldValueType));
+      };
+    };
+  }
+});
+
+// node_modules/protobufjs/src/method.js
+var require_method = __commonJS({
+  "node_modules/protobufjs/src/method.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Method;
+    var ReflectionObject = require_object();
+    Method.prototype = Object.create(ReflectionObject.prototype, {
+      constructor: {
+        value: Method,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    Method.className = "Method";
+    var util = require_util();
+    function Method(name, type, requestType, responseType, requestStream, responseStream, options, comment, parsedOptions) {
+      if (util.isObject(requestStream)) {
+        options = requestStream;
+        requestStream = responseStream = void 0;
+      } else if (util.isObject(responseStream)) {
+        options = responseStream;
+        responseStream = void 0;
+      }
+      if (!(type === void 0 || util.isString(type)))
+        throw TypeError("type must be a string");
+      if (!util.isString(requestType))
+        throw TypeError("requestType must be a string");
+      if (!util.isString(responseType))
+        throw TypeError("responseType must be a string");
+      ReflectionObject.call(this, name, options);
+      this.type = type || "rpc";
+      this.requestType = requestType;
+      this.requestStream = requestStream ? true : void 0;
+      this.responseType = responseType;
+      this.responseStream = responseStream ? true : void 0;
+      this.path = "/" + this.name;
+      this.resolvedRequestType = null;
+      this.resolvedResponseType = null;
+      this.comment = comment;
+      this.parsedOptions = parsedOptions;
+    }
+    Method.fromJSON = function fromJSON(name, json3) {
+      return new Method(name, json3.type, json3.requestType, json3.responseType, json3.requestStream, json3.responseStream, json3.options, json3.comment, json3.parsedOptions);
+    };
+    Method.prototype.toJSON = function toJSON(toJSONOptions) {
+      var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
+      return util.toObject([
+        "type",
+        this.type !== "rpc" && /* istanbul ignore next */
+        this.type || void 0,
+        "requestType",
+        this.requestType,
+        "requestStream",
+        this.requestStream,
+        "responseType",
+        this.responseType,
+        "responseStream",
+        this.responseStream,
+        "options",
+        this.options,
+        "comment",
+        keepComments ? this.comment : void 0,
+        "parsedOptions",
+        this.parsedOptions
+      ]);
+    };
+    Method.prototype.resolve = function resolve3() {
+      if (this.resolved)
+        return this;
+      if (this.parent) {
+        var serviceName = this.parent.fullName;
+        if (serviceName.charAt(0) === ".")
+          serviceName = serviceName.substring(1);
+        this.path = "/" + serviceName + "/" + this.name;
+      } else
+        this.path = "/" + this.name;
+      this.resolvedRequestType = this.parent.lookupType(this.requestType);
+      this.resolvedResponseType = this.parent.lookupType(this.responseType);
+      return ReflectionObject.prototype.resolve.call(this);
+    };
+  }
+});
+
+// node_modules/protobufjs/src/service.js
+var require_service2 = __commonJS({
+  "node_modules/protobufjs/src/service.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Service;
+    var Namespace = require_namespace();
+    Service.prototype = Object.create(Namespace.prototype, {
+      constructor: {
+        value: Service,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    Service.className = "Service";
+    var Method = require_method();
+    var util = require_util();
+    var rpc = require_rpc();
+    function Service(name, options) {
+      Namespace.call(this, name, options);
+      this.methods = {};
+      this._methodsArray = null;
+    }
+    Service.fromJSON = function fromJSON(name, json3, depth) {
+      if (depth === void 0)
+        depth = 0;
+      if (depth > util.recursionLimit)
+        throw Error("max depth exceeded");
+      var service = new Service(name, json3.options);
+      if (json3.methods)
+        for (var names = Object.keys(json3.methods), i = 0; i < names.length; ++i)
+          service.add(Method.fromJSON(names[i], json3.methods[names[i]]));
+      if (json3.nested)
+        service.addJSON(json3.nested, depth);
+      if (json3.edition)
+        service._edition = json3.edition;
+      service.comment = json3.comment;
+      service._defaultEdition = "proto3";
+      return service;
+    };
+    Service.prototype.toJSON = function toJSON(toJSONOptions) {
+      var inherited = Namespace.prototype.toJSON.call(this, toJSONOptions);
+      var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
+      return util.toObject([
+        "edition",
+        this._editionToJSON(),
+        "options",
+        inherited && inherited.options || void 0,
+        "methods",
+        Namespace.arrayToJSON(this.methodsArray, toJSONOptions) || /* istanbul ignore next */
+        {},
+        "nested",
+        inherited && inherited.nested || void 0,
+        "comment",
+        keepComments ? this.comment : void 0
+      ]);
+    };
+    Object.defineProperty(Service.prototype, "methodsArray", {
+      get: function() {
+        return this._methodsArray || (this._methodsArray = util.toArray(this.methods));
+      }
+    });
+    function clearCache(service) {
+      service._methodsArray = null;
+      return service;
+    }
+    Service.prototype.get = function get(name) {
+      return Object.prototype.hasOwnProperty.call(this.methods, name) ? this.methods[name] : Namespace.prototype.get.call(this, name);
+    };
+    Service.prototype.resolveAll = function resolveAll() {
+      if (!this._needsRecursiveResolve) return this;
+      Namespace.prototype.resolve.call(this);
+      var methods = this.methodsArray;
+      for (var i = 0; i < methods.length; ++i)
+        methods[i].resolve();
+      return this;
+    };
+    Service.prototype._resolveFeaturesRecursive = function _resolveFeaturesRecursive(edition) {
+      if (!this._needsRecursiveFeatureResolution) return this;
+      edition = this._edition || edition;
+      Namespace.prototype._resolveFeaturesRecursive.call(this, edition);
+      this.methodsArray.forEach((method) => {
+        method._resolveFeaturesRecursive(edition);
+      });
+      return this;
+    };
+    Service.prototype.add = function add(object2) {
+      if (this.get(object2.name))
+        throw Error("duplicate name '" + object2.name + "' in " + this);
+      if (object2 instanceof Method) {
+        if (object2.name === "__proto__")
+          return this;
+        this.methods[object2.name] = object2;
+        object2.parent = this;
+        return clearCache(this);
+      }
+      return Namespace.prototype.add.call(this, object2);
+    };
+    Service.prototype.remove = function remove(object2) {
+      if (object2 instanceof Method) {
+        if (this.methods[object2.name] !== object2)
+          throw Error(object2 + " is not a member of " + this);
+        delete this.methods[object2.name];
+        object2.parent = null;
+        return clearCache(this);
+      }
+      return Namespace.prototype.remove.call(this, object2);
+    };
+    Service.prototype.create = function create(rpcImpl, requestDelimited, responseDelimited) {
+      var rpcService = new rpc.Service(rpcImpl, requestDelimited, responseDelimited);
+      for (var i = 0, method; i < /* initializes */
+      this.methodsArray.length; ++i) {
+        var methodName = util.lcFirst((method = this._methodsArray[i]).resolve().name).replace(/[^$\w_]/g, "");
+        rpcService[methodName] = /* @__PURE__ */ (function(method2, requestType, responseType) {
+          return function rpcMethod(request, callback) {
+            return rpc.Service.prototype.rpcCall.call(this, method2, requestType, responseType, request, callback);
+          };
+        })(method, method.resolvedRequestType.ctor, method.resolvedResponseType.ctor);
+      }
+      return rpcService;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/message.js
+var require_message = __commonJS({
+  "node_modules/protobufjs/src/message.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Message;
+    var util = require_minimal();
+    function Message(properties) {
+      if (properties) {
+        for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+          if (properties[keys[i]] != null && keys[i] !== "__proto__")
+            this[keys[i]] = properties[keys[i]];
+      }
+    }
+    Message.create = function create(properties) {
+      return this.$type.create(properties);
+    };
+    Message.encode = function encode3(message, writer) {
+      return this.$type.encode(message, writer);
+    };
+    Message.encodeDelimited = function encodeDelimited(message, writer) {
+      return this.$type.encodeDelimited(message, writer);
+    };
+    Message.decode = function decode3(reader) {
+      return this.$type.decode(reader);
+    };
+    Message.decodeDelimited = function decodeDelimited(reader) {
+      return this.$type.decodeDelimited(reader);
+    };
+    Message.verify = function verify(message) {
+      return this.$type.verify(message);
+    };
+    Message.fromObject = function fromObject(object2) {
+      return this.$type.fromObject(object2);
+    };
+    Message.toObject = function toObject(message, options) {
+      return this.$type.toObject(message, options);
+    };
+    Message.prototype.toJSON = function toJSON() {
+      return this.$type.toObject(this, util.toJSONOptions);
+    };
+  }
+});
+
+// node_modules/protobufjs/src/decoder.js
+var require_decoder = __commonJS({
+  "node_modules/protobufjs/src/decoder.js"(exports2, module2) {
+    "use strict";
+    module2.exports = decoder;
+    var Enum = require_enum();
+    var types = require_types();
+    var util = require_util();
+    function missing(field) {
+      return "missing required '" + field.name + "'";
+    }
+    function stringMethod(field) {
+      return field._features.utf8_validation === "VERIFY" ? "stringVerify" : "string";
+    }
+    function genPreserveUnknown(gen, ref) {
+      return gen("if(!r.discardUnknown){")('util.makeProp(m,"$unknowns",false);')("(m.$unknowns||(m.$unknowns=[])).push(%s)", ref)("}");
+    }
+    function decoder(mtype) {
+      var hasMapField = false, needsValueVar = false, i = 0;
+      for (; i < mtype.fieldsArray.length; ++i) {
+        var pfield = mtype._fieldsArray[i];
+        if (pfield.map)
+          hasMapField = true;
+        if (pfield.resolvedType instanceof Enum || !pfield.repeated && !pfield.map && !pfield.hasPresence)
+          needsValueVar = true;
+      }
+      var gen = util.codegen(["r", "l", "z", "q", "g"])("if(!(r instanceof Reader))")("r=Reader.create(r)")("if(q===undefined)q=0")("if(q>Reader.recursionLimit)")('throw Error("max depth exceeded")')("var c,m" + (hasMapField ? ",k,v" : needsValueVar ? ",v" : ""))("if(l===undefined)")("c=r.len")("else{")("c=r.pos+l")("if(c>r.len)")('throw RangeError("index out of range")')("l=r.len")("r.len=c")("}")("m=g||new C")("while(r.pos<c){")("var s=r.pos")("var t=r.tag()")("if(t===z){")("z=undefined")("break")("}");
+      if (mtype.fieldsArray.length) gen("var u=t&7")("switch(t>>>=3){");
+      for (i = 0; i < /* initializes */
+      mtype.fieldsArray.length; ++i) {
+        var field = mtype._fieldsArray[i].resolve(), type = field.resolvedType instanceof Enum ? "int32" : field.type, ref = "m" + util.safeProp(field.name), closed = field.resolvedType instanceof Enum && field.resolvedType._features.enum_type === "CLOSED";
+        if (field.map) {
+          gen("case %i:{", field.id)("if(u!==2)")("break");
+          if (!closed) gen("if(%s===util.emptyObject)", ref)("%s={}", ref);
+          gen("var c2=r.size()+r.pos")("if(c2>r.len)")('throw RangeError("index out of range")')("r.len=c2");
+          if (types.defaults[field.keyType] !== void 0) gen("k=%j", types.defaults[field.keyType]);
+          else gen("k=null");
+          if (types.long[type] !== void 0) gen("v=util.Long?util.Long.fromNumber(0,%j):0", type === "uint64" || type === "fixed64");
+          else if (types.defaults[type] !== void 0) gen("v=%j", types.defaults[type]);
+          else gen("v=null");
+          gen("while(r.pos<c2){")("var t2=r.tag()")("u=t2&7")("switch(t2>>>=3){")("case 1:")("if(u!==%i)", types.mapKey[field.keyType])("break")("k=r.%s()", field.keyType === "string" ? stringMethod(field) : field.keyType)("continue")("case 2:")("if(u!==%i)", types.basic[type] === void 0 ? 2 : types.basic[type])("break");
+          if (types.basic[type] === void 0) gen("v=types[%i].decode(r,r.size(),undefined,q+1,v)", i);
+          else gen("v=r.%s()", type === "string" ? stringMethod(field) : type);
+          gen("continue")("}")("r.skipType(u,q,t2)")("}");
+          gen("if(r.pos!==c2)")('throw RangeError("index out of range")')("r.len=c");
+          if (closed) {
+            gen("if(types[%i].valuesById[v]===undefined){", i);
+            genPreserveUnknown(gen, "r.raw(s,r.pos)")("continue")("}")("if(%s===util.emptyObject)", ref)("%s={}", ref);
+          }
+          var val = types.basic[type] === void 0 ? "v||new types[" + i + "].ctor" : "v";
+          if (types.long[field.keyType] !== void 0) gen('%s[typeof k==="object"?util.longToHash(k):k]=%s', ref, val);
+          else {
+            if (field.keyType === "string") gen('if(k==="__proto__")')("util.makeProp(%s,k)", ref);
+            gen("%s[k]=%s", ref, val);
+          }
+        } else if (field.repeated) {
+          gen("case %i:", field.id)("{");
+          if (types.packed[type] !== void 0) {
+            gen("if(u===2){");
+            if (closed) {
+              gen("var c2=r.size()+r.pos")("if(c2>r.len)")('throw RangeError("index out of range")')("r.len=c2")("while(r.pos<c2){")("s=r.pos")("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref)("%s.push(v)", ref)("}else");
+              genPreserveUnknown(gen, "util.rawField(" + field.id + ",0,r.raw(s,r.pos))")("}");
+              gen("if(r.pos!==c2)")('throw RangeError("index out of range")')("r.len=c");
+            } else gen("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref)("r.%ss(%s)", type, ref);
+            gen("continue")("}");
+          }
+          gen("if(u!==%i)", types.basic[type] === void 0 ? field.delimited ? 3 : 2 : types.basic[type])("break");
+          if (!closed) gen("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref);
+          if (types.basic[type] === void 0) {
+            if (field.delimited) gen("%s.push(types[%i].decode(r,undefined,%i,q+1))", ref, i, field.id * 8 + 4);
+            else gen("%s.push(types[%i].decode(r,r.size(),undefined,q+1))", ref, i);
+          } else if (closed) {
+            gen("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref)("%s.push(v)", ref)("}else");
+            genPreserveUnknown(gen, "r.raw(s,r.pos)");
+          } else gen("%s.push(r.%s())", ref, type === "string" ? stringMethod(field) : type);
+        } else if (types.basic[type] === void 0) {
+          gen("case %i:{", field.id)("if(u!==%i)", field.delimited ? 3 : 2)("break");
+          if (field.delimited) gen("%s=types[%i].decode(r,undefined,%i,q+1,%s)", ref, i, field.id * 8 + 4, ref);
+          else gen("%s=types[%i].decode(r,r.size(),undefined,q+1,%s)", ref, i, ref);
+        } else if (field.hasPresence) {
+          gen("case %i:{", field.id)("if(u!==%i)", types.basic[type])("break");
+          if (closed) {
+            gen("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("%s=v", ref);
+            if (field.partOf) gen("m%s=%j", util.safeProp(field.partOf.name), field.name);
+            gen("}else");
+            genPreserveUnknown(gen, "r.raw(s,r.pos)");
+          } else gen("%s=r.%s()", ref, type === "string" ? stringMethod(field) : type);
+        } else {
+          gen("case %i:{", field.id)("if(u!==%i)", types.basic[type])("break");
+          if (closed) {
+            gen("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("if(v!==%j)", field.typeDefault)("%s=v", ref)("else")("delete %s", ref)("}else{");
+            genPreserveUnknown(gen, "r.raw(s,r.pos)")("}");
+          } else {
+            if (field.resolvedType instanceof Enum && field.typeDefault !== 0) gen("if((v=r.%s())!==%j)", type, field.typeDefault);
+            else if (type === "string") gen("if((v=r.%s()).length)", stringMethod(field));
+            else if (type === "bytes") gen("if((v=r.%s()).length)", type);
+            else if (types.long[type] !== void 0) gen('if(typeof(v=r.%s())==="object"?v.low||v.high:v!==0)', type);
+            else if (type === "double" || type === "float") gen("if(!Object.is(v=r.%s(),0))", type);
+            else gen("if(v=r.%s())", type);
+            gen("%s=v", ref)("else")("delete %s", ref);
+          }
+        }
+        if (field.partOf && !closed) gen("m%s=%j", util.safeProp(field.partOf.name), field.name);
+        gen("continue")("}");
+      }
+      if (i) gen("}");
+      gen("r.skipType(%s,q,t)", i ? "u" : "t&7");
+      genPreserveUnknown(gen, "r.raw(s,r.pos)")("}")("if(l!==undefined){")("if(r.pos!==c)")('throw RangeError("index out of range")')("r.len=l")("}")("if(z!==undefined)")('throw Error("missing end group")');
+      for (i = 0; i < mtype._fieldsArray.length; ++i) {
+        var rfield = mtype._fieldsArray[i];
+        if (rfield.required) gen("if(!Object.hasOwnProperty.call(m,%j))", rfield.name)("throw util.ProtocolError(%j,{instance:m})", missing(rfield));
+      }
+      return gen("return m");
+    }
+  }
+});
+
+// node_modules/protobufjs/src/verifier.js
+var require_verifier = __commonJS({
+  "node_modules/protobufjs/src/verifier.js"(exports2, module2) {
+    "use strict";
+    module2.exports = verifier;
+    var Enum = require_enum();
+    var util = require_util();
+    function invalid(field, expected) {
+      return field.name + ": " + expected + (field.repeated && expected !== "array" ? "[]" : field.map && expected !== "object" ? "{k:" + field.keyType + "}" : "") + " expected";
+    }
+    function genVerifyValue(gen, field, fieldIndex, ref) {
+      var resolvedType = field.resolvedType;
+      if (resolvedType) {
+        if (resolvedType instanceof Enum) {
+          if (resolvedType._features.enum_type === "CLOSED") {
+            gen("switch(%s){", ref)("default:")("return%j", invalid(field, "enum value"));
+            for (var keys = Object.keys(resolvedType.values), j = 0; j < keys.length; ++j) gen("case %i:", resolvedType.values[keys[j]]);
+            gen("break")("}");
+          } else gen('if(typeof %s!=="number"||(%s|0)!==%s)', ref, ref, ref)("return%j", invalid(field, "enum value"));
+        } else {
+          gen("{")("var e=types[%i].verify(%s,q+1);", fieldIndex, ref)("if(e)")("return%j+e", field.name + ".")("}");
+        }
+      } else {
+        switch (field.type) {
+          case "int32":
+          case "uint32":
+          case "sint32":
+          case "fixed32":
+          case "sfixed32":
+            gen("if(!util.isInteger(%s))", ref)("return%j", invalid(field, "integer"));
+            break;
+          case "int64":
+          case "uint64":
+          case "sint64":
+          case "fixed64":
+          case "sfixed64":
+            gen("if(!util.isInteger(%s)&&!(%s&&util.isInteger(%s.low)&&util.isInteger(%s.high)))", ref, ref, ref, ref)("return%j", invalid(field, "integer|Long"));
+            break;
+          case "float":
+          case "double":
+            gen('if(typeof %s!=="number")', ref)("return%j", invalid(field, "number"));
+            break;
+          case "bool":
+            gen('if(typeof %s!=="boolean")', ref)("return%j", invalid(field, "boolean"));
+            break;
+          case "string":
+            gen("if(!util.isString(%s))", ref)("return%j", invalid(field, "string"));
+            break;
+          case "bytes":
+            gen('if(!(%s&&typeof %s.length==="number"||util.isString(%s)))', ref, ref, ref)("return%j", invalid(field, "buffer"));
+            break;
+        }
+      }
+      return gen;
+    }
+    function genVerifyKey(gen, field, ref) {
+      switch (field.keyType) {
+        case "int32":
+        case "uint32":
+        case "sint32":
+        case "fixed32":
+        case "sfixed32":
+          gen("if(!util.key32Re.test(%s))", ref)("return%j", invalid(field, "integer key"));
+          break;
+        case "int64":
+        case "uint64":
+        case "sint64":
+        case "fixed64":
+        case "sfixed64":
+          gen("if(!util.key64Re.test(%s))", ref)("return%j", invalid(field, "integer|Long key"));
+          break;
+        case "bool":
+          gen("if(!util.key2Re.test(%s))", ref)("return%j", invalid(field, "boolean key"));
+          break;
+      }
+      return gen;
+    }
+    function verifier(mtype) {
+      var gen = util.codegen(["m", "q"])('if(typeof m!=="object"||m===null)')("return%j", "object expected")("if(q===undefined)q=0")("if(q>util.recursionLimit)")("return%j", "max depth exceeded");
+      var oneofs = mtype.oneofsArray, seenFirstField = {};
+      if (oneofs.length) gen("var p={}");
+      for (var i = 0; i < /* initializes */
+      mtype.fieldsArray.length; ++i) {
+        var field = mtype._fieldsArray[i].resolve(), ref = "m" + util.safeProp(field.name);
+        if (field.optional) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)){", ref, field.name);
+        if (field.map) {
+          gen("if(!util.isObject(%s))", ref)("return%j", invalid(field, "object"))("var k=Object.keys(%s)", ref)("for(var i=0;i<k.length;++i){");
+          genVerifyKey(gen, field, "k[i]");
+          genVerifyValue(gen, field, i, ref + "[k[i]]")("}");
+        } else if (field.repeated) {
+          gen("if(!Array.isArray(%s))", ref)("return%j", invalid(field, "array"))("for(var i=0;i<%s.length;++i){", ref);
+          genVerifyValue(gen, field, i, ref + "[i]")("}");
+        } else {
+          if (field.partOf) {
+            var oneofProp = util.safeProp(field.partOf.name);
+            if (seenFirstField[field.partOf.name] === 1) gen("if(p%s===1)", oneofProp)("return%j", field.partOf.name + ": multiple values");
+            seenFirstField[field.partOf.name] = 1;
+            gen("p%s=1", oneofProp);
+          }
+          genVerifyValue(gen, field, i, ref);
+        }
+        if (field.optional) gen("}");
+      }
+      return gen("return null");
+    }
+  }
+});
+
+// node_modules/protobufjs/src/converter.js
+var require_converter = __commonJS({
+  "node_modules/protobufjs/src/converter.js"(exports2) {
+    "use strict";
+    var converter = exports2;
+    var Enum = require_enum();
+    var types = require_types();
+    var util = require_util();
+    function genValuePartial_fromObject(gen, field, fieldIndex, prop, dstProp) {
+      if (field.resolvedType) {
+        if (field.resolvedType instanceof Enum) {
+          var dst = dstProp ? "m" + dstProp + "[m" + dstProp + ".length]" : "m" + prop;
+          gen("switch(d%s){", prop);
+          for (var values = field.resolvedType.values, keys = Object.keys(values), i = 0; i < keys.length; ++i) {
+            gen("case%j:", keys[i])("case %i:", values[keys[i]])("%s=%j", dst, values[keys[i]])("break");
+          }
+          gen("default:");
+          if (field.resolvedType._features.enum_type !== "CLOSED") {
+            gen('if(typeof d%s==="number"&&(d%s|0)===d%s)', prop, prop, prop)("%s=d%s", dst, prop);
+          }
+          gen("}");
+        } else gen("if(!util.isObject(d%s))", prop)("throw TypeError(%j)", field.fullName + ": object expected")("m%s=types[%i].fromObject(d%s,q+1)", prop, fieldIndex, prop);
+      } else {
+        var isUnsigned = false;
+        switch (field.type) {
+          case "double":
+          case "float":
+            gen("m%s=Number(d%s)", prop, prop);
+            break;
+          case "uint32":
+          case "fixed32":
+            gen("m%s=d%s>>>0", prop, prop);
+            break;
+          case "int32":
+          case "sint32":
+          case "sfixed32":
+            gen("m%s=d%s|0", prop, prop);
+            break;
+          case "uint64":
+          case "fixed64":
+            isUnsigned = true;
+          // eslint-disable-next-line no-fallthrough
+          case "int64":
+          case "sint64":
+          case "sfixed64":
+            gen("if(util.Long)")("m%s=util.Long.fromValue(d%s,%j)", prop, prop, isUnsigned)('else if(typeof d%s==="string")', prop)("m%s=parseInt(d%s,10)", prop, prop)('else if(typeof d%s==="number")', prop)("m%s=d%s", prop, prop)('else if(typeof d%s==="object")', prop)("m%s=new util.LongBits(d%s.low>>>0,d%s.high>>>0).toNumber(%s)", prop, prop, prop, isUnsigned ? "true" : "");
+            break;
+          case "bytes":
+            gen('if(typeof d%s==="string")', prop)("util.base64.decode(d%s,m%s=util.newBuffer(util.base64.length(d%s)),0)", prop, prop, prop)("else if(d%s.length>=0)", prop)("m%s=d%s", prop, prop);
+            break;
+          case "string":
+            gen("m%s=String(d%s)", prop, prop);
+            break;
+          case "bool":
+            gen("m%s=Boolean(d%s)", prop, prop);
+            break;
+        }
+      }
+      return gen;
+    }
+    converter.fromObject = function fromObject(mtype) {
+      var fields = mtype.fieldsArray;
+      var gen = util.codegen(["d", "q"])("if(d instanceof C)")("return d")("if(!util.isObject(d))")("throw TypeError(%j)", mtype.fullName + ": object expected")("if(q===undefined)q=0")("if(q>util.recursionLimit)")('throw Error("max depth exceeded")');
+      if (!fields.length) return gen("return new C");
+      gen("var m=new C");
+      for (var i = 0; i < fields.length; ++i) {
+        var field = fields[i].resolve(), prop = util.safeProp(field.name), implicitPresence = !field.hasPresence && !field.repeated && !field.map && (field.resolvedType instanceof Enum || types.basic[field.type] !== void 0);
+        if (field.map) {
+          gen("if(d%s){", prop)("if(!util.isObject(d%s))", prop)("throw TypeError(%j)", field.fullName + ": object expected")("m%s={}", prop)("for(var ks=Object.keys(d%s),i=0;i<ks.length;++i){", prop);
+          gen('if(ks[i]==="__proto__")')("util.makeProp(m%s,ks[i])", prop);
+          genValuePartial_fromObject(
+            gen,
+            field,
+            /* not sorted */
+            i,
+            prop + "[ks[i]]"
+          )("}")("}");
+        } else if (field.repeated) {
+          gen("if(d%s){", prop)("if(!Array.isArray(d%s))", prop)("throw TypeError(%j)", field.fullName + ": array expected");
+          if (field.resolvedType instanceof Enum) gen("m%s=[]", prop);
+          else gen("m%s=Array(d%s.length)", prop, prop);
+          gen("for(var i=0;i<d%s.length;++i){", prop);
+          genValuePartial_fromObject(
+            gen,
+            field,
+            /* not sorted */
+            i,
+            prop + "[i]",
+            field.resolvedType instanceof Enum ? prop : void 0
+          )("}")("}");
+        } else {
+          if (!(field.resolvedType instanceof Enum)) gen("if(d%s!=null){", prop);
+          if (implicitPresence) {
+            if (field.resolvedType instanceof Enum) gen('if(d%s!==%j&&(typeof d%s!=="string"||types[%i].values[d%s]!==%j)){', prop, field.typeDefault, prop, i, prop, field.typeDefault);
+            else if (field.type === "string") gen('if(typeof d%s!=="string"||d%s.length){', prop, prop);
+            else if (field.type === "bytes") gen("if(d%s.length){", prop);
+            else if (field.type === "bool") gen("if(d%s){", prop);
+            else if (field.type === "double" || field.type === "float") gen("if(!Object.is(Number(d%s),0)){", prop);
+            else if (types.long[field.type] !== void 0) gen('if(typeof d%s==="object"?d%s.low||d%s.high:Number(d%s)!==0){', prop, prop, prop, prop);
+            else gen("if(Number(d%s)!==0){", prop);
+          }
+          genValuePartial_fromObject(
+            gen,
+            field,
+            /* not sorted */
+            i,
+            prop
+          );
+          if (implicitPresence) gen("}");
+          if (!(field.resolvedType instanceof Enum)) gen("}");
+        }
+      }
+      return gen("return m");
+    };
+    function genValuePartial_toObject(gen, field, fieldIndex, dstProp, srcProp) {
+      if (!srcProp)
+        srcProp = dstProp;
+      if (field.resolvedType) {
+        if (field.resolvedType instanceof Enum) gen("d%s=o.enums===String?(types[%i].values[m%s]===undefined?m%s:types[%i].values[m%s]):m%s", dstProp, fieldIndex, srcProp, srcProp, fieldIndex, srcProp, srcProp);
+        else gen("d%s=types[%i].toObject(m%s,o,q+1)", dstProp, fieldIndex, srcProp);
+      } else {
+        var isUnsigned = false;
+        switch (field.type) {
+          case "double":
+          case "float":
+            gen("d%s=o.json&&!isFinite(m%s)?String(m%s):m%s", dstProp, srcProp, srcProp, srcProp);
+            break;
+          case "uint64":
+          case "fixed64":
+            isUnsigned = true;
+          // eslint-disable-next-line no-fallthrough
+          case "int64":
+          case "sint64":
+          case "sfixed64":
+            gen('if(typeof BigInt!=="undefined"&&o.longs===BigInt)')('d%s=typeof m%s==="number"?BigInt(m%s):util.Long.fromBits(m%s.low>>>0,m%s.high>>>0,%j).toBigInt()', dstProp, srcProp, srcProp, srcProp, srcProp, isUnsigned)('else if(typeof m%s==="number")', srcProp)("d%s=o.longs===String?String(m%s):m%s", dstProp, srcProp, srcProp)("else")("d%s=o.longs===String?util.Long.prototype.toString.call(m%s):o.longs===Number?new util.LongBits(m%s.low>>>0,m%s.high>>>0).toNumber(%s):m%s", dstProp, srcProp, srcProp, srcProp, isUnsigned ? "true" : "", srcProp);
+            break;
+          case "bytes":
+            gen("d%s=o.bytes===String?util.base64.encode(m%s,0,m%s.length):o.bytes===Array?Array.prototype.slice.call(m%s):m%s", dstProp, srcProp, srcProp, srcProp, srcProp);
+            break;
+          default:
+            gen("d%s=m%s", dstProp, srcProp);
+            break;
+        }
+      }
+      return gen;
+    }
+    converter.toObject = function toObject(mtype) {
+      var fields = mtype.fieldsArray.slice().sort(util.compareFieldsById);
+      if (!fields.length)
+        return util.codegen()("return {}");
+      var gen = util.codegen(["m", "o", "q"])("if(!o)")("o={}")("if(q===undefined)q=0")("if(q>util.recursionLimit)")('throw Error("max depth exceeded")')("var d={}");
+      var repeatedFields = [], mapFields = [], normalFields = [], i = 0;
+      for (; i < fields.length; ++i)
+        if (!fields[i].partOf)
+          (fields[i].resolve().repeated ? repeatedFields : fields[i].map ? mapFields : normalFields).push(fields[i]);
+      if (repeatedFields.length) {
+        gen("if(o.arrays||o.defaults){");
+        for (i = 0; i < repeatedFields.length; ++i) gen("d%s=[]", util.safeProp(repeatedFields[i].name));
+        gen("}");
+      }
+      if (mapFields.length) {
+        gen("if(o.objects||o.defaults){");
+        for (i = 0; i < mapFields.length; ++i) gen("d%s={}", util.safeProp(mapFields[i].name));
+        gen("}");
+      }
+      if (normalFields.length) {
+        gen("if(o.defaults){");
+        for (i = 0; i < normalFields.length; ++i) {
+          var field = normalFields[i], prop = util.safeProp(field.name);
+          if (field.resolvedType instanceof Enum) gen("d%s=o.enums===String?%j:%j", prop, field.resolvedType.valuesById[field.typeDefault], field.typeDefault);
+          else if (field.long) gen("if(util.Long){")("var n=new util.Long(%i,%i,%j)", field.typeDefault.low, field.typeDefault.high, field.typeDefault.unsigned)('d%s=o.longs===String?n.toString():o.longs===Number?n.toNumber():typeof BigInt!=="undefined"&&o.longs===BigInt?n.toBigInt():n', prop)("}else")('d%s=o.longs===String?%j:typeof BigInt!=="undefined"&&o.longs===BigInt?BigInt(%j):%i', prop, field.typeDefault.toString(), field.typeDefault.toString(), field.typeDefault.toNumber());
+          else if (field.bytes) {
+            var arrayDefault = Array.prototype.slice.call(field.typeDefault);
+            gen("if(o.bytes===String)d%s=%j", prop, util.base64.encode(field.typeDefault, 0, field.typeDefault.length))("else{")("d%s=%j", prop, arrayDefault)("if(o.bytes!==Array)d%s=util.newBuffer(d%s)", prop, prop)("}");
+          } else if ((field.type === "double" || field.type === "float") && typeof field.typeDefault === "number" && (!isFinite(field.typeDefault) || Object.is(field.typeDefault, -0))) gen("d%s=%f", prop, field.typeDefault)("if(o.json&&!isFinite(d%s))d%s=String(d%s)", prop, prop, prop);
+          else gen("d%s=%j", prop, field.typeDefault);
+        }
+        gen("}");
+      }
+      var hasKs2 = false;
+      for (i = 0; i < fields.length; ++i) {
+        var field = fields[i], index2 = mtype._fieldsArray.indexOf(field), prop = util.safeProp(field.name);
+        if (field.map) {
+          if (!hasKs2) {
+            hasKs2 = true;
+            gen("var ks2");
+          }
+          gen("if(m%s&&(ks2=Object.keys(m%s)).length){", prop, prop)("d%s={}", prop);
+          var longKey = types.long[field.keyType] !== void 0, srcProp = prop + "[ks2[j]]";
+          gen("for(var j=0;j<ks2.length;++j){");
+          if (longKey) gen("var k2=util.longFromKey(ks2[j],%j).toString()", field.keyType === "uint64" || field.keyType === "fixed64");
+          gen('if(ks2[j]==="__proto__")')("util.makeProp(d%s,ks2[j])", prop);
+          genValuePartial_toObject(
+            gen,
+            field,
+            /* sorted */
+            index2,
+            longKey ? prop + "[k2]" : srcProp,
+            srcProp
+          )("}");
+        } else if (field.repeated) {
+          gen("if(m%s&&m%s.length){", prop, prop)("d%s=Array(m%s.length)", prop, prop)("for(var j=0;j<m%s.length;++j){", prop);
+          genValuePartial_toObject(
+            gen,
+            field,
+            /* sorted */
+            index2,
+            prop + "[j]"
+          )("}");
+        } else {
+          gen("if(m%s!=null&&Object.hasOwnProperty.call(m,%j)){", prop, field.name);
+          genValuePartial_toObject(
+            gen,
+            field,
+            /* sorted */
+            index2,
+            prop
+          );
+          if (field.partOf && !field.partOf.isProto3Optional) gen("if(o.oneofs)")("d%s=%j", util.safeProp(field.partOf.name), field.name);
+        }
+        gen("}");
+      }
+      return gen("return d");
+    };
+  }
+});
+
+// node_modules/protobufjs/src/wrappers.js
+var require_wrappers = __commonJS({
+  "node_modules/protobufjs/src/wrappers.js"(exports2) {
+    "use strict";
+    var wrappers = exports2;
+    var Message = require_message();
+    var util = require_minimal();
+    wrappers[".google.protobuf.Any"] = {
+      fromObject: function(object2, depth) {
+        if (depth === void 0)
+          depth = 0;
+        if (depth > util.recursionLimit)
+          throw Error("max depth exceeded");
+        if (object2 && object2["@type"]) {
+          var name = object2["@type"].substring(object2["@type"].lastIndexOf("/") + 1);
+          var type = this.lookup(name, [this.constructor]);
+          if (type) {
+            var type_url = object2["@type"].charAt(0) === "." ? object2["@type"].slice(1) : object2["@type"];
+            if (type_url.indexOf("/") === -1) {
+              type_url = "/" + type_url;
+            }
+            return this.create({
+              type_url,
+              value: type.encode(type.fromObject(object2, depth + 1)).finish()
+            });
+          }
+        }
+        return this.fromObject(object2, depth);
+      },
+      toObject: function(message, options, depth) {
+        if (depth === void 0)
+          depth = 0;
+        if (depth > util.recursionLimit)
+          throw Error("max depth exceeded");
+        var googleApi = "type.googleapis.com/";
+        var prefix = "";
+        var name = "";
+        if (options && options.json && message.type_url && message.value) {
+          name = message.type_url.substring(message.type_url.lastIndexOf("/") + 1);
+          prefix = message.type_url.substring(0, message.type_url.lastIndexOf("/") + 1);
+          var type = this.lookup(name, [this.constructor]);
+          if (type)
+            message = type.decode(message.value, void 0, void 0, depth + 1);
+        }
+        if (!(message instanceof this.ctor) && message instanceof Message) {
+          var object2 = message.$type.toObject(message, options, depth + 1);
+          var messageName = message.$type.fullName[0] === "." ? message.$type.fullName.slice(1) : message.$type.fullName;
+          if (prefix === "") {
+            prefix = googleApi;
+          }
+          name = prefix + messageName;
+          object2["@type"] = name;
+          return object2;
+        }
+        return this.toObject(message, options, depth);
+      }
+    };
+  }
+});
+
+// node_modules/protobufjs/src/type.js
+var require_type = __commonJS({
+  "node_modules/protobufjs/src/type.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Type;
+    var Namespace = require_namespace();
+    Type.prototype = Object.create(Namespace.prototype, {
+      constructor: {
+        value: Type,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    Type.className = "Type";
+    var Enum = require_enum();
+    var OneOf = require_oneof();
+    var Field = require_field();
+    var MapField = require_mapfield();
+    var Service = require_service2();
+    var Message = require_message();
+    var Reader = require_reader();
+    var Writer = require_writer();
+    var util = require_util();
+    var encoder = require_encoder();
+    var decoder = require_decoder();
+    var verifier = require_verifier();
+    var converter = require_converter();
+    var wrappers = require_wrappers();
+    function Type(name, options) {
+      name = name.replace(/\W/g, "");
+      Namespace.call(this, name, options);
+      this.fields = {};
+      this.oneofs = void 0;
+      this.extensions = void 0;
+      this.reserved = void 0;
+      this.group = void 0;
+      this.visibility = void 0;
+      this._fieldsById = null;
+      this._fieldsArray = null;
+      this._oneofsArray = null;
+      this._ctor = null;
+      this._fieldsByJsonName = null;
+    }
+    Object.defineProperties(Type.prototype, {
+      /**
+       * Message fields by id.
+       * @name Type#fieldsById
+       * @type {Object.<number,Field>}
+       * @readonly
+       */
+      fieldsById: {
+        get: function() {
+          if (this._fieldsById)
+            return this._fieldsById;
+          this._fieldsById = {};
+          for (var names = Object.keys(this.fields), i = 0; i < names.length; ++i) {
+            var field = this.fields[names[i]], id2 = field.id;
+            if (this._fieldsById[id2])
+              throw Error("duplicate id " + id2 + " in " + this);
+            this._fieldsById[id2] = field;
+          }
+          return this._fieldsById;
+        }
+      },
+      /**
+       * Fields of this message as an array for iteration.
+       * @name Type#fieldsArray
+       * @type {Field[]}
+       * @readonly
+       */
+      fieldsArray: {
+        get: function() {
+          return this._fieldsArray || (this._fieldsArray = util.toArray(this.fields));
+        }
+      },
+      /**
+       * Oneofs of this message as an array for iteration.
+       * @name Type#oneofsArray
+       * @type {OneOf[]}
+       * @readonly
+       */
+      oneofsArray: {
+        get: function() {
+          return this._oneofsArray || (this._oneofsArray = util.toArray(this.oneofs));
+        }
+      },
+      /**
+       * The registered constructor, if any registered, otherwise a generic constructor.
+       * Assigning a function replaces the internal constructor. If the function does not extend {@link Message} yet, its prototype will be setup accordingly and static methods will be populated. If it already extends {@link Message}, it will just replace the internal constructor.
+       * When assigning manually, add the type to its parent namespace/root first if fields reference other reflected types, because constructor setup resolves field defaults.
+       * @name Type#ctor
+       * @type {Constructor<{}>}
+       */
+      ctor: {
+        get: function() {
+          return this._ctor || (this.ctor = Type.generateConstructor(this)());
+        },
+        set: function(ctor) {
+          var prototype = ctor.prototype;
+          if (!(prototype instanceof Message)) {
+            ctor.prototype = new Message();
+            Object.defineProperty(ctor.prototype, "constructor", {
+              value: ctor,
+              writable: true,
+              enumerable: false,
+              configurable: true
+            });
+            util.merge(ctor.prototype, prototype);
+          }
+          ctor.$type = ctor.prototype.$type = this;
+          util.merge(ctor, Message, true);
+          this._ctor = ctor;
+          delete this.decode;
+          delete this.fromObject;
+          var i = 0;
+          for (var field; i < /* initializes */
+          this.fieldsArray.length; ++i) {
+            field = this._fieldsArray[i].resolve();
+            ctor.prototype[field.name] = field.defaultValue;
+          }
+          var ctorProperties = {};
+          for (i = 0; i < /* initializes */
+          this.oneofsArray.length; ++i)
+            ctorProperties[this._oneofsArray[i].resolve().name] = {
+              get: util.oneOfGetter(this._oneofsArray[i].oneof),
+              set: util.oneOfSetter(this._oneofsArray[i].oneof)
+            };
+          if (i)
+            Object.defineProperties(ctor.prototype, ctorProperties);
+        }
+      }
+    });
+    Type.generateConstructor = function generateConstructor(mtype) {
+      var gen = util.codegen(["p"]);
+      for (var i = 0, field; i < mtype.fieldsArray.length; ++i)
+        if ((field = mtype._fieldsArray[i]).map) gen("this%s={}", util.safeProp(field.name));
+        else if (field.repeated) gen("this%s=[]", util.safeProp(field.name));
+      return gen('if(p)for(var ks=Object.keys(p),i=0;i<ks.length;++i)if(p[ks[i]]!=null&&ks[i]!=="__proto__")')("this[ks[i]]=p[ks[i]]");
+    };
+    function clearCache(type) {
+      type._fieldsById = type._fieldsArray = type._oneofsArray = type._fieldsByJsonName = null;
+      delete type.encode;
+      delete type.decode;
+      delete type.verify;
+      return type;
+    }
+    Type.fromJSON = function fromJSON(name, json3, depth) {
+      if (depth === void 0)
+        depth = 0;
+      if (depth > util.nestingLimit)
+        throw Error("max depth exceeded");
+      var type = new Type(name, json3.options);
+      type.extensions = json3.extensions;
+      type.reserved = json3.reserved;
+      var names = Object.keys(json3.fields), i = 0;
+      for (; i < names.length; ++i)
+        type.add(
+          (typeof json3.fields[names[i]].keyType !== "undefined" ? MapField.fromJSON : Field.fromJSON)(names[i], json3.fields[names[i]])
+        );
+      if (json3.oneofs)
+        for (names = Object.keys(json3.oneofs), i = 0; i < names.length; ++i)
+          type.add(OneOf.fromJSON(names[i], json3.oneofs[names[i]]));
+      if (json3.nested)
+        for (names = Object.keys(json3.nested), i = 0; i < names.length; ++i) {
+          var nested = json3.nested[names[i]];
+          type.add(
+            // most to least likely
+            (nested.id !== void 0 ? Field.fromJSON : nested.fields !== void 0 ? Type.fromJSON : nested.values !== void 0 ? Enum.fromJSON : nested.methods !== void 0 ? Service.fromJSON : Namespace.fromJSON)(names[i], nested, depth + 1)
+          );
+        }
+      if (json3.extensions && json3.extensions.length)
+        type.extensions = json3.extensions;
+      if (json3.reserved && json3.reserved.length)
+        type.reserved = json3.reserved;
+      if (json3.group)
+        type.group = true;
+      if (json3.visibility)
+        type.visibility = json3.visibility;
+      if (json3.comment)
+        type.comment = json3.comment;
+      if (json3.edition)
+        type._edition = json3.edition;
+      type._defaultEdition = "proto3";
+      return type;
+    };
+    Type.prototype.toJSON = function toJSON(toJSONOptions) {
+      var inherited = Namespace.prototype.toJSON.call(this, toJSONOptions);
+      var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
+      return util.toObject([
+        "edition",
+        this._editionToJSON(),
+        "options",
+        inherited && inherited.options || void 0,
+        "oneofs",
+        Namespace.arrayToJSON(this.oneofsArray, toJSONOptions),
+        "fields",
+        Namespace.arrayToJSON(this.fieldsArray.filter(function(obj) {
+          return !obj.declaringField;
+        }), toJSONOptions) || {},
+        "extensions",
+        this.extensions && this.extensions.length ? this.extensions : void 0,
+        "reserved",
+        this.reserved && this.reserved.length ? this.reserved : void 0,
+        "group",
+        this.group || void 0,
+        "visibility",
+        this.visibility,
+        "nested",
+        inherited && inherited.nested || void 0,
+        "comment",
+        keepComments ? this.comment : void 0
+      ]);
+    };
+    Type.prototype.resolveAll = function resolveAll() {
+      if (!this._needsRecursiveResolve) return this;
+      Namespace.prototype.resolveAll.call(this);
+      var oneofs = this.oneofsArray;
+      i = 0;
+      while (i < oneofs.length)
+        oneofs[i++].resolve();
+      var fields = this.fieldsArray, i = 0;
+      while (i < fields.length)
+        fields[i++].resolve();
+      return this;
+    };
+    Type.prototype._resolveFeaturesRecursive = function _resolveFeaturesRecursive(edition) {
+      if (!this._needsRecursiveFeatureResolution) return this;
+      edition = this._edition || edition;
+      Namespace.prototype._resolveFeaturesRecursive.call(this, edition);
+      this.oneofsArray.forEach((oneof) => {
+        oneof._resolveFeatures(edition);
+      });
+      this.fieldsArray.forEach((field) => {
+        field._resolveFeatures(edition);
+      });
+      return this;
+    };
+    Type.prototype.get = function get(name) {
+      if (Object.prototype.hasOwnProperty.call(this.fields, name))
+        return this.fields[name];
+      if (this.oneofs && Object.prototype.hasOwnProperty.call(this.oneofs, name))
+        return this.oneofs[name];
+      if (this.nested && Object.prototype.hasOwnProperty.call(this.nested, name))
+        return this.nested[name];
+      return null;
+    };
+    Type.prototype.add = function add(object2) {
+      if (this.get(object2.name))
+        throw Error("duplicate name '" + object2.name + "' in " + this);
+      if (object2 instanceof Field && object2.extend === void 0) {
+        if (this._fieldsById ? (
+          /* istanbul ignore next */
+          this._fieldsById[object2.id]
+        ) : this.fieldsById[object2.id])
+          throw Error("duplicate id " + object2.id + " in " + this);
+        if (this.isReservedId(object2.id))
+          throw Error("id " + object2.id + " is reserved in " + this);
+        if (this.isReservedName(object2.name) || object2.name.charAt(0) === "$")
+          throw Error("name '" + object2.name + "' is reserved in " + this);
+        if (object2.name === "__proto__")
+          return this;
+        if (object2.parent)
+          object2.parent.remove(object2);
+        this.fields[object2.name] = object2;
+        object2.message = this;
+        object2.onAdd(this);
+        return clearCache(this);
+      }
+      if (object2 instanceof OneOf) {
+        if (object2.name.charAt(0) === "$")
+          throw Error("name '" + object2.name + "' is reserved in " + this);
+        if (object2.name === "__proto__")
+          return this;
+        if (!this.oneofs)
+          this.oneofs = {};
+        this.oneofs[object2.name] = object2;
+        object2.onAdd(this);
+        return clearCache(this);
+      }
+      return Namespace.prototype.add.call(this, object2);
+    };
+    Type.prototype.remove = function remove(object2) {
+      if (object2 instanceof Field && object2.extend === void 0) {
+        if (!util.remove(this.fields, object2, object2.name))
+          throw Error(object2 + " is not a member of " + this);
+        object2.parent = null;
+        object2.onRemove(this);
+        return clearCache(this);
+      }
+      if (object2 instanceof OneOf) {
+        if (!util.remove(this.oneofs, object2, object2.name))
+          throw Error(object2 + " is not a member of " + this);
+        object2.parent = null;
+        object2.onRemove(this);
+        return clearCache(this);
+      }
+      return Namespace.prototype.remove.call(this, object2);
+    };
+    Type.prototype.isReservedId = function isReservedId(id2) {
+      return Namespace.isReservedId(this.reserved, id2);
+    };
+    Type.prototype.isReservedName = function isReservedName(name) {
+      return Namespace.isReservedName(this.reserved, name);
+    };
+    Type.prototype.create = function create(properties) {
+      return new this.ctor(properties);
+    };
+    Type.prototype.setup = function setup() {
+      var root = this.root;
+      if (root && root._needsRecursiveFeatureResolution) {
+        var edition = root._edition || this._edition;
+        if (edition)
+          root._resolveFeaturesRecursive(edition);
+      }
+      var fullName = this.fullName, types = [];
+      for (var i = 0; i < /* initializes */
+      this.fieldsArray.length; ++i)
+        types.push(this._fieldsArray[i].resolve().resolvedType);
+      this.encode = encoder(this)({
+        Writer,
+        types,
+        util
+      });
+      this.decode = decoder(this)({
+        Reader,
+        types,
+        util,
+        C: this.ctor
+      });
+      this.verify = verifier(this)({
+        types,
+        util
+      });
+      this.fromObject = converter.fromObject(this)({
+        types,
+        util,
+        C: this.ctor
+      });
+      this.toObject = converter.toObject(this)({
+        types,
+        util
+      });
+      var wrapper = wrappers[fullName];
+      if (wrapper) {
+        var wrapperThis = Object.create(this);
+        wrapperThis._ctor = this.ctor;
+        wrapperThis.fromObject = this.fromObject;
+        this.fromObject = wrapper.fromObject.bind(wrapperThis);
+        wrapperThis.toObject = this.toObject;
+        this.toObject = wrapper.toObject.bind(wrapperThis);
+      }
+      return this;
+    };
+    Type.prototype.encode = function encode_setup(message, writer) {
+      return this.setup().encode.apply(this, arguments);
+    };
+    Type.prototype.encodeDelimited = function encodeDelimited(message, writer) {
+      return this.encode(message, (writer || Writer.create()).fork()).ldelim();
+    };
+    Type.prototype.decode = function decode_setup(reader, length) {
+      return this.setup().decode.apply(this, arguments);
+    };
+    Type.prototype.decodeDelimited = function decodeDelimited(reader) {
+      if (!(reader instanceof Reader))
+        reader = Reader.create(reader);
+      return this.decode(reader, reader.size());
+    };
+    Type.prototype.verify = function verify_setup(message) {
+      return this.setup().verify.apply(this, arguments);
+    };
+    Type.prototype.fromObject = function fromObject(object2) {
+      return this.setup().fromObject.apply(this, arguments);
+    };
+    Type.prototype.toObject = function toObject(message, options) {
+      return this.setup().toObject.apply(this, arguments);
+    };
+    Type.prototype.getTypeUrl = function getTypeUrl(prefix) {
+      if (prefix === void 0)
+        prefix = "type.googleapis.com";
+      var fullName = this.fullName;
+      return prefix + "/" + (fullName.charAt(0) === "." ? fullName.substring(1) : fullName);
+    };
+    Type.d = function decorateType(typeName) {
+      return function typeDecorator(target) {
+        util.decorateType(target, typeName);
+      };
+    };
+  }
+});
+
+// node_modules/protobufjs/src/root.js
+var require_root = __commonJS({
+  "node_modules/protobufjs/src/root.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Root;
+    var Namespace = require_namespace();
+    Root.prototype = Object.create(Namespace.prototype, {
+      constructor: {
+        value: Root,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    Root.className = "Root";
+    var Field = require_field();
+    var Enum = require_enum();
+    var OneOf = require_oneof();
+    var util = require_util();
+    var Type;
+    var parse3;
+    var common2;
+    function Root(options) {
+      Namespace.call(this, "", options);
+      this.deferred = [];
+      this.files = [];
+      this._edition = "proto2";
+      this._fullyQualifiedObjects = {};
+    }
+    Root.fromJSON = function fromJSON(json3, root, depth) {
+      if (depth === void 0)
+        depth = 0;
+      if (depth > util.recursionLimit)
+        throw Error("max depth exceeded");
+      if (!root)
+        root = new Root();
+      if (json3.options)
+        root.setOptions(json3.options);
+      return root.addJSON(json3.nested, depth).resolveAll();
+    };
+    Root.prototype.resolvePath = util.path.resolve;
+    Root.prototype.fetch = util.fetch;
+    function SYNC() {
+    }
+    Root.prototype.load = function load(filename, options, callback) {
+      if (typeof options === "function") {
+        callback = options;
+        options = void 0;
+      }
+      var self2 = this;
+      if (!callback) {
+        return util.asPromise(load, self2, filename, options);
+      }
+      var sync = callback === SYNC;
+      function finish(err, root) {
+        if (!callback) {
+          return;
+        }
+        if (sync) {
+          throw err;
+        }
+        if (root) {
+          root.resolveAll();
+        }
+        var cb = callback;
+        callback = null;
+        cb(err, root);
+      }
+      function getBundledFileName(filename2) {
+        var idx = filename2.lastIndexOf("google/protobuf/");
+        if (idx > -1) {
+          var altname = filename2.substring(idx);
+          if (Object.prototype.hasOwnProperty.call(common2, altname)) return altname;
+        }
+        if (Object.prototype.hasOwnProperty.call(common2, filename2)) return filename2;
+        return null;
+      }
+      function process2(filename2, source, depth) {
+        if (depth === void 0)
+          depth = 0;
+        try {
+          if (depth > util.recursionLimit)
+            throw Error("max depth exceeded");
+          if (util.isString(source) && source.charAt(0) === "{")
+            source = JSON.parse(source);
+          if (!util.isString(source))
+            self2.setOptions(source.options).addJSON(source.nested);
+          else {
+            parse3.filename = filename2;
+            var parsed = parse3(source, self2, options), resolved2, i2 = 0;
+            if (parsed.imports) {
+              for (; i2 < parsed.imports.length; ++i2)
+                if (resolved2 = getBundledFileName(parsed.imports[i2]) || self2.resolvePath(filename2, parsed.imports[i2]))
+                  fetch2(resolved2, false, depth + 1);
+            }
+            if (parsed.weakImports) {
+              for (i2 = 0; i2 < parsed.weakImports.length; ++i2)
+                if (resolved2 = getBundledFileName(parsed.weakImports[i2]) || self2.resolvePath(filename2, parsed.weakImports[i2]))
+                  fetch2(resolved2, true, depth + 1);
+            }
+          }
+        } catch (err) {
+          finish(err);
+        }
+        if (!sync && !queued) {
+          finish(null, self2);
+        }
+      }
+      function fetch2(filename2, weak, depth) {
+        if (depth === void 0)
+          depth = 0;
+        filename2 = getBundledFileName(filename2) || filename2;
+        if (self2.files.indexOf(filename2) > -1) {
+          return;
+        }
+        self2.files.push(filename2);
+        if (Object.prototype.hasOwnProperty.call(common2, filename2)) {
+          if (sync) {
+            process2(filename2, common2[filename2], depth);
+          } else {
+            ++queued;
+            setTimeout(function() {
+              --queued;
+              process2(filename2, common2[filename2], depth);
+            });
+          }
+          return;
+        }
+        if (sync) {
+          var source;
+          try {
+            source = util.fs.readFileSync(filename2).toString("utf8");
+          } catch (err) {
+            if (!weak)
+              finish(err);
+            return;
+          }
+          process2(filename2, source, depth);
+        } else {
+          ++queued;
+          self2.fetch(filename2, function(err, source2) {
+            --queued;
+            if (!callback) {
+              return;
+            }
+            if (err) {
+              if (!weak)
+                finish(err);
+              else if (!queued)
+                finish(null, self2);
+              return;
+            }
+            process2(filename2, source2, depth);
+          });
+        }
+      }
+      var queued = 0;
+      if (util.isString(filename)) {
+        filename = [filename];
+      }
+      for (var i = 0, resolved; i < filename.length; ++i)
+        if (resolved = self2.resolvePath("", filename[i]))
+          fetch2(resolved);
+      if (sync) {
+        self2.resolveAll();
+        return self2;
+      }
+      if (!queued) {
+        finish(null, self2);
+      }
+      return self2;
+    };
+    Root.prototype.loadSync = function loadSync(filename, options) {
+      if (!util.isNode)
+        throw Error("not supported");
+      return this.load(filename, options, SYNC);
+    };
+    Root.prototype.resolveAll = function resolveAll() {
+      if (!this._needsRecursiveResolve) return this;
+      if (this.deferred.length)
+        throw Error("unresolvable extensions: " + this.deferred.map(function(field) {
+          return "'extend " + field.extend + "' in " + field.parent.fullName;
+        }).join(", "));
+      return Namespace.prototype.resolveAll.call(this);
+    };
+    var exposeRe = /^[A-Z]/;
+    function tryHandleExtension(root, field) {
+      var extendedType = field.parent.lookup(field.extend);
+      if (extendedType) {
+        var sisterField = new Field(field.fullName, field.id, field.type, field.rule, void 0, field.options);
+        if (extendedType.get(sisterField.name)) {
+          return true;
+        }
+        sisterField.declaringField = field;
+        field.extensionField = sisterField;
+        extendedType.add(sisterField);
+        return true;
+      }
+      return false;
+    }
+    Root.prototype._handleAdd = function _handleAdd(object2) {
+      if (object2 instanceof Field) {
+        if (
+          /* an extension field (implies not part of a oneof) */
+          object2.extend !== void 0 && /* not already handled */
+          !object2.extensionField
+        ) {
+          if (!tryHandleExtension(this, object2))
+            this.deferred.push(object2);
+        }
+      } else if (object2 instanceof Enum) {
+        if (exposeRe.test(object2.name))
+          object2.parent[object2.name] = object2.values;
+      } else if (!(object2 instanceof OneOf)) {
+        if (object2 instanceof Type)
+          for (var i = 0; i < this.deferred.length; )
+            if (tryHandleExtension(this, this.deferred[i]))
+              this.deferred.splice(i, 1);
+            else
+              ++i;
+        for (var j = 0; j < /* initializes */
+        object2.nestedArray.length; ++j)
+          this._handleAdd(object2._nestedArray[j]);
+        if (exposeRe.test(object2.name))
+          object2.parent[object2.name] = object2;
+      }
+      if (object2 instanceof Type || object2 instanceof Enum || object2 instanceof Field) {
+        this._fullyQualifiedObjects[object2.fullName] = object2;
+      }
+    };
+    Root.prototype._handleRemove = function _handleRemove(object2) {
+      if (object2 instanceof Field) {
+        if (
+          /* an extension field */
+          object2.extend !== void 0
+        ) {
+          if (
+            /* already handled */
+            object2.extensionField
+          ) {
+            object2.extensionField.parent.remove(object2.extensionField);
+            object2.extensionField = null;
+          } else {
+            var index2 = this.deferred.indexOf(object2);
+            if (index2 > -1)
+              this.deferred.splice(index2, 1);
+          }
+        }
+      } else if (object2 instanceof Enum) {
+        if (exposeRe.test(object2.name))
+          delete object2.parent[object2.name];
+      } else if (object2 instanceof Namespace) {
+        for (var i = 0; i < /* initializes */
+        object2.nestedArray.length; ++i)
+          this._handleRemove(object2._nestedArray[i]);
+        if (exposeRe.test(object2.name))
+          delete object2.parent[object2.name];
+      }
+      delete this._fullyQualifiedObjects[object2.fullName];
+    };
+    Root._configure = function(Type_, parse_, common_) {
+      Type = Type_;
+      parse3 = parse_;
+      common2 = common_;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/util.js
+var require_util = __commonJS({
+  "node_modules/protobufjs/src/util.js"(exports2, module2) {
+    "use strict";
+    var util = module2.exports = require_minimal();
+    var roots = require_roots();
+    var Type;
+    var Enum;
+    util.codegen = require_codegen();
+    util.fetch = require_fetch();
+    util.path = require_path();
+    util.patterns = require_patterns();
+    var reservedRe = util.patterns.reservedRe;
+    util.fs = require_fs();
+    util.toArray = function toArray(object2) {
+      if (object2) {
+        var keys = Object.keys(object2), array2 = new Array(keys.length), index2 = 0;
+        while (index2 < keys.length)
+          array2[index2] = object2[keys[index2++]];
+        return array2;
+      }
+      return [];
+    };
+    util.toObject = function toObject(array2) {
+      var object2 = {}, index2 = 0;
+      while (index2 < array2.length) {
+        var key = array2[index2++], val = array2[index2++];
+        if (val !== void 0)
+          object2[key] = val;
+      }
+      return object2;
+    };
+    util.remove = function remove(object2, value, key) {
+      if (!object2)
+        return false;
+      if (key !== void 0 && Object.prototype.hasOwnProperty.call(object2, key) && object2[key] === value) {
+        delete object2[key];
+        return true;
+      }
+      for (var names = Object.keys(object2), i = 0; i < names.length; ++i)
+        if (object2[names[i]] === value) {
+          delete object2[names[i]];
+          return true;
+        }
+      return false;
+    };
+    util.isReserved = function isReserved(name) {
+      return reservedRe.test(name);
+    };
+    util.safeProp = function safeProp(prop) {
+      if (!/^[$\w_]+$/.test(prop) || reservedRe.test(prop))
+        return "[" + JSON.stringify(prop) + "]";
+      return "." + prop;
+    };
+    util.ucFirst = function ucFirst(str) {
+      return str.charAt(0).toUpperCase() + str.substring(1);
+    };
+    var camelCaseRe = /_([a-z])/g;
+    util.camelCase = function camelCase(str) {
+      return str.substring(0, 1) + str.substring(1).replace(camelCaseRe, function($0, $1) {
+        return $1.toUpperCase();
+      });
+    };
+    util.jsonName = function jsonName(str) {
+      var result = "", upperNext = false, i = 0;
+      for (; i < str.length; ++i) {
+        var ch = str.charAt(i);
+        if (ch === "_")
+          upperNext = true;
+        else if (upperNext) {
+          result += ch.toUpperCase();
+          upperNext = false;
+        } else
+          result += ch;
+      }
+      return result;
+    };
+    util.compareFieldsById = function compareFieldsById(a, b) {
+      return a.id - b.id;
+    };
+    util.decorateType = function decorateType(ctor, typeName) {
+      if (ctor.$type) {
+        if (typeName && ctor.$type.name !== typeName) {
+          util.decorateRoot.remove(ctor.$type);
+          ctor.$type.name = typeName;
+          util.decorateRoot.add(ctor.$type);
+        }
+        return ctor.$type;
+      }
+      if (!Type)
+        Type = require_type();
+      var type = new Type(typeName || ctor.name);
+      util.decorateRoot.add(type);
+      type.ctor = ctor;
+      Object.defineProperty(ctor, "$type", { value: type, enumerable: false });
+      Object.defineProperty(ctor.prototype, "$type", { value: type, enumerable: false });
+      return type;
+    };
+    var decorateEnumIndex = 0;
+    util.decorateEnum = function decorateEnum(object2) {
+      if (object2.$type)
+        return object2.$type;
+      if (!Enum)
+        Enum = require_enum();
+      var enm = new Enum("Enum" + decorateEnumIndex++, object2);
+      util.decorateRoot.add(enm);
+      Object.defineProperty(object2, "$type", { value: enm, enumerable: false });
+      return enm;
+    };
+    util.setProperty = function setProperty(dst, path, value, ifNotSet) {
+      function setProp(dst2, path2, value2) {
+        var part = path2.shift();
+        if (util.isUnsafeProperty(part))
+          return dst2;
+        if (path2.length > 0) {
+          dst2[part] = setProp(dst2[part] || {}, path2, value2);
+        } else {
+          var prevValue = dst2[part];
+          if (prevValue && ifNotSet)
+            return dst2;
+          if (prevValue)
+            value2 = [].concat(prevValue).concat(value2);
+          dst2[part] = value2;
+        }
+        return dst2;
+      }
+      if (typeof dst !== "object")
+        throw TypeError("dst must be an object");
+      if (!path)
+        throw TypeError("path must be specified");
+      path = path.split(".");
+      if (path.length > util.recursionLimit)
+        throw Error("max depth exceeded");
+      return setProp(dst, path, value);
+    };
+    Object.defineProperty(util, "decorateRoot", {
+      get: function() {
+        return roots["decorated"] || (roots["decorated"] = new (require_root())());
+      }
+    });
+  }
+});
+
+// node_modules/protobufjs/src/types.js
+var require_types = __commonJS({
+  "node_modules/protobufjs/src/types.js"(exports2) {
+    "use strict";
+    var types = exports2;
+    var util = require_util();
+    var s = [
+      "double",
+      // 0
+      "float",
+      // 1
+      "int32",
+      // 2
+      "uint32",
+      // 3
+      "sint32",
+      // 4
+      "fixed32",
+      // 5
+      "sfixed32",
+      // 6
+      "int64",
+      // 7
+      "uint64",
+      // 8
+      "sint64",
+      // 9
+      "fixed64",
+      // 10
+      "sfixed64",
+      // 11
+      "bool",
+      // 12
+      "string",
+      // 13
+      "bytes"
+      // 14
+    ];
+    function bake(values, offset) {
+      var i = 0, o = /* @__PURE__ */ Object.create(null);
+      offset |= 0;
+      while (i < values.length) o[s[i + offset]] = values[i++];
+      return o;
+    }
+    types.basic = bake([
+      /* double   */
+      1,
+      /* float    */
+      5,
+      /* int32    */
+      0,
+      /* uint32   */
+      0,
+      /* sint32   */
+      0,
+      /* fixed32  */
+      5,
+      /* sfixed32 */
+      5,
+      /* int64    */
+      0,
+      /* uint64   */
+      0,
+      /* sint64   */
+      0,
+      /* fixed64  */
+      1,
+      /* sfixed64 */
+      1,
+      /* bool     */
+      0,
+      /* string   */
+      2,
+      /* bytes    */
+      2
+    ]);
+    types.defaults = bake([
+      /* double   */
+      0,
+      /* float    */
+      0,
+      /* int32    */
+      0,
+      /* uint32   */
+      0,
+      /* sint32   */
+      0,
+      /* fixed32  */
+      0,
+      /* sfixed32 */
+      0,
+      /* int64    */
+      0,
+      /* uint64   */
+      0,
+      /* sint64   */
+      0,
+      /* fixed64  */
+      0,
+      /* sfixed64 */
+      0,
+      /* bool     */
+      false,
+      /* string   */
+      "",
+      /* bytes    */
+      util.emptyArray,
+      /* message  */
+      null
+    ]);
+    types.long = bake([
+      /* int64    */
+      0,
+      /* uint64   */
+      0,
+      /* sint64   */
+      0,
+      /* fixed64  */
+      1,
+      /* sfixed64 */
+      1
+    ], 7);
+    types.mapKey = bake([
+      /* int32    */
+      0,
+      /* uint32   */
+      0,
+      /* sint32   */
+      0,
+      /* fixed32  */
+      5,
+      /* sfixed32 */
+      5,
+      /* int64    */
+      0,
+      /* uint64   */
+      0,
+      /* sint64   */
+      0,
+      /* fixed64  */
+      1,
+      /* sfixed64 */
+      1,
+      /* bool     */
+      0,
+      /* string   */
+      2
+    ], 2);
+    types.packed = bake([
+      /* double   */
+      1,
+      /* float    */
+      5,
+      /* int32    */
+      0,
+      /* uint32   */
+      0,
+      /* sint32   */
+      0,
+      /* fixed32  */
+      5,
+      /* sfixed32 */
+      5,
+      /* int64    */
+      0,
+      /* uint64   */
+      0,
+      /* sint64   */
+      0,
+      /* fixed64  */
+      1,
+      /* sfixed64 */
+      1,
+      /* bool     */
+      0
+    ]);
+  }
+});
+
+// node_modules/protobufjs/src/field.js
+var require_field = __commonJS({
+  "node_modules/protobufjs/src/field.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Field;
+    var ReflectionObject = require_object();
+    Field.prototype = Object.create(ReflectionObject.prototype, {
+      constructor: {
+        value: Field,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    Field.className = "Field";
+    var Enum = require_enum();
+    var types = require_types();
+    var util = require_util();
+    var Type;
+    var ruleRe = /^(?:required|optional|repeated)$/;
+    Field.fromJSON = function fromJSON(name, json3) {
+      var field = new Field(name, json3.id, json3.type, json3.rule, json3.extend, json3.options, json3.comment);
+      if (json3.edition)
+        field._edition = json3.edition;
+      if (json3.protoName)
+        field.protoName = json3.protoName;
+      if (json3.jsonName !== void 0)
+        field.jsonName = json3.jsonName;
+      else if (json3.options && json3.options.json_name !== void 0)
+        field.jsonName = json3.options.json_name;
+      field._defaultEdition = "proto3";
+      return field;
+    };
+    function Field(name, id2, type, rule, extend2, options, comment) {
+      if (util.isObject(rule)) {
+        comment = extend2;
+        options = rule;
+        rule = extend2 = void 0;
+      } else if (util.isObject(extend2)) {
+        comment = options;
+        options = extend2;
+        extend2 = void 0;
+      }
+      ReflectionObject.call(this, name, options);
+      if (!util.isInteger(id2) || id2 < 0)
+        throw TypeError("id must be a non-negative integer");
+      if (!util.isString(type))
+        throw TypeError("type must be a string");
+      if (rule !== void 0 && !ruleRe.test(rule = rule.toString().toLowerCase()))
+        throw TypeError("rule must be a string rule");
+      if (extend2 !== void 0 && !util.isString(extend2))
+        throw TypeError("extend must be a string");
+      this.rule = rule && rule !== "optional" ? rule : void 0;
+      this.type = type;
+      this.id = id2;
+      this.extend = extend2 || void 0;
+      this.repeated = rule === "repeated";
+      this.map = false;
+      this.message = null;
+      this.partOf = null;
+      this.typeDefault = null;
+      this.defaultValue = null;
+      this.long = util.Long ? types.long[type] !== void 0 : (
+        /* istanbul ignore next */
+        false
+      );
+      this.bytes = type === "bytes";
+      this.resolvedType = null;
+      this.extensionField = null;
+      this.declaringField = null;
+      this.comment = comment;
+      this.protoName = void 0;
+      this.jsonName = void 0;
+    }
+    Object.defineProperty(Field.prototype, "required", {
+      get: function() {
+        return this._features.field_presence === "LEGACY_REQUIRED";
+      }
+    });
+    Object.defineProperty(Field.prototype, "optional", {
+      get: function() {
+        return !this.required;
+      }
+    });
+    Object.defineProperty(Field.prototype, "delimited", {
+      get: function() {
+        return this.resolvedType instanceof Type && this._features.message_encoding === "DELIMITED";
+      }
+    });
+    Object.defineProperty(Field.prototype, "packed", {
+      get: function() {
+        return this._features.repeated_field_encoding === "PACKED";
+      }
+    });
+    Object.defineProperty(Field.prototype, "hasPresence", {
+      get: function() {
+        if (this.repeated || this.map) {
+          return false;
+        }
+        return this.partOf || // oneofs
+        this.declaringField || this.extensionField || // extensions
+        this._features.field_presence !== "IMPLICIT";
+      }
+    });
+    Field.prototype.setOption = function setOption(name, value, ifNotSet) {
+      return ReflectionObject.prototype.setOption.call(this, name, value, ifNotSet);
+    };
+    Field.prototype.toJSON = function toJSON(toJSONOptions) {
+      var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
+      return util.toObject([
+        "edition",
+        this._editionToJSON(),
+        "rule",
+        this.rule !== "optional" && this.rule || void 0,
+        "type",
+        this.type,
+        "id",
+        this.id,
+        "extend",
+        this.extend,
+        "protoName",
+        this.protoName !== this.name ? this.protoName : void 0,
+        "jsonName",
+        this.jsonName !== util.jsonName(this.protoName || this.name) ? this.jsonName : void 0,
+        "options",
+        this.options,
+        "comment",
+        keepComments ? this.comment : void 0
+      ]);
+    };
+    Field.prototype.resolve = function resolve3() {
+      if (this.resolved)
+        return this;
+      if ((this.typeDefault = types.defaults[this.type]) === void 0) {
+        this.resolvedType = (this.declaringField ? this.declaringField.parent : this.parent).lookupTypeOrEnum(this.type);
+        if (this.resolvedType instanceof Type)
+          this.typeDefault = null;
+        else
+          this.typeDefault = this.resolvedType.values[Object.keys(this.resolvedType.values)[0]];
+      } else if (this.options && this.options.proto3_optional) {
+        this.typeDefault = null;
+      }
+      if (this.options && this.options["default"] != null) {
+        this.typeDefault = this.options["default"];
+        if (this.resolvedType instanceof Enum && typeof this.typeDefault === "string")
+          this.typeDefault = this.resolvedType.values[this.typeDefault];
+      }
+      if (this.options) {
+        if (this.options.packed !== void 0 && this.resolvedType && !(this.resolvedType instanceof Enum))
+          delete this.options.packed;
+        if (!Object.keys(this.options).length)
+          this.options = void 0;
+      }
+      if (this.long) {
+        var unsigned = this.type === "uint64" || this.type === "fixed64";
+        this.typeDefault = typeof this.typeDefault === "string" ? util.Long.fromString(this.typeDefault, unsigned) : util.Long.fromNumber(this.typeDefault, unsigned);
+        if (Object.freeze)
+          Object.freeze(this.typeDefault);
+      } else if (types.long[this.type] !== void 0 && typeof this.typeDefault === "string") {
+        this.typeDefault = parseInt(this.typeDefault, 10);
+      } else if (this.bytes && typeof this.typeDefault === "string") {
+        var buf;
+        if (util.base64.test(this.typeDefault))
+          util.base64.decode(this.typeDefault, buf = util.newBuffer(util.base64.length(this.typeDefault)), 0);
+        else
+          util.utf8.write(this.typeDefault, buf = util.newBuffer(util.utf8.length(this.typeDefault)), 0);
+        this.typeDefault = buf;
+      }
+      if (this.map)
+        this.defaultValue = util.emptyObject;
+      else if (this.repeated)
+        this.defaultValue = util.emptyArray;
+      else
+        this.defaultValue = this.typeDefault;
+      if (this.parent instanceof Type && this.parent._ctor)
+        this.parent._ctor.prototype[this.name] = this.defaultValue;
+      if (this.protoName === void 0)
+        this.protoName = this.name;
+      if (this.jsonName === void 0)
+        this.jsonName = util.jsonName(this.protoName);
+      return ReflectionObject.prototype.resolve.call(this);
+    };
+    Field.prototype._inferLegacyProtoFeatures = function _inferLegacyProtoFeatures(edition) {
+      if (edition !== "proto2" && edition !== "proto3") {
+        return {};
+      }
+      var features = {};
+      if (this.rule === "required") {
+        features.field_presence = "LEGACY_REQUIRED";
+      }
+      if (this.parent && types.defaults[this.type] === void 0) {
+        var type = this.parent.get(this.type.split(".").pop());
+        if (type && type instanceof Type && type.group) {
+          features.message_encoding = "DELIMITED";
+        }
+      }
+      if (this.getOption("packed") === true) {
+        features.repeated_field_encoding = "PACKED";
+      } else if (this.getOption("packed") === false) {
+        features.repeated_field_encoding = "EXPANDED";
+      }
+      return features;
+    };
+    Field.prototype._resolveFeatures = function _resolveFeatures(edition) {
+      return ReflectionObject.prototype._resolveFeatures.call(this, this._edition || edition);
+    };
+    Field.d = function decorateField(fieldId, fieldType, fieldRule, defaultValue) {
+      if (typeof fieldType === "function")
+        fieldType = util.decorateType(fieldType).name;
+      else if (fieldType && typeof fieldType === "object")
+        fieldType = util.decorateEnum(fieldType).name;
+      return function fieldDecorator(prototype, fieldName) {
+        util.decorateType(prototype.constructor).add(new Field(fieldName, fieldId, fieldType, fieldRule, { "default": defaultValue }));
+      };
+    };
+    Field._configure = function configure(Type_) {
+      Type = Type_;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/oneof.js
+var require_oneof = __commonJS({
+  "node_modules/protobufjs/src/oneof.js"(exports2, module2) {
+    "use strict";
+    module2.exports = OneOf;
+    var ReflectionObject = require_object();
+    OneOf.prototype = Object.create(ReflectionObject.prototype, {
+      constructor: {
+        value: OneOf,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    OneOf.className = "OneOf";
+    var Field = require_field();
+    var util = require_util();
+    function OneOf(name, fieldNames, options, comment) {
+      if (!Array.isArray(fieldNames)) {
+        options = fieldNames;
+        fieldNames = void 0;
+      }
+      ReflectionObject.call(this, name, options);
+      if (!(fieldNames === void 0 || Array.isArray(fieldNames)))
+        throw TypeError("fieldNames must be an Array");
+      this.oneof = fieldNames || [];
+      this.fieldsArray = [];
+      this.comment = comment;
+    }
+    OneOf.fromJSON = function fromJSON(name, json3) {
+      return new OneOf(name, json3.oneof, json3.options, json3.comment);
+    };
+    OneOf.prototype.toJSON = function toJSON(toJSONOptions) {
+      var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
+      return util.toObject([
+        "options",
+        this.options,
+        "oneof",
+        this.oneof,
+        "comment",
+        keepComments ? this.comment : void 0
+      ]);
+    };
+    function addFieldsToParent(oneof) {
+      if (oneof.parent) {
+        for (var i = 0; i < oneof.fieldsArray.length; ++i)
+          if (!oneof.fieldsArray[i].parent)
+            oneof.parent.add(oneof.fieldsArray[i]);
+      }
+    }
+    OneOf.prototype.add = function add(field) {
+      if (!(field instanceof Field))
+        throw TypeError("field must be a Field");
+      if (field.parent && field.parent !== this.parent)
+        field.parent.remove(field);
+      this.oneof.push(field.name);
+      this.fieldsArray.push(field);
+      field.partOf = this;
+      addFieldsToParent(this);
+      return this;
+    };
+    OneOf.prototype.remove = function remove(field) {
+      if (!(field instanceof Field))
+        throw TypeError("field must be a Field");
+      var index2 = this.fieldsArray.indexOf(field);
+      if (index2 < 0)
+        throw Error(field + " is not a member of " + this);
+      this.fieldsArray.splice(index2, 1);
+      index2 = this.oneof.indexOf(field.name);
+      if (index2 > -1)
+        this.oneof.splice(index2, 1);
+      field.partOf = null;
+      return this;
+    };
+    OneOf.prototype.onAdd = function onAdd(parent) {
+      ReflectionObject.prototype.onAdd.call(this, parent);
+      var self2 = this;
+      for (var i = 0; i < this.oneof.length; ++i) {
+        var field = parent.get(this.oneof[i]);
+        if (field && !field.partOf) {
+          field.partOf = self2;
+          self2.fieldsArray.push(field);
+        }
+      }
+      addFieldsToParent(this);
+    };
+    OneOf.prototype.onRemove = function onRemove(parent) {
+      for (var i = 0, field; i < this.fieldsArray.length; ++i)
+        if ((field = this.fieldsArray[i]).parent)
+          field.parent.remove(field);
+      ReflectionObject.prototype.onRemove.call(this, parent);
+    };
+    Object.defineProperty(OneOf.prototype, "isProto3Optional", {
+      get: function() {
+        if (this.fieldsArray == null || this.fieldsArray.length !== 1) {
+          return false;
+        }
+        var field = this.fieldsArray[0];
+        return field.options != null && field.options["proto3_optional"] === true;
+      }
+    });
+    OneOf.d = function decorateOneOf() {
+      var fieldNames = new Array(arguments.length), index2 = 0;
+      while (index2 < arguments.length)
+        fieldNames[index2] = arguments[index2++];
+      return function oneOfDecorator(prototype, oneofName) {
+        util.decorateType(prototype.constructor).add(new OneOf(oneofName, fieldNames));
+        Object.defineProperty(prototype, oneofName, {
+          get: util.oneOfGetter(fieldNames),
+          set: util.oneOfSetter(fieldNames)
+        });
+      };
+    };
+  }
+});
+
+// node_modules/protobufjs/src/object.js
+var require_object = __commonJS({
+  "node_modules/protobufjs/src/object.js"(exports2, module2) {
+    "use strict";
+    module2.exports = ReflectionObject;
+    ReflectionObject.className = "ReflectionObject";
+    var OneOf = require_oneof();
+    var util = require_util();
+    var Root;
+    var proto2Defaults = { enum_type: "CLOSED", field_presence: "EXPLICIT", json_format: "LEGACY_BEST_EFFORT", message_encoding: "LENGTH_PREFIXED", repeated_field_encoding: "EXPANDED", utf8_validation: "NONE", enforce_naming_style: "STYLE_LEGACY", default_symbol_visibility: "EXPORT_ALL" };
+    var proto3Defaults = { enum_type: "OPEN", field_presence: "IMPLICIT", json_format: "ALLOW", message_encoding: "LENGTH_PREFIXED", repeated_field_encoding: "PACKED", utf8_validation: "VERIFY", enforce_naming_style: "STYLE_LEGACY", default_symbol_visibility: "EXPORT_ALL" };
+    var editions2023Defaults = { enum_type: "OPEN", field_presence: "EXPLICIT", json_format: "ALLOW", message_encoding: "LENGTH_PREFIXED", repeated_field_encoding: "PACKED", utf8_validation: "VERIFY", enforce_naming_style: "STYLE_LEGACY", default_symbol_visibility: "EXPORT_ALL" };
+    var editions2024Defaults = { enum_type: "OPEN", field_presence: "EXPLICIT", json_format: "ALLOW", message_encoding: "LENGTH_PREFIXED", repeated_field_encoding: "PACKED", utf8_validation: "VERIFY", enforce_naming_style: "STYLE2024", default_symbol_visibility: "EXPORT_TOP_LEVEL" };
+    var editions2026Defaults = { enum_type: "OPEN", field_presence: "EXPLICIT", json_format: "ALLOW", message_encoding: "LENGTH_PREFIXED", repeated_field_encoding: "PACKED", utf8_validation: "VERIFY", enforce_naming_style: "STYLE2026", default_symbol_visibility: "STRICT", enforce_proto_limits: "PROTO_LIMITS2026" };
+    function ReflectionObject(name, options) {
+      if (!util.isString(name))
+        throw TypeError("name must be a string");
+      if (options && !util.isObject(options))
+        throw TypeError("options must be an object");
+      this.options = options;
+      this.parsedOptions = null;
+      this.name = name;
+      this._edition = null;
+      this._defaultEdition = "proto2";
+      this._features = {};
+      this._featuresResolved = false;
+      this.parent = null;
+      this.resolved = false;
+      this.comment = null;
+      this.filename = null;
+    }
+    Object.defineProperties(ReflectionObject.prototype, {
+      /**
+       * Reference to the root namespace.
+       * @name ReflectionObject#root
+       * @type {Root}
+       * @readonly
+       */
+      root: {
+        get: function() {
+          var ptr = this;
+          while (ptr.parent !== null)
+            ptr = ptr.parent;
+          return ptr;
+        }
+      },
+      /**
+       * Full name including leading dot.
+       * @name ReflectionObject#fullName
+       * @type {string}
+       * @readonly
+       */
+      fullName: {
+        get: function() {
+          var path = [this.name], ptr = this.parent;
+          while (ptr) {
+            path.unshift(ptr.name);
+            ptr = ptr.parent;
+          }
+          return path.join(".");
+        }
+      }
+    });
+    ReflectionObject.prototype.toJSON = /* istanbul ignore next */
+    function toJSON() {
+      throw Error();
+    };
+    ReflectionObject.prototype.onAdd = function onAdd(parent) {
+      if (this.parent && this.parent !== parent)
+        this.parent.remove(this);
+      this.parent = parent;
+      this.resolved = false;
+      var root = parent.root;
+      if (root instanceof Root)
+        root._handleAdd(this);
+    };
+    ReflectionObject.prototype.onRemove = function onRemove(parent) {
+      var root = parent.root;
+      if (root instanceof Root)
+        root._handleRemove(this);
+      this.parent = null;
+      this.resolved = false;
+    };
+    ReflectionObject.prototype.resolve = function resolve3() {
+      if (this.resolved)
+        return this;
+      if (this.root instanceof Root)
+        this.resolved = true;
+      return this;
+    };
+    ReflectionObject.prototype._resolveFeaturesRecursive = function _resolveFeaturesRecursive(edition) {
+      return this._resolveFeatures(this._edition || edition);
+    };
+    ReflectionObject.prototype._resolveFeatures = function _resolveFeatures(edition) {
+      if (this._featuresResolved) {
+        return;
+      }
+      var defaults = {};
+      if (!edition) {
+        throw new Error("Unknown edition for " + this.fullName);
+      }
+      var protoFeatures = util.merge(
+        {},
+        this.options && this.options.features,
+        this._inferLegacyProtoFeatures(edition)
+      );
+      if (this._edition) {
+        if (edition === "proto2") {
+          defaults = Object.assign({}, proto2Defaults);
+        } else if (edition === "proto3") {
+          defaults = Object.assign({}, proto3Defaults);
+        } else if (edition === "2023") {
+          defaults = Object.assign({}, editions2023Defaults);
+        } else if (edition === "2024") {
+          defaults = Object.assign({}, editions2024Defaults);
+        } else if (edition === "2026") {
+          defaults = Object.assign({}, editions2026Defaults);
+        } else {
+          throw new Error("Unknown edition: " + edition);
+        }
+        this._features = util.merge(defaults, protoFeatures);
+      } else {
+        if (this.partOf instanceof OneOf) {
+          var lexicalParentFeaturesCopy = util.merge({}, this.partOf._features);
+          this._features = util.merge(lexicalParentFeaturesCopy, protoFeatures);
+        } else if (this.declaringField) {
+        } else if (this.parent) {
+          var parentFeaturesCopy = util.merge({}, this.parent._features);
+          this._features = util.merge(parentFeaturesCopy, protoFeatures);
+        } else {
+          throw new Error("Unable to find a parent for " + this.fullName);
+        }
+      }
+      if (this.extensionField) {
+        this.extensionField._features = this._features;
+      }
+      this._featuresResolved = true;
+    };
+    ReflectionObject.prototype._inferLegacyProtoFeatures = function _inferLegacyProtoFeatures() {
+      return {};
+    };
+    ReflectionObject.prototype.getOption = function getOption(name) {
+      if (this.options && Object.prototype.hasOwnProperty.call(this.options, name))
+        return this.options[name];
+      return void 0;
+    };
+    ReflectionObject.prototype.setOption = function setOption(name, value, ifNotSet) {
+      if (name === "__proto__")
+        return this;
+      if (!this.options)
+        this.options = {};
+      if (/^features\./.test(name)) {
+        util.setProperty(this.options, name, value, ifNotSet);
+      } else {
+        var prev = this.getOption(name);
+        if (!ifNotSet || prev === void 0) {
+          if (prev !== value) this.resolved = false;
+          this.options[name] = value;
+        }
+      }
+      return this;
+    };
+    ReflectionObject.prototype.setParsedOption = function setParsedOption(name, value, propName) {
+      if (name === "__proto__")
+        return this;
+      if (!this.parsedOptions) {
+        this.parsedOptions = [];
+      }
+      var parsedOptions = this.parsedOptions;
+      if (propName) {
+        var opt = parsedOptions.find(function(opt2) {
+          return Object.prototype.hasOwnProperty.call(opt2, name);
+        });
+        if (opt) {
+          var newValue = opt[name];
+          util.setProperty(newValue, propName, value);
+        } else {
+          opt = {};
+          opt[name] = util.setProperty({}, propName, value);
+          parsedOptions.push(opt);
+        }
+      } else {
+        var newOpt = {};
+        newOpt[name] = value;
+        parsedOptions.push(newOpt);
+      }
+      return this;
+    };
+    ReflectionObject.prototype.setOptions = function setOptions(options, ifNotSet) {
+      if (options)
+        for (var keys = Object.keys(options), i = 0; i < keys.length; ++i)
+          this.setOption(keys[i], options[keys[i]], ifNotSet);
+      return this;
+    };
+    Object.defineProperty(ReflectionObject.prototype, "toString", {
+      value: function toString() {
+        var className = this.constructor.className, fullName = this.fullName;
+        if (fullName.length)
+          return className + " " + fullName;
+        return className;
+      },
+      writable: true,
+      enumerable: false,
+      configurable: true
+    });
+    ReflectionObject.prototype._editionToJSON = function _editionToJSON() {
+      if (!this._edition || this._edition === "proto3") {
+        return void 0;
+      }
+      return this._edition;
+    };
+    ReflectionObject._configure = function(Root_) {
+      Root = Root_;
+    };
+  }
+});
+
+// node_modules/protobufjs/src/enum.js
+var require_enum = __commonJS({
+  "node_modules/protobufjs/src/enum.js"(exports2, module2) {
+    "use strict";
+    module2.exports = Enum;
+    var ReflectionObject = require_object();
+    Enum.prototype = Object.create(ReflectionObject.prototype, {
+      constructor: {
+        value: Enum,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      }
+    });
+    Enum.className = "Enum";
+    var Namespace = require_namespace();
+    var util = require_util();
+    function Enum(name, values, options, comment, comments, valuesOptions) {
+      ReflectionObject.call(this, name, options);
+      if (values && typeof values !== "object")
+        throw TypeError("values must be an object");
+      this.valuesById = /* @__PURE__ */ Object.create(null);
+      this.values = Object.create(this.valuesById);
+      this.comment = comment;
+      this.comments = comments || {};
+      this.valuesOptions = valuesOptions;
+      this._valuesFeatures = {};
+      this.reserved = void 0;
+      this.visibility = void 0;
+      if (values) {
+        for (var keys = Object.keys(values), i = 0; i < keys.length; ++i)
+          if (keys[i] !== "__proto__" && typeof values[keys[i]] === "number") {
+            this.values[keys[i]] = values[keys[i]];
+            if (this.valuesById[values[keys[i]]] === void 0)
+              this.valuesById[values[keys[i]]] = keys[i];
+          }
+      }
+    }
+    Enum.prototype._resolveFeatures = function _resolveFeatures(edition) {
+      edition = this._edition || edition;
+      ReflectionObject.prototype._resolveFeatures.call(this, edition);
+      Object.keys(this.values).forEach((key) => {
+        var parentFeaturesCopy = util.merge({}, this._features);
+        this._valuesFeatures[key] = util.merge(parentFeaturesCopy, this.valuesOptions && this.valuesOptions[key] && this.valuesOptions[key].features || {});
+      });
+      return this;
+    };
+    Enum.fromJSON = function fromJSON(name, json3) {
+      var enm = new Enum(name, json3.values, json3.options, json3.comment, json3.comments, json3.valuesOptions);
+      enm.reserved = json3.reserved;
+      if (json3.visibility)
+        enm.visibility = json3.visibility;
+      if (json3.edition)
+        enm._edition = json3.edition;
+      enm._defaultEdition = "proto3";
+      return enm;
+    };
+    Enum.prototype.toJSON = function toJSON(toJSONOptions) {
+      var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
+      return util.toObject([
+        "edition",
+        this._editionToJSON(),
+        "options",
+        this.options,
+        "valuesOptions",
+        this.valuesOptions,
+        "values",
+        this.values,
+        "reserved",
+        this.reserved && this.reserved.length ? this.reserved : void 0,
+        "visibility",
+        this.visibility,
+        "comment",
+        keepComments ? this.comment : void 0,
+        "comments",
+        keepComments ? this.comments : void 0
+      ]);
+    };
+    Enum.prototype.add = function add(name, id2, comment, options) {
+      if (!util.isString(name))
+        throw TypeError("name must be a string");
+      if (!util.isInteger(id2))
+        throw TypeError("id must be an integer");
+      if (name === "__proto__")
+        return this;
+      if (this.values[name] !== void 0)
+        throw Error("duplicate name '" + name + "' in " + this);
+      if (this.isReservedId(id2))
+        throw Error("id " + id2 + " is reserved in " + this);
+      if (this.isReservedName(name))
+        throw Error("name '" + name + "' is reserved in " + this);
+      if (this.valuesById[id2] !== void 0) {
+        if (!(this.options && this.options.allow_alias))
+          throw Error("duplicate id " + id2 + " in " + this);
+        this.values[name] = id2;
+      } else
+        this.valuesById[this.values[name] = id2] = name;
+      if (options) {
+        if (this.valuesOptions === void 0)
+          this.valuesOptions = {};
+        this.valuesOptions[name] = options || null;
+      }
+      this.comments[name] = comment || null;
+      return this;
+    };
+    Enum.prototype.remove = function remove(name) {
+      if (!util.isString(name))
+        throw TypeError("name must be a string");
+      var val = this.values[name];
+      if (val == null)
+        throw Error("name '" + name + "' does not exist in " + this);
+      delete this.valuesById[val];
+      delete this.values[name];
+      delete this.comments[name];
+      if (this.valuesOptions)
+        delete this.valuesOptions[name];
+      return this;
+    };
+    Enum.prototype.isReservedId = function isReservedId(id2) {
+      return Namespace.isReservedId(this.reserved, id2);
+    };
+    Enum.prototype.isReservedName = function isReservedName(name) {
+      return Namespace.isReservedName(this.reserved, name);
+    };
+  }
+});
+
+// node_modules/protobufjs/src/encoder.js
+var require_encoder = __commonJS({
+  "node_modules/protobufjs/src/encoder.js"(exports2, module2) {
+    "use strict";
+    module2.exports = encoder;
+    var Enum = require_enum();
+    var types = require_types();
+    var util = require_util();
+    function genTypePartial(gen, field, fieldIndex, ref) {
+      return field.delimited ? gen("types[%i].encode(%s,w.uint32(%i),q+1).uint32(%i)", fieldIndex, ref, (field.id << 3 | 3) >>> 0, (field.id << 3 | 4) >>> 0) : gen("types[%i].encode(%s,w.uint32(%i).fork(),q+1).ldelim()", fieldIndex, ref, (field.id << 3 | 2) >>> 0);
+    }
+    function encoder(mtype) {
+      var gen = util.codegen(["m", "w", "q"])("if(!w)")("w=Writer.create()")("if(q===undefined)q=0")("if(q>util.recursionLimit)")('throw Error("max depth exceeded")');
+      var i, ref;
+      var fields = (
+        /* initializes */
+        mtype.fieldsArray.slice().sort(util.compareFieldsById)
+      );
+      for (var i = 0; i < fields.length; ++i) {
+        var field = fields[i].resolve(), index2 = mtype._fieldsArray.indexOf(field), type = field.resolvedType instanceof Enum ? "int32" : field.type, wireType = types.basic[type];
+        ref = "m" + util.safeProp(field.name);
+        if (field.map) {
+          gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)){", ref, field.name)("for(var ks=Object.keys(%s),i=0;i<ks.length;++i){", ref);
+          if (field.keyType === "bool") gen("w.uint32(%i).fork().uint32(%i).bool(util.boolFromKey(ks[i]))", (field.id << 3 | 2) >>> 0, 8 | types.mapKey[field.keyType]);
+          else if (types.long[field.keyType] !== void 0) gen("w.uint32(%i).fork().uint32(%i).%s(util.longFromKey(ks[i],%j))", (field.id << 3 | 2) >>> 0, 8 | types.mapKey[field.keyType], field.keyType, field.keyType === "uint64" || field.keyType === "fixed64");
+          else gen("w.uint32(%i).fork().uint32(%i).%s(ks[i])", (field.id << 3 | 2) >>> 0, 8 | types.mapKey[field.keyType], field.keyType);
+          if (wireType === void 0) gen("types[%i].encode(%s[ks[i]],w.uint32(18).fork(),q+1).ldelim().ldelim()", index2, ref);
+          else gen(".uint32(%i).%s(%s[ks[i]]).ldelim()", 16 | wireType, type, ref);
+          gen("}")("}");
+        } else if (field.repeated) {
+          gen("if(%s!=null&&%s.length){", ref, ref);
+          if (field.packed && types.packed[type] !== void 0) {
+            gen("w.uint32(%i).%ss(%s)", (field.id << 3 | 2) >>> 0, type, ref);
+          } else {
+            gen("for(var i=0;i<%s.length;++i)", ref);
+            if (wireType === void 0)
+              genTypePartial(gen, field, index2, ref + "[i]");
+            else gen("w.uint32(%i).%s(%s[i])", (field.id << 3 | wireType) >>> 0, type, ref);
+          }
+          gen("}");
+        } else {
+          if (!field.required)
+            if (field.hasPresence || !(field.resolvedType instanceof Enum || types.basic[type] !== void 0)) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j))", ref, field.name);
+            else if (field.resolvedType instanceof Enum) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==%j)", ref, field.name, ref, field.typeDefault);
+            else if (type === "bool") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==false)", ref, field.name, ref);
+            else if (type === "string") gen('if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!=="")', ref, field.name, ref);
+            else if (type === "bytes") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s.length)", ref, field.name, ref);
+            else if (type === "double" || type === "float") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&!Object.is(%s,0))", ref, field.name, ref);
+            else if (types.long[type] !== void 0) gen('if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&(typeof %s==="object"?%s.low||%s.high:%s!==0))', ref, field.name, ref, ref, ref, ref);
+            else gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==0)", ref, field.name, ref);
+          if (wireType === void 0)
+            genTypePartial(gen, field, index2, ref);
+          else gen("w.uint32(%i).%s(%s)", (field.id << 3 | wireType) >>> 0, type, ref);
+        }
+      }
+      return gen('if(m.$unknowns!=null&&Object.hasOwnProperty.call(m,"$unknowns"))')("for(var i=0;i<m.$unknowns.length;++i)")("w.raw(m.$unknowns[i])")("return w");
+    }
+  }
+});
+
+// node_modules/protobufjs/src/index-light.js
+var require_index_light = __commonJS({
+  "node_modules/protobufjs/src/index-light.js"(exports2, module2) {
+    "use strict";
+    exports2 = module2.exports = require_index_minimal();
+    exports2.build = "light";
+    function load(filename, root, callback) {
+      if (typeof root === "function") {
+        callback = root;
+        root = new exports2.Root();
+      } else if (!root)
+        root = new exports2.Root();
+      return root.load(filename, callback);
+    }
+    exports2.load = load;
+    function loadSync(filename, root) {
+      if (!root)
+        root = new exports2.Root();
+      return root.loadSync(filename);
+    }
+    exports2.loadSync = loadSync;
+    exports2.encoder = require_encoder();
+    exports2.decoder = require_decoder();
+    exports2.verifier = require_verifier();
+    exports2.converter = require_converter();
+    exports2.ReflectionObject = require_object();
+    exports2.Namespace = require_namespace();
+    exports2.Root = require_root();
+    exports2.Enum = require_enum();
+    exports2.Type = require_type();
+    exports2.Field = require_field();
+    exports2.OneOf = require_oneof();
+    exports2.MapField = require_mapfield();
+    exports2.Service = require_service2();
+    exports2.Method = require_method();
+    exports2.Message = require_message();
+    exports2.wrappers = require_wrappers();
+    exports2.types = require_types();
+    exports2.util = require_util();
+    exports2.ReflectionObject._configure(exports2.Root);
+    exports2.Namespace._configure(exports2.Type, exports2.Service, exports2.Enum);
+    exports2.Root._configure(exports2.Type, void 0, {});
+    exports2.Field._configure(exports2.Type);
+  }
+});
+
+// node_modules/protobufjs/light.js
+var require_light = __commonJS({
+  "node_modules/protobufjs/light.js"(exports2, module2) {
+    "use strict";
+    module2.exports = require_index_light();
+  }
+});
+
 // src/worker.ts
-var import_strict4 = __toESM(require("node:assert/strict"), 1);
+var import_strict5 = __toESM(require("node:assert/strict"), 1);
 var import_node_fs2 = require("node:fs");
 var import_promises3 = require("node:fs/promises");
-var import_node_path2 = require("node:path");
+var import_node_path3 = require("node:path");
 var import_node_child_process = require("node:child_process");
 var import_node_events = require("node:events");
 var import_proper_lockfile2 = __toESM(require_proper_lockfile(), 1);
@@ -14231,6 +20400,7 @@ var transcriptRow = external_exports.object({
   error: external_exports.string().optional(),
   created_at: external_exports.iso.datetime(),
   content: external_exports.string().optional(),
+  thinking: external_exports.string().optional(),
   input_tokens: index.optional(),
   output_tokens: index.optional(),
   cache_read_tokens: index.optional(),
@@ -14253,6 +20423,7 @@ var attribute = external_exports.object({
   value: external_exports.union([
     external_exports.object({ stringValue: external_exports.string() }),
     external_exports.object({ intValue: external_exports.string() }),
+    external_exports.object({ doubleValue: external_exports.number().finite() }),
     external_exports.object({ boolValue: external_exports.boolean() })
   ])
 });
@@ -14323,7 +20494,8 @@ var configSchema = external_exports.object({
   projectApiKey: external_exports.string().min(1),
   baseUrl: external_exports.url(),
   maxChars: external_exports.number().int().min(256).max(1e5).default(2e4),
-  timeoutMs: external_exports.number().int().min(100).max(15e3).default(5e3)
+  timeoutMs: external_exports.number().int().min(100).max(15e3).default(5e3),
+  captureNativeTiming: external_exports.boolean().default(true)
 }).strict();
 async function readConfig() {
   const config2 = configSchema.parse(
@@ -14567,9 +20739,21 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
           "gen_ai.response.model": prePayload.modelName,
           "gen_ai.input.messages": JSON.stringify(messages),
           "gen_ai.output.messages": JSON.stringify([
-            { role: "assistant", parts }
+            {
+              role: "assistant",
+              parts: model.thinking === void 0 ? parts : [
+                {
+                  type: "thinking",
+                  content: text(model.thinking, maxChars)
+                },
+                ...parts
+              ]
+            }
           ]),
           "antigravity.step_index": model.step_index,
+          "antigravity.user_step": user.step_index,
+          "antigravity.user_turn_first_call": model === models[0],
+          "antigravity.thinking_source": "cli_visible_transcript",
           "antigravity.incomplete": !modelComplete,
           "antigravity.timing_source": toolHooks.length > 0 || post ? "hook_wall_clock" : "recovery_observation"
         };
@@ -14765,7 +20949,7 @@ function pack(spans) {
           })
         },
         scopeSpans: [
-          { scope: { name: "lmnr.antigravity", version: "0.3.0" }, spans }
+          { scope: { name: "lmnr.antigravity", version: "0.3.1" }, spans }
         ]
       }
     ]
@@ -14892,6 +21076,93 @@ async function deliver(path, receiptPath, config2) {
   }
 }
 
+// src/native-timing.ts
+var import_strict4 = __toESM(require("node:assert/strict"), 1);
+var import_node_path2 = require("node:path");
+var import_light = __toESM(require_light(), 1);
+var generator = import_light.default.Root.fromJSON({
+  nested: {
+    Duration: {
+      fields: {
+        seconds: { type: "int64", id: 1 },
+        nanos: { type: "int32", id: 2 }
+      }
+    },
+    ChatModelMetadata: {
+      fields: {
+        timeToFirstToken: { type: "Duration", id: 11 },
+        streamingDuration: { type: "Duration", id: 12 }
+      }
+    },
+    CortexStepGeneratorMetadata: {
+      fields: {
+        chatModel: { type: "ChatModelMetadata", id: 1 },
+        stepIndices: { rule: "repeated", type: "uint32", id: 2 }
+      }
+    }
+  }
+}).lookupType("CortexStepGeneratorMetadata");
+var duration3 = external_exports.object({
+  // Zero components are omitted by proto3 serialization.
+  seconds: external_exports.coerce.number().int().nonnegative().safe().default(0),
+  nanos: external_exports.number().int().min(0).max(999999999).default(0)
+}).transform((value) => value.seconds + value.nanos / 1e9);
+var metadata = external_exports.object({
+  stepIndices: external_exports.array(external_exports.number().int().nonnegative()).optional(),
+  chatModel: external_exports.object({
+    timeToFirstToken: duration3.optional(),
+    streamingDuration: duration3.optional()
+  }).optional()
+});
+async function readNativeTimings(transcriptPath, conversationId, steps) {
+  const result = /* @__PURE__ */ new Map();
+  if (steps.length === 0) return result;
+  const cliRoot = (0, import_node_path2.resolve)((0, import_node_path2.dirname)(transcriptPath), "../../../..");
+  import_strict4.default.equal(
+    transcriptPath,
+    (0, import_node_path2.join)(
+      cliRoot,
+      "brain",
+      conversationId,
+      ".system_generated",
+      "logs",
+      "transcript_full.jsonl"
+    ),
+    "Native timing requires the CLI's original transcript path"
+  );
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(
+    (0, import_node_path2.join)(cliRoot, "conversations", `${conversationId}.db`),
+    { readOnly: true }
+  );
+  const pending = new Set(steps);
+  try {
+    for (const row of db.prepare("SELECT data FROM gen_metadata ORDER BY idx DESC").iterate()) {
+      (0, import_strict4.default)(row.data instanceof Uint8Array, "Invalid generator metadata blob");
+      const value = metadata.parse(
+        generator.toObject(generator.decode(row.data), { longs: String })
+      );
+      if (!value.stepIndices) continue;
+      for (const step of value.stepIndices) {
+        if (!pending.has(step)) continue;
+        if (value.chatModel?.timeToFirstToken !== void 0) {
+          result.set(step, {
+            ttftSeconds: value.chatModel.timeToFirstToken,
+            streamingSeconds: value.chatModel.streamingDuration
+          });
+        } else {
+          result.set(step, null);
+        }
+        pending.delete(step);
+      }
+      if (pending.size === 0) break;
+    }
+  } finally {
+    db.close();
+  }
+  return result;
+}
+
 // src/worker.ts
 function lines(raw) {
   const end = raw.lastIndexOf("\n");
@@ -14906,14 +21177,14 @@ async function session(directory, config2) {
     stale: 3e4
   });
   try {
-    (0, import_strict4.default)(
-      (0, import_node_fs2.existsSync)((0, import_node_path2.join)(directory, "ledger.json")),
+    (0, import_strict5.default)(
+      (0, import_node_fs2.existsSync)((0, import_node_path3.join)(directory, "ledger.json")),
       "Run worker --migrate before processing v0.2 state"
     );
     const ledger = ledgerSchema.parse(
-      JSON.parse(await (0, import_promises3.readFile)((0, import_node_path2.join)(directory, "ledger.json"), "utf8"))
+      JSON.parse(await (0, import_promises3.readFile)((0, import_node_path3.join)(directory, "ledger.json"), "utf8"))
     );
-    const path = (0, import_node_path2.join)(directory, "events.jsonl");
+    const path = (0, import_node_path3.join)(directory, "events.jsonl");
     const releaseJournal = await import_proper_lockfile2.default.lock(path, journalLock);
     let journalText;
     try {
@@ -14926,8 +21197,8 @@ async function session(directory, config2) {
       (line) => eventRecord.parse(JSON.parse(line))
     );
     if (events.length === 0) return;
-    (0, import_strict4.default)(
-      sessionKey(events[0].payload, config2) === (0, import_node_path2.basename)(directory),
+    (0, import_strict5.default)(
+      sessionKey(events[0].payload, config2) === (0, import_node_path3.basename)(directory),
       "Session belongs to a different endpoint or project credential; refusing to reroute it"
     );
     const raw = lines(
@@ -14937,7 +21208,7 @@ async function session(directory, config2) {
       (line) => transcriptEnvelope.parse(JSON.parse(line))
     );
     for (let i = 1; i < envelopes.length; i++)
-      (0, import_strict4.default)(
+      (0, import_strict5.default)(
         envelopes[i].step_index > envelopes[i - 1].step_index,
         "Transcript indices must strictly increase"
       );
@@ -14946,12 +21217,12 @@ async function session(directory, config2) {
     );
     let spans = [];
     if (first) {
-      (0, import_strict4.default)(first.payload.event === "PreInvocation");
+      (0, import_strict5.default)(first.payload.event === "PreInvocation");
       const initial = first.payload.initialNumSteps;
       const user = envelopes.findLast(
         (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index < initial
       );
-      (0, import_strict4.default)(user, "No explicit user input before first observed invocation");
+      (0, import_strict5.default)(user, "No explicit user input before first observed invocation");
       const rows = envelopes.filter(
         (r) => r.step_index >= user.step_index && r.step_index > ledger.importedThroughStep
       ).map((r) => transcriptRow.parse(r));
@@ -14965,11 +21236,68 @@ async function session(directory, config2) {
         raw.partial || journal.partial
       );
     }
-    const outbox = (0, import_node_path2.join)(directory, "outbox");
+    const outbox = (0, import_node_path3.join)(directory, "outbox");
     await (0, import_promises3.mkdir)(outbox, { recursive: true, mode: 448 });
+    const newModels = spans.filter(
+      (span2) => span2.attributes.some(
+        (a) => a.key === "lmnr.span.type" && "stringValue" in a.value && a.value.stringValue === "LLM"
+      ) && !(0, import_node_fs2.existsSync)((0, import_node_path3.join)(outbox, `${span2.traceId}-${span2.spanId}.json`))
+    );
+    const stepOf = (span2) => external_exports.object({ intValue: external_exports.coerce.number().int().nonnegative() }).parse(
+      span2.attributes.find((a) => a.key === "antigravity.step_index").value
+    ).intValue;
+    const modelSteps = newModels.filter(
+      (span2) => span2.attributes.some((a) => a.key === "antigravity.step_index")
+    );
+    const timings = config2.captureNativeTiming ? await readNativeTimings(
+      events[0].payload.transcriptPath,
+      events[0].payload.conversationId,
+      modelSteps.map(stepOf)
+    ) : /* @__PURE__ */ new Map();
+    const pendingNativeTiming = /* @__PURE__ */ new Set();
+    for (const span2 of modelSteps) {
+      const timing = timings.get(stepOf(span2));
+      if (config2.captureNativeTiming && timing == null) {
+        const lastOwner = events.findLast((e) => e.owner !== null)?.owner;
+        if (lastOwner && ownerAlive(lastOwner)) {
+          pendingNativeTiming.add(span2.spanId);
+          continue;
+        }
+      }
+      span2.attributes.push({
+        key: "antigravity.llm.timing_status",
+        value: {
+          stringValue: !config2.captureNativeTiming ? "disabled" : timing ? "recorded" : "not_recorded"
+        }
+      });
+      if (timing) {
+        span2.attributes.push(
+          {
+            key: "antigravity.llm.ttft_seconds",
+            value: { doubleValue: timing.ttftSeconds }
+          },
+          {
+            key: "antigravity.llm.timing_source",
+            value: { stringValue: "cli_sqlite_gen_metadata" }
+          },
+          {
+            key: "antigravity.llm.ttft_scope",
+            value: {
+              stringValue: "cli_first_output_including_thinking_not_first_answer_text"
+            }
+          }
+        );
+        if (timing.streamingSeconds !== void 0)
+          span2.attributes.push({
+            key: "antigravity.llm.streaming_duration_seconds",
+            value: { doubleValue: timing.streamingSeconds }
+          });
+      }
+    }
     for (const span2 of spans) {
+      if (pendingNativeTiming.has(span2.spanId)) continue;
       const name = `${span2.traceId}-${span2.spanId}`;
-      const itemPath = (0, import_node_path2.join)(outbox, `${name}.json`), receiptPath = (0, import_node_path2.join)(outbox, `${name}.receipt.json`);
+      const itemPath = (0, import_node_path3.join)(outbox, `${name}.json`), receiptPath = (0, import_node_path3.join)(outbox, `${name}.receipt.json`);
       if (!(0, import_node_fs2.existsSync)(itemPath))
         await atomicJson(itemPath, { span: span2, request: pack([span2]) });
       if (!(0, import_node_fs2.existsSync)(receiptPath))
@@ -14981,7 +21309,7 @@ async function session(directory, config2) {
     }
     let attempted = 0;
     for (const name of (await (0, import_promises3.readdir)(outbox)).filter((n) => n.endsWith(".json") && !n.endsWith(".receipt.json")).sort()) {
-      const receiptPath = (0, import_node_path2.join)(
+      const receiptPath = (0, import_node_path3.join)(
         outbox,
         name.replace(/\.json$/, ".receipt.json")
       );
@@ -14997,12 +21325,13 @@ async function session(directory, config2) {
       if (["confirmed", "rejected"].includes(receipt.state) || receipt.retryAt > Date.now())
         continue;
       if (attempted++ === 20) break;
-      await deliver((0, import_node_path2.join)(outbox, name), receiptPath, config2);
+      await deliver((0, import_node_path3.join)(outbox, name), receiptPath, config2);
     }
-    await atomicJson((0, import_node_path2.join)(directory, "worker-status.json"), {
+    await atomicJson((0, import_node_path3.join)(directory, "worker-status.json"), {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
       partialTranscript: raw.partial,
-      partialJournal: journal.partial
+      partialJournal: journal.partial,
+      pendingNativeTiming: pendingNativeTiming.size
     });
   } finally {
     await release();
@@ -15014,12 +21343,12 @@ async function migrate(directory) {
     stale: 3e4
   });
   try {
-    if ((0, import_node_fs2.existsSync)((0, import_node_path2.join)(directory, "ledger.json"))) return;
-    const journal = (0, import_node_path2.join)(directory, "events.jsonl");
+    if ((0, import_node_fs2.existsSync)((0, import_node_path3.join)(directory, "ledger.json"))) return;
+    const journal = (0, import_node_path3.join)(directory, "events.jsonl");
     const releaseJournal = await import_proper_lockfile2.default.lock(journal, journalLock);
     try {
       const original = await (0, import_promises3.readFile)(journal, "utf8");
-      (0, import_strict4.default)(
+      (0, import_strict5.default)(
         original.endsWith("\n"),
         "Repair partial legacy journal before migration"
       );
@@ -15027,9 +21356,9 @@ async function migrate(directory) {
         const old = eventRecord.omit({ owner: true }).extend({ owner: eventRecord.shape.owner.optional() }).parse(JSON.parse(line));
         return eventRecord.parse({ ...old, owner: old.owner ?? null });
       });
-      const checkpointPath = (0, import_node_path2.join)(directory, "checkpoint.json");
+      const checkpointPath = (0, import_node_path3.join)(directory, "checkpoint.json");
       const baseline = (0, import_node_fs2.existsSync)(checkpointPath) ? external_exports.object({ throughStep: external_exports.number().int().min(-1) }).parse(JSON.parse(await (0, import_promises3.readFile)(checkpointPath, "utf8"))).throughStep : -1;
-      await atomicJson((0, import_node_path2.join)(directory, "v02-backup.json"), {
+      await atomicJson((0, import_node_path3.join)(directory, "v02-backup.json"), {
         events: original,
         checkpoint: baseline
       });
@@ -15043,30 +21372,30 @@ async function migrate(directory) {
         await file2.close();
       }
       await (0, import_promises3.rename)(`${journal}.migrate`, journal);
-      const pendingPath = (0, import_node_path2.join)(directory, "pending.json");
+      const pendingPath = (0, import_node_path3.join)(directory, "pending.json");
       if ((0, import_node_fs2.existsSync)(pendingPath)) {
         const pending = external_exports.object({ request: outboxSchema.shape.request }).parse(JSON.parse(await (0, import_promises3.readFile)(pendingPath, "utf8")));
-        const outbox = (0, import_node_path2.join)(directory, "outbox");
+        const outbox = (0, import_node_path3.join)(directory, "outbox");
         await (0, import_promises3.mkdir)(outbox, { recursive: true, mode: 448 });
         for (const resource of pending.request.resourceSpans)
           for (const scope of resource.scopeSpans)
             for (const span2 of scope.spans) {
               const name = `${span2.traceId}-${span2.spanId}`;
-              await atomicJson((0, import_node_path2.join)(outbox, `${name}.json`), {
+              await atomicJson((0, import_node_path3.join)(outbox, `${name}.json`), {
                 span: span2,
                 request: pack([span2])
               });
-              await atomicJson((0, import_node_path2.join)(outbox, `${name}.receipt.json`), {
+              await atomicJson((0, import_node_path3.join)(outbox, `${name}.receipt.json`), {
                 state: "uncertain",
                 attempts: 1,
                 retryAt: 0,
                 error: "Imported v0.2 pending upload; server acknowledgement unknown"
               });
             }
-        await atomicJson((0, import_node_path2.join)(directory, "v02-pending-backup.json"), pending);
+        await atomicJson((0, import_node_path3.join)(directory, "v02-pending-backup.json"), pending);
         await (0, import_promises3.rm)(pendingPath);
       }
-      await atomicJson((0, import_node_path2.join)(directory, "ledger.json"), {
+      await atomicJson((0, import_node_path3.join)(directory, "ledger.json"), {
         version: 3,
         importedThroughStep: baseline
       });
@@ -15081,14 +21410,14 @@ async function migrate(directory) {
 async function directories() {
   if (!(0, import_node_fs2.existsSync)(stateRoot)) return [];
   const entries = await (0, import_promises3.readdir)(stateRoot, { withFileTypes: true });
-  return entries.filter((e) => e.isDirectory() && /^[0-9a-f]{64}$/.test(e.name)).map((e) => (0, import_node_path2.join)(stateRoot, e.name));
+  return entries.filter((e) => e.isDirectory() && /^[0-9a-f]{64}$/.test(e.name)).map((e) => (0, import_node_path3.join)(stateRoot, e.name));
 }
 async function main() {
   const mode = external_exports.enum(["--once", "--session", "--status", "--migrate", "--daemon"]).parse(process.argv[2]);
   const config2 = await readConfig();
   if (mode === "--session") {
-    (0, import_strict4.default)(process.argv[3]);
-    await session((0, import_node_path2.resolve)(process.argv[3]), config2);
+    (0, import_strict5.default)(process.argv[3]);
+    await session((0, import_node_path3.resolve)(process.argv[3]), config2);
     return;
   }
   if (mode === "--migrate") {
@@ -15098,17 +21427,17 @@ async function main() {
   if (mode === "--status") {
     for (const dir of await directories()) {
       const counts = {};
-      const outbox = (0, import_node_path2.join)(dir, "outbox");
+      const outbox = (0, import_node_path3.join)(dir, "outbox");
       if ((0, import_node_fs2.existsSync)(outbox)) {
         for (const name of await (0, import_promises3.readdir)(outbox))
           if (name.endsWith(".receipt.json")) {
             const r = deliverySchema.parse(
-              JSON.parse(await (0, import_promises3.readFile)((0, import_node_path2.join)(outbox, name), "utf8"))
+              JSON.parse(await (0, import_promises3.readFile)((0, import_node_path3.join)(outbox, name), "utf8"))
             );
             counts[r.state] = (counts[r.state] ?? 0) + 1;
           }
       }
-      const data = lines(await (0, import_promises3.readFile)((0, import_node_path2.join)(dir, "events.jsonl"), "utf8"));
+      const data = lines(await (0, import_promises3.readFile)((0, import_node_path3.join)(dir, "events.jsonl"), "utf8"));
       const last = data.lines.at(-1);
       const record2 = last ? eventRecord.parse(JSON.parse(last)) : void 0;
       console.log(
@@ -15142,13 +21471,36 @@ async function main() {
       if (code !== 0) {
         failures++;
         console.error(
-          `lmnr-antigravity worker_failed session=${(0, import_node_path2.basename)(dir)} exit=${code}`
+          `lmnr-antigravity worker_failed session=${(0, import_node_path3.basename)(dir)} exit=${code}`
         );
       }
     }
     if (mode !== "--daemon") break;
-    if (running) await new Promise((resolve2) => setTimeout(resolve2, 5e3));
+    if (running) await new Promise((resolve3) => setTimeout(resolve3, 5e3));
   } while (running);
   if (mode === "--once" && failures) process.exitCode = 1;
 }
 void main();
+/*! Bundled license information:
+
+long/umd/index.js:
+  (**
+   * @license
+   * Copyright 2009 The Closure Library Authors
+   * Copyright 2020 Daniel Wirtz / The long.js Authors.
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *     http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *
+   * SPDX-License-Identifier: Apache-2.0
+   *)
+*/

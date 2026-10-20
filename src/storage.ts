@@ -25,6 +25,7 @@ export const configSchema = z
     baseUrl: z.url(),
     maxChars: z.number().int().min(256).max(100_000).default(20_000),
     timeoutMs: z.number().int().min(100).max(15_000).default(5_000),
+    captureNativeTiming: z.boolean().default(true),
   })
   .strict();
 export type Config = z.infer<typeof configSchema>;

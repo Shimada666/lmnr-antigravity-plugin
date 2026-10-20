@@ -15,7 +15,7 @@ import {
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { createServer } from "node:http";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const temp = await mkdtemp("/tmp/lmnr-worker-test-");
 let action = "normal",
@@ -29,7 +29,10 @@ const attributes = (s) =>
   Object.fromEntries(
     s.attributes.map((a) => [
       a.key,
-      a.value.stringValue ?? a.value.intValue ?? a.value.boolValue,
+      a.value.stringValue ??
+        a.value.intValue ??
+        a.value.boolValue ??
+        a.value.doubleValue,
     ]),
   );
 const handler = async (req, res) => {
@@ -140,11 +143,23 @@ function full() {
     ],
   };
 }
-async function fixture(data = full(), baseUrl = url) {
+async function fixture(data = full(), baseUrl = url, nativeTiming = false) {
   const dir = await mkdtemp(join(temp, "session-"));
-  const transcriptPath = join(dir, "transcript.jsonl");
+  const conversationId = randomUUID();
+  const transcriptPath = nativeTiming
+    ? join(
+        dir,
+        "cli",
+        "brain",
+        conversationId,
+        ".system_generated",
+        "logs",
+        "transcript_full.jsonl",
+      )
+    : join(dir, "transcript.jsonl");
+  await mkdir(dirname(transcriptPath), { recursive: true });
   const base = {
-    conversationId: randomUUID(),
+    conversationId,
     transcriptPath,
     workspacePaths: [dir],
     artifactDirectoryPath: dir,
@@ -163,7 +178,12 @@ async function fixture(data = full(), baseUrl = url) {
   }));
   await writeFile(
     config,
-    JSON.stringify({ baseUrl, projectApiKey: "synthetic", timeoutMs: 1000 }),
+    JSON.stringify({
+      baseUrl,
+      projectApiKey: "synthetic",
+      captureNativeTiming: nativeTiming,
+      timeoutMs: 1000,
+    }),
   );
   await writeFile(
     join(state, "ledger.json"),
@@ -516,6 +536,73 @@ try {
   await run(bad, false, ["--once"]);
   assert.equal(stored.size, 4);
   pass("one corrupt session cannot starve other sessions");
+  stored.clear();
+  const nativeData = full();
+  nativeData.rows[1].thinking = "Synthetic visible thinking";
+  f = await fixture(nativeData, url, true);
+  const { DatabaseSync } = await import("node:sqlite");
+  await mkdir(join(f.dir, "cli", "conversations"));
+  const nativeDb = new DatabaseSync(
+    join(f.dir, "cli", "conversations", `${f.base.conversationId}.db`),
+  );
+  nativeDb.exec(
+    "CREATE TABLE gen_metadata (idx INTEGER PRIMARY KEY, data BLOB)",
+  );
+  nativeDb
+    .prepare("INSERT INTO gen_metadata VALUES (?, ?)")
+    .run(0, Buffer.from("120101", "hex"));
+  await run(f);
+  assert.equal(
+    entries().filter((s) => attributes(s)["lmnr.span.type"] === "LLM").length,
+    0,
+  );
+  assert.equal(
+    JSON.parse(await readFile(join(f.state, "worker-status.json"), "utf8"))
+      .pendingNativeTiming,
+    2,
+  );
+  // Independently encoded protobuf fixtures: 125 ms / 750 ms, then 0 s / 1 s.
+  const insertMetadata = nativeDb.prepare(
+    "INSERT OR REPLACE INTO gen_metadata VALUES (?, ?)",
+  );
+  insertMetadata.run(
+    0,
+    Buffer.from("0a0f5a0510c0b2cd3b62061080afd0e502120101", "hex"),
+  );
+  insertMetadata.run(1, Buffer.from("0a065a0062020801120103", "hex"));
+  nativeDb.close();
+  await run(f);
+  const nativeModels = entries()
+    .filter((s) => attributes(s)["lmnr.span.type"] === "LLM")
+    .sort(
+      (a, b) =>
+        Number(attributes(a)["antigravity.step_index"]) -
+        Number(attributes(b)["antigravity.step_index"]),
+    );
+  assert.equal(nativeModels.length, 2);
+  const firstNative = attributes(nativeModels[0]),
+    secondNative = attributes(nativeModels[1]);
+  assert.equal(firstNative["antigravity.llm.ttft_seconds"], 0.125);
+  assert.equal(firstNative["antigravity.llm.streaming_duration_seconds"], 0.75);
+  assert.equal(firstNative["antigravity.user_turn_first_call"], true);
+  assert.equal(secondNative["antigravity.llm.ttft_seconds"], 0);
+  assert.equal(secondNative["antigravity.llm.streaming_duration_seconds"], 1);
+  assert.equal(secondNative["antigravity.user_turn_first_call"], false);
+  assert.equal(
+    JSON.parse(firstNative["gen_ai.output.messages"])[0].parts[0].type,
+    "thinking",
+  );
+  assert(
+    !secondNative["gen_ai.input.messages"].includes(
+      "Synthetic visible thinking",
+    ),
+  );
+  await run(f);
+  unique();
+  assert.equal(entries().length, 4);
+  pass(
+    "native SQLite timing waits for metadata, preserves fractional/zero durations and exports thinking separately without duplicates",
+  );
   console.log(`${count} worker lifecycle scenarios passed`);
 } finally {
   server.closeAllConnections();

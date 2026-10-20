@@ -26,6 +26,7 @@ import {
 } from "./storage.js";
 import { buildSpans, pack } from "./traces.js";
 import { deliver } from "./delivery.js";
+import { readNativeTimings, type NativeTiming } from "./native-timing.js";
 
 function lines(raw: string): { lines: string[]; partial: boolean } {
   const end = raw.lastIndexOf("\n");
@@ -111,7 +112,81 @@ async function session(directory: string, config: Config): Promise<void> {
     }
     const outbox = join(directory, "outbox");
     await mkdir(outbox, { recursive: true, mode: 0o700 });
+    const newModels = spans.filter(
+      (span) =>
+        span.attributes.some(
+          (a) =>
+            a.key === "lmnr.span.type" &&
+            "stringValue" in a.value &&
+            a.value.stringValue === "LLM",
+        ) && !existsSync(join(outbox, `${span.traceId}-${span.spanId}.json`)),
+    );
+    const stepOf = (span: Span) =>
+      z
+        .object({ intValue: z.coerce.number().int().nonnegative() })
+        .parse(
+          span.attributes.find((a) => a.key === "antigravity.step_index")!
+            .value,
+        ).intValue;
+    // An interrupted call with no response has no transcript step or native
+    // generation to join. Completed response spans carry the exact step index.
+    const modelSteps = newModels.filter((span) =>
+      span.attributes.some((a) => a.key === "antigravity.step_index"),
+    );
+    const timings = config.captureNativeTiming
+      ? await readNativeTimings(
+          events[0]!.payload.transcriptPath,
+          events[0]!.payload.conversationId,
+          modelSteps.map(stepOf),
+        )
+      : new Map<number, NativeTiming | null>();
+    const pendingNativeTiming = new Set<string>();
+    for (const span of modelSteps) {
+      const timing = timings.get(stepOf(span));
+      if (config.captureNativeTiming && timing == null) {
+        const lastOwner = events.findLast((e) => e.owner !== null)?.owner;
+        if (lastOwner && ownerAlive(lastOwner)) {
+          pendingNativeTiming.add(span.spanId);
+          continue;
+        }
+      }
+      span.attributes.push({
+        key: "antigravity.llm.timing_status",
+        value: {
+          stringValue: !config.captureNativeTiming
+            ? "disabled"
+            : timing
+              ? "recorded"
+              : "not_recorded",
+        },
+      });
+      if (timing) {
+        span.attributes.push(
+          {
+            key: "antigravity.llm.ttft_seconds",
+            value: { doubleValue: timing.ttftSeconds },
+          },
+          {
+            key: "antigravity.llm.timing_source",
+            value: { stringValue: "cli_sqlite_gen_metadata" },
+          },
+          {
+            key: "antigravity.llm.ttft_scope",
+            value: {
+              stringValue:
+                "cli_first_output_including_thinking_not_first_answer_text",
+            },
+          },
+        );
+        if (timing.streamingSeconds !== undefined)
+          span.attributes.push({
+            key: "antigravity.llm.streaming_duration_seconds",
+            value: { doubleValue: timing.streamingSeconds },
+          });
+      }
+    }
     for (const span of spans) {
+      if (pendingNativeTiming.has(span.spanId)) continue;
       const name = `${span.traceId}-${span.spanId}`;
       const itemPath = join(outbox, `${name}.json`),
         receiptPath = join(outbox, `${name}.receipt.json`);
@@ -155,6 +230,7 @@ async function session(directory: string, config: Config): Promise<void> {
       checkedAt: new Date().toISOString(),
       partialTranscript: raw.partial,
       partialJournal: journal.partial,
+      pendingNativeTiming: pendingNativeTiming.size,
     });
   } finally {
     await release();

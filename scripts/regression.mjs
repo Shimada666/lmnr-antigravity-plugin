@@ -67,7 +67,12 @@ const baseUrl = `http://127.0.0.1:${server.address().port}`;
 const config = join(directory, "config.json");
 await writeFile(
   config,
-  JSON.stringify({ baseUrl, projectApiKey: "synthetic", timeoutMs: 1000 }),
+  JSON.stringify({
+    baseUrl,
+    projectApiKey: "synthetic",
+    captureNativeTiming: false,
+    timeoutMs: 1000,
+  }),
 );
 const at = (n) => new Date(Date.UTC(2026, 0, 1, 0, 0, n)).toISOString();
 const row = (step_index, type, content, extra = {}) => ({
@@ -203,6 +208,7 @@ async function run(name, data, verify, failure) {
     JSON.stringify({
       baseUrl,
       projectApiKey: "synthetic",
+      captureNativeTiming: false,
       timeoutMs: data.timeoutMs ?? 1000,
     }),
   );
@@ -222,7 +228,12 @@ async function run(name, data, verify, failure) {
   if (data.captureDuringUpload)
     await writeFile(
       config,
-      JSON.stringify({ baseUrl, projectApiKey: "synthetic", timeoutMs: 5000 }),
+      JSON.stringify({
+        baseUrl,
+        projectApiKey: "synthetic",
+        captureNativeTiming: false,
+        timeoutMs: 5000,
+      }),
     );
   const pending = Promise.all(
     Array.from({ length: data.parallel ?? 1 }, () => invoke()),
@@ -246,7 +257,12 @@ async function run(name, data, verify, failure) {
   requestStarted = undefined;
   await writeFile(
     config,
-    JSON.stringify({ baseUrl, projectApiKey: "synthetic", timeoutMs: 1000 }),
+    JSON.stringify({
+      baseUrl,
+      projectApiKey: "synthetic",
+      captureNativeTiming: false,
+      timeoutMs: 1000,
+    }),
   );
   const result = results[0];
   if (!failure) for (const r of results) assert.equal(r.code, 0, r.stderr);

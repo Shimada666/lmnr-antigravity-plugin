@@ -55,7 +55,7 @@ export async function deliver(
         Authorization: `Bearer ${config.projectApiKey}`,
       },
       body: JSON.stringify({ query }),
-      signal: AbortSignal.timeout(config.timeoutMs),
+      signal: AbortSignal.timeout(config.queryTimeoutMs),
       redirect: "error",
     });
     assert(

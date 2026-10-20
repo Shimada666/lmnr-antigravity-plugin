@@ -42,7 +42,7 @@ function json(value: unknown, limit: number): string {
     : encoded;
 }
 
-type Part =
+export type Part =
   | { type: "text"; content: string }
   | { type: "thinking"; content: string }
   | {
@@ -51,7 +51,7 @@ type Part =
       name: string;
       arguments: ToolCall["args"];
     };
-type Message = {
+export type Message = {
   role: string;
   content?: string;
   parts?: Part[];
@@ -67,6 +67,7 @@ export function buildSpans(
   observedAt: string,
   alive: (owner: Owner) => boolean,
   partialTranscript: boolean,
+  completedTurns: ReadonlySet<number> = new Set(),
 ): Span[] {
   const first = events.find(
     (e) =>
@@ -92,6 +93,7 @@ export function buildSpans(
   );
   const spans: Span[] = [];
   for (const [turnIndex, user] of starts.entries()) {
+    if (completedTurns.has(user.step_index)) continue;
     const next = starts[turnIndex + 1];
     const turnRows = rows.filter(
       (r) =>
@@ -551,7 +553,7 @@ export function pack(spans: Span[]): ExportRequest {
           }),
         },
         scopeSpans: [
-          { scope: { name: "lmnr.antigravity", version: "0.3.1" }, spans },
+          { scope: { name: "lmnr.antigravity", version: "0.4.0" }, spans },
         ],
       },
     ],

@@ -521,8 +521,8 @@ var require_graceful_fs = __commonJS({
       fs2.createReadStream = createReadStream;
       fs2.createWriteStream = createWriteStream;
       var fs$readFile = fs2.readFile;
-      fs2.readFile = readFile4;
-      function readFile4(path, options, cb) {
+      fs2.readFile = readFile7;
+      function readFile7(path, options, cb) {
         if (typeof options === "function")
           cb = options, options = null;
         return go$readFile(path, options, cb);
@@ -698,7 +698,7 @@ var require_graceful_fs = __commonJS({
       }
       function ReadStream$open() {
         var that = this;
-        open3(that.path, that.flags, that.mode, function(err, fd) {
+        open4(that.path, that.flags, that.mode, function(err, fd) {
           if (err) {
             if (that.autoClose)
               that.destroy();
@@ -718,7 +718,7 @@ var require_graceful_fs = __commonJS({
       }
       function WriteStream$open() {
         var that = this;
-        open3(that.path, that.flags, that.mode, function(err, fd) {
+        open4(that.path, that.flags, that.mode, function(err, fd) {
           if (err) {
             that.destroy();
             that.emit("error", err);
@@ -735,8 +735,8 @@ var require_graceful_fs = __commonJS({
         return new fs2.WriteStream(path, options);
       }
       var fs$open = fs2.open;
-      fs2.open = open3;
-      function open3(path, flags, mode, cb) {
+      fs2.open = open4;
+      function open4(path, flags, mode, cb) {
         if (typeof mode === "function")
           cb = mode, mode = null;
         return go$open(path, flags, mode, cb);
@@ -1080,7 +1080,7 @@ var require_signal_exit = __commonJS({
         };
       };
     } else {
-      assert7 = require("assert");
+      assert10 = require("assert");
       signals = require_signals();
       isWin = /^win/i.test(process2.platform);
       EE = require("events");
@@ -1103,7 +1103,7 @@ var require_signal_exit = __commonJS({
           return function() {
           };
         }
-        assert7.equal(typeof cb, "function", "a callback must be provided for exit handler");
+        assert10.equal(typeof cb, "function", "a callback must be provided for exit handler");
         if (loaded === false) {
           load();
         }
@@ -1209,7 +1209,7 @@ var require_signal_exit = __commonJS({
         }
       };
     }
-    var assert7;
+    var assert10;
     var signals;
     var isWin;
     var EE;
@@ -1234,11 +1234,11 @@ var require_mtime_precision = __commonJS({
     function probe(file2, fs, callback) {
       const cachedPrecision = fs[cacheSymbol];
       if (cachedPrecision) {
-        return fs.stat(file2, (err, stat) => {
+        return fs.stat(file2, (err, stat3) => {
           if (err) {
             return callback(err);
           }
-          callback(null, stat.mtime, cachedPrecision);
+          callback(null, stat3.mtime, cachedPrecision);
         });
       }
       const mtime = new Date(Math.ceil(Date.now() / 1e3) * 1e3 + 5);
@@ -1246,13 +1246,13 @@ var require_mtime_precision = __commonJS({
         if (err) {
           return callback(err);
         }
-        fs.stat(file2, (err2, stat) => {
+        fs.stat(file2, (err2, stat3) => {
           if (err2) {
             return callback(err2);
           }
-          const precision = stat.mtime.getTime() % 1e3 === 0 ? "s" : "ms";
+          const precision = stat3.mtime.getTime() % 1e3 === 0 ? "s" : "ms";
           Object.defineProperty(fs, cacheSymbol, { value: precision });
-          callback(null, stat.mtime, precision);
+          callback(null, stat3.mtime, precision);
         });
       });
     }
@@ -1306,14 +1306,14 @@ var require_lockfile = __commonJS({
         if (options.stale <= 0) {
           return callback(Object.assign(new Error("Lock file is already being held"), { code: "ELOCKED", file: file2 }));
         }
-        options.fs.stat(lockfilePath, (err2, stat) => {
+        options.fs.stat(lockfilePath, (err2, stat3) => {
           if (err2) {
             if (err2.code === "ENOENT") {
               return acquireLock(file2, { ...options, stale: 0 }, callback);
             }
             return callback(err2);
           }
-          if (!isLockStale(stat, options)) {
+          if (!isLockStale(stat3, options)) {
             return callback(Object.assign(new Error("Lock file is already being held"), { code: "ELOCKED", file: file2 }));
           }
           removeLock(file2, options, (err3) => {
@@ -1325,8 +1325,8 @@ var require_lockfile = __commonJS({
         });
       });
     }
-    function isLockStale(stat, options) {
-      return stat.mtime.getTime() < Date.now() - options.stale;
+    function isLockStale(stat3, options) {
+      return stat3.mtime.getTime() < Date.now() - options.stale;
     }
     function removeLock(file2, options, callback) {
       options.fs.rmdir(getLockFile(file2, options), (err) => {
@@ -1344,7 +1344,7 @@ var require_lockfile = __commonJS({
       lock2.updateDelay = lock2.updateDelay || options.update;
       lock2.updateTimeout = setTimeout(() => {
         lock2.updateTimeout = null;
-        options.fs.stat(lock2.lockfilePath, (err, stat) => {
+        options.fs.stat(lock2.lockfilePath, (err, stat3) => {
           const isOverThreshold = lock2.lastUpdate + options.stale < Date.now();
           if (err) {
             if (err.code === "ENOENT" || isOverThreshold) {
@@ -1353,7 +1353,7 @@ var require_lockfile = __commonJS({
             lock2.updateDelay = 1e3;
             return updateLock(file2, options);
           }
-          const isMtimeOurs = lock2.mtime.getTime() === stat.mtime.getTime();
+          const isMtimeOurs = lock2.mtime.getTime() === stat3.mtime.getTime();
           if (!isMtimeOurs) {
             return setLockAsCompromised(
               file2,
@@ -1478,11 +1478,11 @@ var require_lockfile = __commonJS({
         if (err) {
           return callback(err);
         }
-        options.fs.stat(getLockFile(file3, options), (err2, stat) => {
+        options.fs.stat(getLockFile(file3, options), (err2, stat3) => {
           if (err2) {
             return err2.code === "ENOENT" ? callback(null, false) : callback(err2);
           }
-          return callback(null, !isLockStale(stat, options));
+          return callback(null, !isLockStale(stat3, options));
         });
       });
     }
@@ -1574,27 +1574,27 @@ var require_adapter = __commonJS({
 var require_proper_lockfile = __commonJS({
   "node_modules/proper-lockfile/index.js"(exports2, module2) {
     "use strict";
-    var lockfile3 = require_lockfile();
+    var lockfile4 = require_lockfile();
     var { toPromise, toSync, toSyncOptions } = require_adapter();
     async function lock(file2, options) {
-      const release = await toPromise(lockfile3.lock)(file2, options);
+      const release = await toPromise(lockfile4.lock)(file2, options);
       return toPromise(release);
     }
     function lockSync(file2, options) {
-      const release = toSync(lockfile3.lock)(file2, toSyncOptions(options));
+      const release = toSync(lockfile4.lock)(file2, toSyncOptions(options));
       return toSync(release);
     }
     function unlock(file2, options) {
-      return toPromise(lockfile3.unlock)(file2, options);
+      return toPromise(lockfile4.unlock)(file2, options);
     }
     function unlockSync(file2, options) {
-      return toSync(lockfile3.unlock)(file2, toSyncOptions(options));
+      return toSync(lockfile4.unlock)(file2, toSyncOptions(options));
     }
     function check2(file2, options) {
-      return toPromise(lockfile3.check)(file2, options);
+      return toPromise(lockfile4.check)(file2, options);
     }
     function checkSync(file2, options) {
-      return toSync(lockfile3.check)(file2, toSyncOptions(options));
+      return toSync(lockfile4.check)(file2, toSyncOptions(options));
     }
     module2.exports = lock;
     module2.exports.lock = lock;
@@ -5187,14 +5187,14 @@ var require_mapfield = __commonJS({
       this.map = true;
     }
     MapField.fromJSON = function fromJSON(name, json3) {
-      var field = new MapField(name, json3.id, json3.keyType, json3.type, json3.options, json3.comment);
+      var field2 = new MapField(name, json3.id, json3.keyType, json3.type, json3.options, json3.comment);
       if (json3.protoName)
-        field.protoName = json3.protoName;
+        field2.protoName = json3.protoName;
       if (json3.jsonName !== void 0)
-        field.jsonName = json3.jsonName;
+        field2.jsonName = json3.jsonName;
       else if (json3.options && json3.options.json_name !== void 0)
-        field.jsonName = json3.options.json_name;
-      return field;
+        field2.jsonName = json3.options.json_name;
+      return field2;
     };
     MapField.prototype.toJSON = function toJSON(toJSONOptions) {
       var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
@@ -5495,11 +5495,11 @@ var require_decoder = __commonJS({
     var Enum = require_enum();
     var types = require_types();
     var util = require_util();
-    function missing(field) {
-      return "missing required '" + field.name + "'";
+    function missing(field2) {
+      return "missing required '" + field2.name + "'";
     }
-    function stringMethod(field) {
-      return field._features.utf8_validation === "VERIFY" ? "stringVerify" : "string";
+    function stringMethod(field2) {
+      return field2._features.utf8_validation === "VERIFY" ? "stringVerify" : "string";
     }
     function genPreserveUnknown(gen, ref) {
       return gen("if(!r.discardUnknown){")('util.makeProp(m,"$unknowns",false);')("(m.$unknowns||(m.$unknowns=[])).push(%s)", ref)("}");
@@ -5517,19 +5517,19 @@ var require_decoder = __commonJS({
       if (mtype.fieldsArray.length) gen("var u=t&7")("switch(t>>>=3){");
       for (i = 0; i < /* initializes */
       mtype.fieldsArray.length; ++i) {
-        var field = mtype._fieldsArray[i].resolve(), type = field.resolvedType instanceof Enum ? "int32" : field.type, ref = "m" + util.safeProp(field.name), closed = field.resolvedType instanceof Enum && field.resolvedType._features.enum_type === "CLOSED";
-        if (field.map) {
-          gen("case %i:{", field.id)("if(u!==2)")("break");
+        var field2 = mtype._fieldsArray[i].resolve(), type = field2.resolvedType instanceof Enum ? "int32" : field2.type, ref = "m" + util.safeProp(field2.name), closed = field2.resolvedType instanceof Enum && field2.resolvedType._features.enum_type === "CLOSED";
+        if (field2.map) {
+          gen("case %i:{", field2.id)("if(u!==2)")("break");
           if (!closed) gen("if(%s===util.emptyObject)", ref)("%s={}", ref);
           gen("var c2=r.size()+r.pos")("if(c2>r.len)")('throw RangeError("index out of range")')("r.len=c2");
-          if (types.defaults[field.keyType] !== void 0) gen("k=%j", types.defaults[field.keyType]);
+          if (types.defaults[field2.keyType] !== void 0) gen("k=%j", types.defaults[field2.keyType]);
           else gen("k=null");
           if (types.long[type] !== void 0) gen("v=util.Long?util.Long.fromNumber(0,%j):0", type === "uint64" || type === "fixed64");
           else if (types.defaults[type] !== void 0) gen("v=%j", types.defaults[type]);
           else gen("v=null");
-          gen("while(r.pos<c2){")("var t2=r.tag()")("u=t2&7")("switch(t2>>>=3){")("case 1:")("if(u!==%i)", types.mapKey[field.keyType])("break")("k=r.%s()", field.keyType === "string" ? stringMethod(field) : field.keyType)("continue")("case 2:")("if(u!==%i)", types.basic[type] === void 0 ? 2 : types.basic[type])("break");
+          gen("while(r.pos<c2){")("var t2=r.tag()")("u=t2&7")("switch(t2>>>=3){")("case 1:")("if(u!==%i)", types.mapKey[field2.keyType])("break")("k=r.%s()", field2.keyType === "string" ? stringMethod(field2) : field2.keyType)("continue")("case 2:")("if(u!==%i)", types.basic[type] === void 0 ? 2 : types.basic[type])("break");
           if (types.basic[type] === void 0) gen("v=types[%i].decode(r,r.size(),undefined,q+1,v)", i);
-          else gen("v=r.%s()", type === "string" ? stringMethod(field) : type);
+          else gen("v=r.%s()", type === "string" ? stringMethod(field2) : type);
           gen("continue")("}")("r.skipType(u,q,t2)")("}");
           gen("if(r.pos!==c2)")('throw RangeError("index out of range")')("r.len=c");
           if (closed) {
@@ -5537,51 +5537,51 @@ var require_decoder = __commonJS({
             genPreserveUnknown(gen, "r.raw(s,r.pos)")("continue")("}")("if(%s===util.emptyObject)", ref)("%s={}", ref);
           }
           var val = types.basic[type] === void 0 ? "v||new types[" + i + "].ctor" : "v";
-          if (types.long[field.keyType] !== void 0) gen('%s[typeof k==="object"?util.longToHash(k):k]=%s', ref, val);
+          if (types.long[field2.keyType] !== void 0) gen('%s[typeof k==="object"?util.longToHash(k):k]=%s', ref, val);
           else {
-            if (field.keyType === "string") gen('if(k==="__proto__")')("util.makeProp(%s,k)", ref);
+            if (field2.keyType === "string") gen('if(k==="__proto__")')("util.makeProp(%s,k)", ref);
             gen("%s[k]=%s", ref, val);
           }
-        } else if (field.repeated) {
-          gen("case %i:", field.id)("{");
+        } else if (field2.repeated) {
+          gen("case %i:", field2.id)("{");
           if (types.packed[type] !== void 0) {
             gen("if(u===2){");
             if (closed) {
               gen("var c2=r.size()+r.pos")("if(c2>r.len)")('throw RangeError("index out of range")')("r.len=c2")("while(r.pos<c2){")("s=r.pos")("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref)("%s.push(v)", ref)("}else");
-              genPreserveUnknown(gen, "util.rawField(" + field.id + ",0,r.raw(s,r.pos))")("}");
+              genPreserveUnknown(gen, "util.rawField(" + field2.id + ",0,r.raw(s,r.pos))")("}");
               gen("if(r.pos!==c2)")('throw RangeError("index out of range")')("r.len=c");
             } else gen("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref)("r.%ss(%s)", type, ref);
             gen("continue")("}");
           }
-          gen("if(u!==%i)", types.basic[type] === void 0 ? field.delimited ? 3 : 2 : types.basic[type])("break");
+          gen("if(u!==%i)", types.basic[type] === void 0 ? field2.delimited ? 3 : 2 : types.basic[type])("break");
           if (!closed) gen("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref);
           if (types.basic[type] === void 0) {
-            if (field.delimited) gen("%s.push(types[%i].decode(r,undefined,%i,q+1))", ref, i, field.id * 8 + 4);
+            if (field2.delimited) gen("%s.push(types[%i].decode(r,undefined,%i,q+1))", ref, i, field2.id * 8 + 4);
             else gen("%s.push(types[%i].decode(r,r.size(),undefined,q+1))", ref, i);
           } else if (closed) {
             gen("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("if(!(%s&&%s.length))", ref, ref)("%s=[]", ref)("%s.push(v)", ref)("}else");
             genPreserveUnknown(gen, "r.raw(s,r.pos)");
-          } else gen("%s.push(r.%s())", ref, type === "string" ? stringMethod(field) : type);
+          } else gen("%s.push(r.%s())", ref, type === "string" ? stringMethod(field2) : type);
         } else if (types.basic[type] === void 0) {
-          gen("case %i:{", field.id)("if(u!==%i)", field.delimited ? 3 : 2)("break");
-          if (field.delimited) gen("%s=types[%i].decode(r,undefined,%i,q+1,%s)", ref, i, field.id * 8 + 4, ref);
+          gen("case %i:{", field2.id)("if(u!==%i)", field2.delimited ? 3 : 2)("break");
+          if (field2.delimited) gen("%s=types[%i].decode(r,undefined,%i,q+1,%s)", ref, i, field2.id * 8 + 4, ref);
           else gen("%s=types[%i].decode(r,r.size(),undefined,q+1,%s)", ref, i, ref);
-        } else if (field.hasPresence) {
-          gen("case %i:{", field.id)("if(u!==%i)", types.basic[type])("break");
+        } else if (field2.hasPresence) {
+          gen("case %i:{", field2.id)("if(u!==%i)", types.basic[type])("break");
           if (closed) {
             gen("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("%s=v", ref);
-            if (field.partOf) gen("m%s=%j", util.safeProp(field.partOf.name), field.name);
+            if (field2.partOf) gen("m%s=%j", util.safeProp(field2.partOf.name), field2.name);
             gen("}else");
             genPreserveUnknown(gen, "r.raw(s,r.pos)");
-          } else gen("%s=r.%s()", ref, type === "string" ? stringMethod(field) : type);
+          } else gen("%s=r.%s()", ref, type === "string" ? stringMethod(field2) : type);
         } else {
-          gen("case %i:{", field.id)("if(u!==%i)", types.basic[type])("break");
+          gen("case %i:{", field2.id)("if(u!==%i)", types.basic[type])("break");
           if (closed) {
-            gen("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("if(v!==%j)", field.typeDefault)("%s=v", ref)("else")("delete %s", ref)("}else{");
+            gen("v=r.%s()", type)("if(types[%i].valuesById[v]!==undefined){", i)("if(v!==%j)", field2.typeDefault)("%s=v", ref)("else")("delete %s", ref)("}else{");
             genPreserveUnknown(gen, "r.raw(s,r.pos)")("}");
           } else {
-            if (field.resolvedType instanceof Enum && field.typeDefault !== 0) gen("if((v=r.%s())!==%j)", type, field.typeDefault);
-            else if (type === "string") gen("if((v=r.%s()).length)", stringMethod(field));
+            if (field2.resolvedType instanceof Enum && field2.typeDefault !== 0) gen("if((v=r.%s())!==%j)", type, field2.typeDefault);
+            else if (type === "string") gen("if((v=r.%s()).length)", stringMethod(field2));
             else if (type === "bytes") gen("if((v=r.%s()).length)", type);
             else if (types.long[type] !== void 0) gen('if(typeof(v=r.%s())==="object"?v.low||v.high:v!==0)', type);
             else if (type === "double" || type === "float") gen("if(!Object.is(v=r.%s(),0))", type);
@@ -5589,7 +5589,7 @@ var require_decoder = __commonJS({
             gen("%s=v", ref)("else")("delete %s", ref);
           }
         }
-        if (field.partOf && !closed) gen("m%s=%j", util.safeProp(field.partOf.name), field.name);
+        if (field2.partOf && !closed) gen("m%s=%j", util.safeProp(field2.partOf.name), field2.name);
         gen("continue")("}");
       }
       if (i) gen("}");
@@ -5611,72 +5611,72 @@ var require_verifier = __commonJS({
     module2.exports = verifier;
     var Enum = require_enum();
     var util = require_util();
-    function invalid(field, expected) {
-      return field.name + ": " + expected + (field.repeated && expected !== "array" ? "[]" : field.map && expected !== "object" ? "{k:" + field.keyType + "}" : "") + " expected";
+    function invalid(field2, expected2) {
+      return field2.name + ": " + expected2 + (field2.repeated && expected2 !== "array" ? "[]" : field2.map && expected2 !== "object" ? "{k:" + field2.keyType + "}" : "") + " expected";
     }
-    function genVerifyValue(gen, field, fieldIndex, ref) {
-      var resolvedType = field.resolvedType;
+    function genVerifyValue(gen, field2, fieldIndex, ref) {
+      var resolvedType = field2.resolvedType;
       if (resolvedType) {
         if (resolvedType instanceof Enum) {
           if (resolvedType._features.enum_type === "CLOSED") {
-            gen("switch(%s){", ref)("default:")("return%j", invalid(field, "enum value"));
+            gen("switch(%s){", ref)("default:")("return%j", invalid(field2, "enum value"));
             for (var keys = Object.keys(resolvedType.values), j = 0; j < keys.length; ++j) gen("case %i:", resolvedType.values[keys[j]]);
             gen("break")("}");
-          } else gen('if(typeof %s!=="number"||(%s|0)!==%s)', ref, ref, ref)("return%j", invalid(field, "enum value"));
+          } else gen('if(typeof %s!=="number"||(%s|0)!==%s)', ref, ref, ref)("return%j", invalid(field2, "enum value"));
         } else {
-          gen("{")("var e=types[%i].verify(%s,q+1);", fieldIndex, ref)("if(e)")("return%j+e", field.name + ".")("}");
+          gen("{")("var e=types[%i].verify(%s,q+1);", fieldIndex, ref)("if(e)")("return%j+e", field2.name + ".")("}");
         }
       } else {
-        switch (field.type) {
+        switch (field2.type) {
           case "int32":
           case "uint32":
           case "sint32":
           case "fixed32":
           case "sfixed32":
-            gen("if(!util.isInteger(%s))", ref)("return%j", invalid(field, "integer"));
+            gen("if(!util.isInteger(%s))", ref)("return%j", invalid(field2, "integer"));
             break;
           case "int64":
           case "uint64":
           case "sint64":
           case "fixed64":
           case "sfixed64":
-            gen("if(!util.isInteger(%s)&&!(%s&&util.isInteger(%s.low)&&util.isInteger(%s.high)))", ref, ref, ref, ref)("return%j", invalid(field, "integer|Long"));
+            gen("if(!util.isInteger(%s)&&!(%s&&util.isInteger(%s.low)&&util.isInteger(%s.high)))", ref, ref, ref, ref)("return%j", invalid(field2, "integer|Long"));
             break;
           case "float":
           case "double":
-            gen('if(typeof %s!=="number")', ref)("return%j", invalid(field, "number"));
+            gen('if(typeof %s!=="number")', ref)("return%j", invalid(field2, "number"));
             break;
           case "bool":
-            gen('if(typeof %s!=="boolean")', ref)("return%j", invalid(field, "boolean"));
+            gen('if(typeof %s!=="boolean")', ref)("return%j", invalid(field2, "boolean"));
             break;
           case "string":
-            gen("if(!util.isString(%s))", ref)("return%j", invalid(field, "string"));
+            gen("if(!util.isString(%s))", ref)("return%j", invalid(field2, "string"));
             break;
           case "bytes":
-            gen('if(!(%s&&typeof %s.length==="number"||util.isString(%s)))', ref, ref, ref)("return%j", invalid(field, "buffer"));
+            gen('if(!(%s&&typeof %s.length==="number"||util.isString(%s)))', ref, ref, ref)("return%j", invalid(field2, "buffer"));
             break;
         }
       }
       return gen;
     }
-    function genVerifyKey(gen, field, ref) {
-      switch (field.keyType) {
+    function genVerifyKey(gen, field2, ref) {
+      switch (field2.keyType) {
         case "int32":
         case "uint32":
         case "sint32":
         case "fixed32":
         case "sfixed32":
-          gen("if(!util.key32Re.test(%s))", ref)("return%j", invalid(field, "integer key"));
+          gen("if(!util.key32Re.test(%s))", ref)("return%j", invalid(field2, "integer key"));
           break;
         case "int64":
         case "uint64":
         case "sint64":
         case "fixed64":
         case "sfixed64":
-          gen("if(!util.key64Re.test(%s))", ref)("return%j", invalid(field, "integer|Long key"));
+          gen("if(!util.key64Re.test(%s))", ref)("return%j", invalid(field2, "integer|Long key"));
           break;
         case "bool":
-          gen("if(!util.key2Re.test(%s))", ref)("return%j", invalid(field, "boolean key"));
+          gen("if(!util.key2Re.test(%s))", ref)("return%j", invalid(field2, "boolean key"));
           break;
       }
       return gen;
@@ -5687,25 +5687,25 @@ var require_verifier = __commonJS({
       if (oneofs.length) gen("var p={}");
       for (var i = 0; i < /* initializes */
       mtype.fieldsArray.length; ++i) {
-        var field = mtype._fieldsArray[i].resolve(), ref = "m" + util.safeProp(field.name);
-        if (field.optional) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)){", ref, field.name);
-        if (field.map) {
-          gen("if(!util.isObject(%s))", ref)("return%j", invalid(field, "object"))("var k=Object.keys(%s)", ref)("for(var i=0;i<k.length;++i){");
-          genVerifyKey(gen, field, "k[i]");
-          genVerifyValue(gen, field, i, ref + "[k[i]]")("}");
-        } else if (field.repeated) {
-          gen("if(!Array.isArray(%s))", ref)("return%j", invalid(field, "array"))("for(var i=0;i<%s.length;++i){", ref);
-          genVerifyValue(gen, field, i, ref + "[i]")("}");
+        var field2 = mtype._fieldsArray[i].resolve(), ref = "m" + util.safeProp(field2.name);
+        if (field2.optional) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)){", ref, field2.name);
+        if (field2.map) {
+          gen("if(!util.isObject(%s))", ref)("return%j", invalid(field2, "object"))("var k=Object.keys(%s)", ref)("for(var i=0;i<k.length;++i){");
+          genVerifyKey(gen, field2, "k[i]");
+          genVerifyValue(gen, field2, i, ref + "[k[i]]")("}");
+        } else if (field2.repeated) {
+          gen("if(!Array.isArray(%s))", ref)("return%j", invalid(field2, "array"))("for(var i=0;i<%s.length;++i){", ref);
+          genVerifyValue(gen, field2, i, ref + "[i]")("}");
         } else {
-          if (field.partOf) {
-            var oneofProp = util.safeProp(field.partOf.name);
-            if (seenFirstField[field.partOf.name] === 1) gen("if(p%s===1)", oneofProp)("return%j", field.partOf.name + ": multiple values");
-            seenFirstField[field.partOf.name] = 1;
+          if (field2.partOf) {
+            var oneofProp = util.safeProp(field2.partOf.name);
+            if (seenFirstField[field2.partOf.name] === 1) gen("if(p%s===1)", oneofProp)("return%j", field2.partOf.name + ": multiple values");
+            seenFirstField[field2.partOf.name] = 1;
             gen("p%s=1", oneofProp);
           }
-          genVerifyValue(gen, field, i, ref);
+          genVerifyValue(gen, field2, i, ref);
         }
-        if (field.optional) gen("}");
+        if (field2.optional) gen("}");
       }
       return gen("return null");
     }
@@ -5720,23 +5720,23 @@ var require_converter = __commonJS({
     var Enum = require_enum();
     var types = require_types();
     var util = require_util();
-    function genValuePartial_fromObject(gen, field, fieldIndex, prop, dstProp) {
-      if (field.resolvedType) {
-        if (field.resolvedType instanceof Enum) {
+    function genValuePartial_fromObject(gen, field2, fieldIndex, prop, dstProp) {
+      if (field2.resolvedType) {
+        if (field2.resolvedType instanceof Enum) {
           var dst = dstProp ? "m" + dstProp + "[m" + dstProp + ".length]" : "m" + prop;
           gen("switch(d%s){", prop);
-          for (var values = field.resolvedType.values, keys = Object.keys(values), i = 0; i < keys.length; ++i) {
+          for (var values = field2.resolvedType.values, keys = Object.keys(values), i = 0; i < keys.length; ++i) {
             gen("case%j:", keys[i])("case %i:", values[keys[i]])("%s=%j", dst, values[keys[i]])("break");
           }
           gen("default:");
-          if (field.resolvedType._features.enum_type !== "CLOSED") {
+          if (field2.resolvedType._features.enum_type !== "CLOSED") {
             gen('if(typeof d%s==="number"&&(d%s|0)===d%s)', prop, prop, prop)("%s=d%s", dst, prop);
           }
           gen("}");
-        } else gen("if(!util.isObject(d%s))", prop)("throw TypeError(%j)", field.fullName + ": object expected")("m%s=types[%i].fromObject(d%s,q+1)", prop, fieldIndex, prop);
+        } else gen("if(!util.isObject(d%s))", prop)("throw TypeError(%j)", field2.fullName + ": object expected")("m%s=types[%i].fromObject(d%s,q+1)", prop, fieldIndex, prop);
       } else {
         var isUnsigned = false;
-        switch (field.type) {
+        switch (field2.type) {
           case "double":
           case "float":
             gen("m%s=Number(d%s)", prop, prop);
@@ -5778,63 +5778,63 @@ var require_converter = __commonJS({
       if (!fields.length) return gen("return new C");
       gen("var m=new C");
       for (var i = 0; i < fields.length; ++i) {
-        var field = fields[i].resolve(), prop = util.safeProp(field.name), implicitPresence = !field.hasPresence && !field.repeated && !field.map && (field.resolvedType instanceof Enum || types.basic[field.type] !== void 0);
-        if (field.map) {
-          gen("if(d%s){", prop)("if(!util.isObject(d%s))", prop)("throw TypeError(%j)", field.fullName + ": object expected")("m%s={}", prop)("for(var ks=Object.keys(d%s),i=0;i<ks.length;++i){", prop);
+        var field2 = fields[i].resolve(), prop = util.safeProp(field2.name), implicitPresence = !field2.hasPresence && !field2.repeated && !field2.map && (field2.resolvedType instanceof Enum || types.basic[field2.type] !== void 0);
+        if (field2.map) {
+          gen("if(d%s){", prop)("if(!util.isObject(d%s))", prop)("throw TypeError(%j)", field2.fullName + ": object expected")("m%s={}", prop)("for(var ks=Object.keys(d%s),i=0;i<ks.length;++i){", prop);
           gen('if(ks[i]==="__proto__")')("util.makeProp(m%s,ks[i])", prop);
           genValuePartial_fromObject(
             gen,
-            field,
+            field2,
             /* not sorted */
             i,
             prop + "[ks[i]]"
           )("}")("}");
-        } else if (field.repeated) {
-          gen("if(d%s){", prop)("if(!Array.isArray(d%s))", prop)("throw TypeError(%j)", field.fullName + ": array expected");
-          if (field.resolvedType instanceof Enum) gen("m%s=[]", prop);
+        } else if (field2.repeated) {
+          gen("if(d%s){", prop)("if(!Array.isArray(d%s))", prop)("throw TypeError(%j)", field2.fullName + ": array expected");
+          if (field2.resolvedType instanceof Enum) gen("m%s=[]", prop);
           else gen("m%s=Array(d%s.length)", prop, prop);
           gen("for(var i=0;i<d%s.length;++i){", prop);
           genValuePartial_fromObject(
             gen,
-            field,
+            field2,
             /* not sorted */
             i,
             prop + "[i]",
-            field.resolvedType instanceof Enum ? prop : void 0
+            field2.resolvedType instanceof Enum ? prop : void 0
           )("}")("}");
         } else {
-          if (!(field.resolvedType instanceof Enum)) gen("if(d%s!=null){", prop);
+          if (!(field2.resolvedType instanceof Enum)) gen("if(d%s!=null){", prop);
           if (implicitPresence) {
-            if (field.resolvedType instanceof Enum) gen('if(d%s!==%j&&(typeof d%s!=="string"||types[%i].values[d%s]!==%j)){', prop, field.typeDefault, prop, i, prop, field.typeDefault);
-            else if (field.type === "string") gen('if(typeof d%s!=="string"||d%s.length){', prop, prop);
-            else if (field.type === "bytes") gen("if(d%s.length){", prop);
-            else if (field.type === "bool") gen("if(d%s){", prop);
-            else if (field.type === "double" || field.type === "float") gen("if(!Object.is(Number(d%s),0)){", prop);
-            else if (types.long[field.type] !== void 0) gen('if(typeof d%s==="object"?d%s.low||d%s.high:Number(d%s)!==0){', prop, prop, prop, prop);
+            if (field2.resolvedType instanceof Enum) gen('if(d%s!==%j&&(typeof d%s!=="string"||types[%i].values[d%s]!==%j)){', prop, field2.typeDefault, prop, i, prop, field2.typeDefault);
+            else if (field2.type === "string") gen('if(typeof d%s!=="string"||d%s.length){', prop, prop);
+            else if (field2.type === "bytes") gen("if(d%s.length){", prop);
+            else if (field2.type === "bool") gen("if(d%s){", prop);
+            else if (field2.type === "double" || field2.type === "float") gen("if(!Object.is(Number(d%s),0)){", prop);
+            else if (types.long[field2.type] !== void 0) gen('if(typeof d%s==="object"?d%s.low||d%s.high:Number(d%s)!==0){', prop, prop, prop, prop);
             else gen("if(Number(d%s)!==0){", prop);
           }
           genValuePartial_fromObject(
             gen,
-            field,
+            field2,
             /* not sorted */
             i,
             prop
           );
           if (implicitPresence) gen("}");
-          if (!(field.resolvedType instanceof Enum)) gen("}");
+          if (!(field2.resolvedType instanceof Enum)) gen("}");
         }
       }
       return gen("return m");
     };
-    function genValuePartial_toObject(gen, field, fieldIndex, dstProp, srcProp) {
+    function genValuePartial_toObject(gen, field2, fieldIndex, dstProp, srcProp) {
       if (!srcProp)
         srcProp = dstProp;
-      if (field.resolvedType) {
-        if (field.resolvedType instanceof Enum) gen("d%s=o.enums===String?(types[%i].values[m%s]===undefined?m%s:types[%i].values[m%s]):m%s", dstProp, fieldIndex, srcProp, srcProp, fieldIndex, srcProp, srcProp);
+      if (field2.resolvedType) {
+        if (field2.resolvedType instanceof Enum) gen("d%s=o.enums===String?(types[%i].values[m%s]===undefined?m%s:types[%i].values[m%s]):m%s", dstProp, fieldIndex, srcProp, srcProp, fieldIndex, srcProp, srcProp);
         else gen("d%s=types[%i].toObject(m%s,o,q+1)", dstProp, fieldIndex, srcProp);
       } else {
         var isUnsigned = false;
-        switch (field.type) {
+        switch (field2.type) {
           case "double":
           case "float":
             gen("d%s=o.json&&!isFinite(m%s)?String(m%s):m%s", dstProp, srcProp, srcProp, srcProp);
@@ -5880,57 +5880,57 @@ var require_converter = __commonJS({
       if (normalFields.length) {
         gen("if(o.defaults){");
         for (i = 0; i < normalFields.length; ++i) {
-          var field = normalFields[i], prop = util.safeProp(field.name);
-          if (field.resolvedType instanceof Enum) gen("d%s=o.enums===String?%j:%j", prop, field.resolvedType.valuesById[field.typeDefault], field.typeDefault);
-          else if (field.long) gen("if(util.Long){")("var n=new util.Long(%i,%i,%j)", field.typeDefault.low, field.typeDefault.high, field.typeDefault.unsigned)('d%s=o.longs===String?n.toString():o.longs===Number?n.toNumber():typeof BigInt!=="undefined"&&o.longs===BigInt?n.toBigInt():n', prop)("}else")('d%s=o.longs===String?%j:typeof BigInt!=="undefined"&&o.longs===BigInt?BigInt(%j):%i', prop, field.typeDefault.toString(), field.typeDefault.toString(), field.typeDefault.toNumber());
-          else if (field.bytes) {
-            var arrayDefault = Array.prototype.slice.call(field.typeDefault);
-            gen("if(o.bytes===String)d%s=%j", prop, util.base64.encode(field.typeDefault, 0, field.typeDefault.length))("else{")("d%s=%j", prop, arrayDefault)("if(o.bytes!==Array)d%s=util.newBuffer(d%s)", prop, prop)("}");
-          } else if ((field.type === "double" || field.type === "float") && typeof field.typeDefault === "number" && (!isFinite(field.typeDefault) || Object.is(field.typeDefault, -0))) gen("d%s=%f", prop, field.typeDefault)("if(o.json&&!isFinite(d%s))d%s=String(d%s)", prop, prop, prop);
-          else gen("d%s=%j", prop, field.typeDefault);
+          var field2 = normalFields[i], prop = util.safeProp(field2.name);
+          if (field2.resolvedType instanceof Enum) gen("d%s=o.enums===String?%j:%j", prop, field2.resolvedType.valuesById[field2.typeDefault], field2.typeDefault);
+          else if (field2.long) gen("if(util.Long){")("var n=new util.Long(%i,%i,%j)", field2.typeDefault.low, field2.typeDefault.high, field2.typeDefault.unsigned)('d%s=o.longs===String?n.toString():o.longs===Number?n.toNumber():typeof BigInt!=="undefined"&&o.longs===BigInt?n.toBigInt():n', prop)("}else")('d%s=o.longs===String?%j:typeof BigInt!=="undefined"&&o.longs===BigInt?BigInt(%j):%i', prop, field2.typeDefault.toString(), field2.typeDefault.toString(), field2.typeDefault.toNumber());
+          else if (field2.bytes) {
+            var arrayDefault = Array.prototype.slice.call(field2.typeDefault);
+            gen("if(o.bytes===String)d%s=%j", prop, util.base64.encode(field2.typeDefault, 0, field2.typeDefault.length))("else{")("d%s=%j", prop, arrayDefault)("if(o.bytes!==Array)d%s=util.newBuffer(d%s)", prop, prop)("}");
+          } else if ((field2.type === "double" || field2.type === "float") && typeof field2.typeDefault === "number" && (!isFinite(field2.typeDefault) || Object.is(field2.typeDefault, -0))) gen("d%s=%f", prop, field2.typeDefault)("if(o.json&&!isFinite(d%s))d%s=String(d%s)", prop, prop, prop);
+          else gen("d%s=%j", prop, field2.typeDefault);
         }
         gen("}");
       }
       var hasKs2 = false;
       for (i = 0; i < fields.length; ++i) {
-        var field = fields[i], index2 = mtype._fieldsArray.indexOf(field), prop = util.safeProp(field.name);
-        if (field.map) {
+        var field2 = fields[i], index2 = mtype._fieldsArray.indexOf(field2), prop = util.safeProp(field2.name);
+        if (field2.map) {
           if (!hasKs2) {
             hasKs2 = true;
             gen("var ks2");
           }
           gen("if(m%s&&(ks2=Object.keys(m%s)).length){", prop, prop)("d%s={}", prop);
-          var longKey = types.long[field.keyType] !== void 0, srcProp = prop + "[ks2[j]]";
+          var longKey = types.long[field2.keyType] !== void 0, srcProp = prop + "[ks2[j]]";
           gen("for(var j=0;j<ks2.length;++j){");
-          if (longKey) gen("var k2=util.longFromKey(ks2[j],%j).toString()", field.keyType === "uint64" || field.keyType === "fixed64");
+          if (longKey) gen("var k2=util.longFromKey(ks2[j],%j).toString()", field2.keyType === "uint64" || field2.keyType === "fixed64");
           gen('if(ks2[j]==="__proto__")')("util.makeProp(d%s,ks2[j])", prop);
           genValuePartial_toObject(
             gen,
-            field,
+            field2,
             /* sorted */
             index2,
             longKey ? prop + "[k2]" : srcProp,
             srcProp
           )("}");
-        } else if (field.repeated) {
+        } else if (field2.repeated) {
           gen("if(m%s&&m%s.length){", prop, prop)("d%s=Array(m%s.length)", prop, prop)("for(var j=0;j<m%s.length;++j){", prop);
           genValuePartial_toObject(
             gen,
-            field,
+            field2,
             /* sorted */
             index2,
             prop + "[j]"
           )("}");
         } else {
-          gen("if(m%s!=null&&Object.hasOwnProperty.call(m,%j)){", prop, field.name);
+          gen("if(m%s!=null&&Object.hasOwnProperty.call(m,%j)){", prop, field2.name);
           genValuePartial_toObject(
             gen,
-            field,
+            field2,
             /* sorted */
             index2,
             prop
           );
-          if (field.partOf && !field.partOf.isProto3Optional) gen("if(o.oneofs)")("d%s=%j", util.safeProp(field.partOf.name), field.name);
+          if (field2.partOf && !field2.partOf.isProto3Optional) gen("if(o.oneofs)")("d%s=%j", util.safeProp(field2.partOf.name), field2.name);
         }
         gen("}");
       }
@@ -6056,10 +6056,10 @@ var require_type = __commonJS({
             return this._fieldsById;
           this._fieldsById = {};
           for (var names = Object.keys(this.fields), i = 0; i < names.length; ++i) {
-            var field = this.fields[names[i]], id2 = field.id;
+            var field2 = this.fields[names[i]], id2 = field2.id;
             if (this._fieldsById[id2])
               throw Error("duplicate id " + id2 + " in " + this);
-            this._fieldsById[id2] = field;
+            this._fieldsById[id2] = field2;
           }
           return this._fieldsById;
         }
@@ -6115,10 +6115,10 @@ var require_type = __commonJS({
           delete this.decode;
           delete this.fromObject;
           var i = 0;
-          for (var field; i < /* initializes */
+          for (var field2; i < /* initializes */
           this.fieldsArray.length; ++i) {
-            field = this._fieldsArray[i].resolve();
-            ctor.prototype[field.name] = field.defaultValue;
+            field2 = this._fieldsArray[i].resolve();
+            ctor.prototype[field2.name] = field2.defaultValue;
           }
           var ctorProperties = {};
           for (i = 0; i < /* initializes */
@@ -6134,9 +6134,9 @@ var require_type = __commonJS({
     });
     Type.generateConstructor = function generateConstructor(mtype) {
       var gen = util.codegen(["p"]);
-      for (var i = 0, field; i < mtype.fieldsArray.length; ++i)
-        if ((field = mtype._fieldsArray[i]).map) gen("this%s={}", util.safeProp(field.name));
-        else if (field.repeated) gen("this%s=[]", util.safeProp(field.name));
+      for (var i = 0, field2; i < mtype.fieldsArray.length; ++i)
+        if ((field2 = mtype._fieldsArray[i]).map) gen("this%s={}", util.safeProp(field2.name));
+        else if (field2.repeated) gen("this%s=[]", util.safeProp(field2.name));
       return gen('if(p)for(var ks=Object.keys(p),i=0;i<ks.length;++i)if(p[ks[i]]!=null&&ks[i]!=="__proto__")')("this[ks[i]]=p[ks[i]]");
     };
     function clearCache(type) {
@@ -6232,8 +6232,8 @@ var require_type = __commonJS({
       this.oneofsArray.forEach((oneof) => {
         oneof._resolveFeatures(edition);
       });
-      this.fieldsArray.forEach((field) => {
-        field._resolveFeatures(edition);
+      this.fieldsArray.forEach((field2) => {
+        field2._resolveFeatures(edition);
       });
       return this;
     };
@@ -6570,21 +6570,21 @@ var require_root = __commonJS({
     Root.prototype.resolveAll = function resolveAll() {
       if (!this._needsRecursiveResolve) return this;
       if (this.deferred.length)
-        throw Error("unresolvable extensions: " + this.deferred.map(function(field) {
-          return "'extend " + field.extend + "' in " + field.parent.fullName;
+        throw Error("unresolvable extensions: " + this.deferred.map(function(field2) {
+          return "'extend " + field2.extend + "' in " + field2.parent.fullName;
         }).join(", "));
       return Namespace.prototype.resolveAll.call(this);
     };
     var exposeRe = /^[A-Z]/;
-    function tryHandleExtension(root, field) {
-      var extendedType = field.parent.lookup(field.extend);
+    function tryHandleExtension(root, field2) {
+      var extendedType = field2.parent.lookup(field2.extend);
       if (extendedType) {
-        var sisterField = new Field(field.fullName, field.id, field.type, field.rule, void 0, field.options);
+        var sisterField = new Field(field2.fullName, field2.id, field2.type, field2.rule, void 0, field2.options);
         if (extendedType.get(sisterField.name)) {
           return true;
         }
-        sisterField.declaringField = field;
-        field.extensionField = sisterField;
+        sisterField.declaringField = field2;
+        field2.extensionField = sisterField;
         extendedType.add(sisterField);
         return true;
       }
@@ -7001,17 +7001,17 @@ var require_field = __commonJS({
     var Type;
     var ruleRe = /^(?:required|optional|repeated)$/;
     Field.fromJSON = function fromJSON(name, json3) {
-      var field = new Field(name, json3.id, json3.type, json3.rule, json3.extend, json3.options, json3.comment);
+      var field2 = new Field(name, json3.id, json3.type, json3.rule, json3.extend, json3.options, json3.comment);
       if (json3.edition)
-        field._edition = json3.edition;
+        field2._edition = json3.edition;
       if (json3.protoName)
-        field.protoName = json3.protoName;
+        field2.protoName = json3.protoName;
       if (json3.jsonName !== void 0)
-        field.jsonName = json3.jsonName;
+        field2.jsonName = json3.jsonName;
       else if (json3.options && json3.options.json_name !== void 0)
-        field.jsonName = json3.options.json_name;
-      field._defaultEdition = "proto3";
-      return field;
+        field2.jsonName = json3.options.json_name;
+      field2._defaultEdition = "proto3";
+      return field2;
     };
     function Field(name, id2, type, rule, extend2, options, comment) {
       if (util.isObject(rule)) {
@@ -7251,46 +7251,46 @@ var require_oneof = __commonJS({
             oneof.parent.add(oneof.fieldsArray[i]);
       }
     }
-    OneOf.prototype.add = function add(field) {
-      if (!(field instanceof Field))
+    OneOf.prototype.add = function add(field2) {
+      if (!(field2 instanceof Field))
         throw TypeError("field must be a Field");
-      if (field.parent && field.parent !== this.parent)
-        field.parent.remove(field);
-      this.oneof.push(field.name);
-      this.fieldsArray.push(field);
-      field.partOf = this;
+      if (field2.parent && field2.parent !== this.parent)
+        field2.parent.remove(field2);
+      this.oneof.push(field2.name);
+      this.fieldsArray.push(field2);
+      field2.partOf = this;
       addFieldsToParent(this);
       return this;
     };
-    OneOf.prototype.remove = function remove(field) {
-      if (!(field instanceof Field))
+    OneOf.prototype.remove = function remove(field2) {
+      if (!(field2 instanceof Field))
         throw TypeError("field must be a Field");
-      var index2 = this.fieldsArray.indexOf(field);
+      var index2 = this.fieldsArray.indexOf(field2);
       if (index2 < 0)
-        throw Error(field + " is not a member of " + this);
+        throw Error(field2 + " is not a member of " + this);
       this.fieldsArray.splice(index2, 1);
-      index2 = this.oneof.indexOf(field.name);
+      index2 = this.oneof.indexOf(field2.name);
       if (index2 > -1)
         this.oneof.splice(index2, 1);
-      field.partOf = null;
+      field2.partOf = null;
       return this;
     };
     OneOf.prototype.onAdd = function onAdd(parent) {
       ReflectionObject.prototype.onAdd.call(this, parent);
       var self2 = this;
       for (var i = 0; i < this.oneof.length; ++i) {
-        var field = parent.get(this.oneof[i]);
-        if (field && !field.partOf) {
-          field.partOf = self2;
-          self2.fieldsArray.push(field);
+        var field2 = parent.get(this.oneof[i]);
+        if (field2 && !field2.partOf) {
+          field2.partOf = self2;
+          self2.fieldsArray.push(field2);
         }
       }
       addFieldsToParent(this);
     };
     OneOf.prototype.onRemove = function onRemove(parent) {
-      for (var i = 0, field; i < this.fieldsArray.length; ++i)
-        if ((field = this.fieldsArray[i]).parent)
-          field.parent.remove(field);
+      for (var i = 0, field2; i < this.fieldsArray.length; ++i)
+        if ((field2 = this.fieldsArray[i]).parent)
+          field2.parent.remove(field2);
       ReflectionObject.prototype.onRemove.call(this, parent);
     };
     Object.defineProperty(OneOf.prototype, "isProto3Optional", {
@@ -7298,8 +7298,8 @@ var require_oneof = __commonJS({
         if (this.fieldsArray == null || this.fieldsArray.length !== 1) {
           return false;
         }
-        var field = this.fieldsArray[0];
-        return field.options != null && field.options["proto3_optional"] === true;
+        var field2 = this.fieldsArray[0];
+        return field2.options != null && field2.options["proto3_optional"] === true;
       }
     });
     OneOf.d = function decorateOneOf() {
@@ -7669,8 +7669,8 @@ var require_encoder = __commonJS({
     var Enum = require_enum();
     var types = require_types();
     var util = require_util();
-    function genTypePartial(gen, field, fieldIndex, ref) {
-      return field.delimited ? gen("types[%i].encode(%s,w.uint32(%i),q+1).uint32(%i)", fieldIndex, ref, (field.id << 3 | 3) >>> 0, (field.id << 3 | 4) >>> 0) : gen("types[%i].encode(%s,w.uint32(%i).fork(),q+1).ldelim()", fieldIndex, ref, (field.id << 3 | 2) >>> 0);
+    function genTypePartial(gen, field2, fieldIndex, ref) {
+      return field2.delimited ? gen("types[%i].encode(%s,w.uint32(%i),q+1).uint32(%i)", fieldIndex, ref, (field2.id << 3 | 3) >>> 0, (field2.id << 3 | 4) >>> 0) : gen("types[%i].encode(%s,w.uint32(%i).fork(),q+1).ldelim()", fieldIndex, ref, (field2.id << 3 | 2) >>> 0);
     }
     function encoder(mtype) {
       var gen = util.codegen(["m", "w", "q"])("if(!w)")("w=Writer.create()")("if(q===undefined)q=0")("if(q>util.recursionLimit)")('throw Error("max depth exceeded")');
@@ -7680,40 +7680,40 @@ var require_encoder = __commonJS({
         mtype.fieldsArray.slice().sort(util.compareFieldsById)
       );
       for (var i = 0; i < fields.length; ++i) {
-        var field = fields[i].resolve(), index2 = mtype._fieldsArray.indexOf(field), type = field.resolvedType instanceof Enum ? "int32" : field.type, wireType = types.basic[type];
-        ref = "m" + util.safeProp(field.name);
-        if (field.map) {
-          gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)){", ref, field.name)("for(var ks=Object.keys(%s),i=0;i<ks.length;++i){", ref);
-          if (field.keyType === "bool") gen("w.uint32(%i).fork().uint32(%i).bool(util.boolFromKey(ks[i]))", (field.id << 3 | 2) >>> 0, 8 | types.mapKey[field.keyType]);
-          else if (types.long[field.keyType] !== void 0) gen("w.uint32(%i).fork().uint32(%i).%s(util.longFromKey(ks[i],%j))", (field.id << 3 | 2) >>> 0, 8 | types.mapKey[field.keyType], field.keyType, field.keyType === "uint64" || field.keyType === "fixed64");
-          else gen("w.uint32(%i).fork().uint32(%i).%s(ks[i])", (field.id << 3 | 2) >>> 0, 8 | types.mapKey[field.keyType], field.keyType);
+        var field2 = fields[i].resolve(), index2 = mtype._fieldsArray.indexOf(field2), type = field2.resolvedType instanceof Enum ? "int32" : field2.type, wireType = types.basic[type];
+        ref = "m" + util.safeProp(field2.name);
+        if (field2.map) {
+          gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)){", ref, field2.name)("for(var ks=Object.keys(%s),i=0;i<ks.length;++i){", ref);
+          if (field2.keyType === "bool") gen("w.uint32(%i).fork().uint32(%i).bool(util.boolFromKey(ks[i]))", (field2.id << 3 | 2) >>> 0, 8 | types.mapKey[field2.keyType]);
+          else if (types.long[field2.keyType] !== void 0) gen("w.uint32(%i).fork().uint32(%i).%s(util.longFromKey(ks[i],%j))", (field2.id << 3 | 2) >>> 0, 8 | types.mapKey[field2.keyType], field2.keyType, field2.keyType === "uint64" || field2.keyType === "fixed64");
+          else gen("w.uint32(%i).fork().uint32(%i).%s(ks[i])", (field2.id << 3 | 2) >>> 0, 8 | types.mapKey[field2.keyType], field2.keyType);
           if (wireType === void 0) gen("types[%i].encode(%s[ks[i]],w.uint32(18).fork(),q+1).ldelim().ldelim()", index2, ref);
           else gen(".uint32(%i).%s(%s[ks[i]]).ldelim()", 16 | wireType, type, ref);
           gen("}")("}");
-        } else if (field.repeated) {
+        } else if (field2.repeated) {
           gen("if(%s!=null&&%s.length){", ref, ref);
-          if (field.packed && types.packed[type] !== void 0) {
-            gen("w.uint32(%i).%ss(%s)", (field.id << 3 | 2) >>> 0, type, ref);
+          if (field2.packed && types.packed[type] !== void 0) {
+            gen("w.uint32(%i).%ss(%s)", (field2.id << 3 | 2) >>> 0, type, ref);
           } else {
             gen("for(var i=0;i<%s.length;++i)", ref);
             if (wireType === void 0)
-              genTypePartial(gen, field, index2, ref + "[i]");
-            else gen("w.uint32(%i).%s(%s[i])", (field.id << 3 | wireType) >>> 0, type, ref);
+              genTypePartial(gen, field2, index2, ref + "[i]");
+            else gen("w.uint32(%i).%s(%s[i])", (field2.id << 3 | wireType) >>> 0, type, ref);
           }
           gen("}");
         } else {
-          if (!field.required)
-            if (field.hasPresence || !(field.resolvedType instanceof Enum || types.basic[type] !== void 0)) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j))", ref, field.name);
-            else if (field.resolvedType instanceof Enum) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==%j)", ref, field.name, ref, field.typeDefault);
-            else if (type === "bool") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==false)", ref, field.name, ref);
-            else if (type === "string") gen('if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!=="")', ref, field.name, ref);
-            else if (type === "bytes") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s.length)", ref, field.name, ref);
-            else if (type === "double" || type === "float") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&!Object.is(%s,0))", ref, field.name, ref);
-            else if (types.long[type] !== void 0) gen('if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&(typeof %s==="object"?%s.low||%s.high:%s!==0))', ref, field.name, ref, ref, ref, ref);
-            else gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==0)", ref, field.name, ref);
+          if (!field2.required)
+            if (field2.hasPresence || !(field2.resolvedType instanceof Enum || types.basic[type] !== void 0)) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j))", ref, field2.name);
+            else if (field2.resolvedType instanceof Enum) gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==%j)", ref, field2.name, ref, field2.typeDefault);
+            else if (type === "bool") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==false)", ref, field2.name, ref);
+            else if (type === "string") gen('if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!=="")', ref, field2.name, ref);
+            else if (type === "bytes") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s.length)", ref, field2.name, ref);
+            else if (type === "double" || type === "float") gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&!Object.is(%s,0))", ref, field2.name, ref);
+            else if (types.long[type] !== void 0) gen('if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&(typeof %s==="object"?%s.low||%s.high:%s!==0))', ref, field2.name, ref, ref, ref, ref);
+            else gen("if(%s!=null&&Object.hasOwnProperty.call(m,%j)&&%s!==0)", ref, field2.name, ref);
           if (wireType === void 0)
-            genTypePartial(gen, field, index2, ref);
-          else gen("w.uint32(%i).%s(%s)", (field.id << 3 | wireType) >>> 0, type, ref);
+            genTypePartial(gen, field2, index2, ref);
+          else gen("w.uint32(%i).%s(%s)", (field2.id << 3 | wireType) >>> 0, type, ref);
         }
       }
       return gen('if(m.$unknowns!=null&&Object.hasOwnProperty.call(m,"$unknowns"))')("for(var i=0;i<m.$unknowns.length;++i)")("w.raw(m.$unknowns[i])")("return w");
@@ -7776,13 +7776,13 @@ var require_light = __commonJS({
 });
 
 // src/worker.ts
-var import_strict5 = __toESM(require("node:assert/strict"), 1);
-var import_node_fs2 = require("node:fs");
-var import_promises3 = require("node:fs/promises");
-var import_node_path3 = require("node:path");
+var import_strict8 = __toESM(require("node:assert/strict"), 1);
+var import_node_fs5 = require("node:fs");
+var import_promises7 = require("node:fs/promises");
+var import_node_path5 = require("node:path");
 var import_node_child_process = require("node:child_process");
 var import_node_events = require("node:events");
-var import_proper_lockfile2 = __toESM(require_proper_lockfile(), 1);
+var import_proper_lockfile3 = __toESM(require_proper_lockfile(), 1);
 
 // node_modules/zod/v4/classic/external.js
 var external_exports = {};
@@ -8512,8 +8512,8 @@ function mergeDefs(...defs) {
   }
   return Object.defineProperties({}, mergedDescriptors);
 }
-function cloneDef(schema) {
-  return mergeDefs(schema._zod.def);
+function cloneDef(schema2) {
+  return mergeDefs(schema2._zod.def);
 }
 function getElementAtPath(obj, path) {
   if (!path)
@@ -8687,9 +8687,9 @@ function createTransparentProxy(getter) {
       target ?? (target = getter());
       return Reflect.getOwnPropertyDescriptor(target, prop);
     },
-    defineProperty(_, prop, descriptor) {
+    defineProperty(_, prop, descriptor2) {
       target ?? (target = getter());
-      return Reflect.defineProperty(target, prop, descriptor);
+      return Reflect.defineProperty(target, prop, descriptor2);
     }
   });
 }
@@ -8716,9 +8716,9 @@ var BIGINT_FORMAT_RANGES = {
   int64: [/* @__PURE__ */ BigInt("-9223372036854775808"), /* @__PURE__ */ BigInt("9223372036854775807")],
   uint64: [/* @__PURE__ */ BigInt(0), /* @__PURE__ */ BigInt("18446744073709551615")]
 };
-function pick(schema, mask) {
-  const currDef = schema._zod.def;
-  const def = mergeDefs(schema._zod.def, {
+function pick(schema2, mask) {
+  const currDef = schema2._zod.def;
+  const def = mergeDefs(schema2._zod.def, {
     get shape() {
       const newShape = {};
       for (const key in mask) {
@@ -8734,13 +8734,13 @@ function pick(schema, mask) {
     },
     checks: []
   });
-  return clone(schema, def);
+  return clone(schema2, def);
 }
-function omit(schema, mask) {
-  const currDef = schema._zod.def;
-  const def = mergeDefs(schema._zod.def, {
+function omit(schema2, mask) {
+  const currDef = schema2._zod.def;
+  const def = mergeDefs(schema2._zod.def, {
     get shape() {
-      const newShape = { ...schema._zod.def.shape };
+      const newShape = { ...schema2._zod.def.shape };
       for (const key in mask) {
         if (!(key in currDef.shape)) {
           throw new Error(`Unrecognized key: "${key}"`);
@@ -8754,41 +8754,41 @@ function omit(schema, mask) {
     },
     checks: []
   });
-  return clone(schema, def);
+  return clone(schema2, def);
 }
-function extend(schema, shape) {
+function extend(schema2, shape) {
   if (!isPlainObject(shape)) {
     throw new Error("Invalid input to extend: expected a plain object");
   }
-  const checks = schema._zod.def.checks;
+  const checks = schema2._zod.def.checks;
   const hasChecks = checks && checks.length > 0;
   if (hasChecks) {
     throw new Error("Object schemas containing refinements cannot be extended. Use `.safeExtend()` instead.");
   }
-  const def = mergeDefs(schema._zod.def, {
+  const def = mergeDefs(schema2._zod.def, {
     get shape() {
-      const _shape = { ...schema._zod.def.shape, ...shape };
+      const _shape = { ...schema2._zod.def.shape, ...shape };
       assignProp(this, "shape", _shape);
       return _shape;
     },
     checks: []
   });
-  return clone(schema, def);
+  return clone(schema2, def);
 }
-function safeExtend(schema, shape) {
+function safeExtend(schema2, shape) {
   if (!isPlainObject(shape)) {
     throw new Error("Invalid input to safeExtend: expected a plain object");
   }
   const def = {
-    ...schema._zod.def,
+    ...schema2._zod.def,
     get shape() {
-      const _shape = { ...schema._zod.def.shape, ...shape };
+      const _shape = { ...schema2._zod.def.shape, ...shape };
       assignProp(this, "shape", _shape);
       return _shape;
     },
-    checks: schema._zod.def.checks
+    checks: schema2._zod.def.checks
   };
-  return clone(schema, def);
+  return clone(schema2, def);
 }
 function merge(a, b) {
   const def = mergeDefs(a._zod.def, {
@@ -8805,10 +8805,10 @@ function merge(a, b) {
   });
   return clone(a, def);
 }
-function partial(Class2, schema, mask) {
-  const def = mergeDefs(schema._zod.def, {
+function partial(Class2, schema2, mask) {
+  const def = mergeDefs(schema2._zod.def, {
     get shape() {
-      const oldShape = schema._zod.def.shape;
+      const oldShape = schema2._zod.def.shape;
       const shape = { ...oldShape };
       if (mask) {
         for (const key in mask) {
@@ -8835,12 +8835,12 @@ function partial(Class2, schema, mask) {
     },
     checks: []
   });
-  return clone(schema, def);
+  return clone(schema2, def);
 }
-function required(Class2, schema, mask) {
-  const def = mergeDefs(schema._zod.def, {
+function required(Class2, schema2, mask) {
+  const def = mergeDefs(schema2._zod.def, {
     get shape() {
-      const oldShape = schema._zod.def.shape;
+      const oldShape = schema2._zod.def.shape;
       const shape = { ...oldShape };
       if (mask) {
         for (const key in mask) {
@@ -8867,7 +8867,7 @@ function required(Class2, schema, mask) {
     },
     checks: []
   });
-  return clone(schema, def);
+  return clone(schema2, def);
 }
 function aborted(x, startIndex = 0) {
   if (x.aborted === true)
@@ -9115,9 +9115,9 @@ function prettifyError(error46) {
 }
 
 // node_modules/zod/v4/core/parse.js
-var _parse = (_Err) => (schema, value, _ctx, _params) => {
+var _parse = (_Err) => (schema2, value, _ctx, _params) => {
   const ctx = _ctx ? Object.assign(_ctx, { async: false }) : { async: false };
-  const result = schema._zod.run({ value, issues: [] }, ctx);
+  const result = schema2._zod.run({ value, issues: [] }, ctx);
   if (result instanceof Promise) {
     throw new $ZodAsyncError();
   }
@@ -9129,9 +9129,9 @@ var _parse = (_Err) => (schema, value, _ctx, _params) => {
   return result.value;
 };
 var parse = /* @__PURE__ */ _parse($ZodRealError);
-var _parseAsync = (_Err) => async (schema, value, _ctx, params) => {
+var _parseAsync = (_Err) => async (schema2, value, _ctx, params) => {
   const ctx = _ctx ? Object.assign(_ctx, { async: true }) : { async: true };
-  let result = schema._zod.run({ value, issues: [] }, ctx);
+  let result = schema2._zod.run({ value, issues: [] }, ctx);
   if (result instanceof Promise)
     result = await result;
   if (result.issues.length) {
@@ -9142,9 +9142,9 @@ var _parseAsync = (_Err) => async (schema, value, _ctx, params) => {
   return result.value;
 };
 var parseAsync = /* @__PURE__ */ _parseAsync($ZodRealError);
-var _safeParse = (_Err) => (schema, value, _ctx) => {
+var _safeParse = (_Err) => (schema2, value, _ctx) => {
   const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
-  const result = schema._zod.run({ value, issues: [] }, ctx);
+  const result = schema2._zod.run({ value, issues: [] }, ctx);
   if (result instanceof Promise) {
     throw new $ZodAsyncError();
   }
@@ -9154,9 +9154,9 @@ var _safeParse = (_Err) => (schema, value, _ctx) => {
   } : { success: true, data: result.value };
 };
 var safeParse = /* @__PURE__ */ _safeParse($ZodRealError);
-var _safeParseAsync = (_Err) => async (schema, value, _ctx) => {
+var _safeParseAsync = (_Err) => async (schema2, value, _ctx) => {
   const ctx = _ctx ? Object.assign(_ctx, { async: true }) : { async: true };
-  let result = schema._zod.run({ value, issues: [] }, ctx);
+  let result = schema2._zod.run({ value, issues: [] }, ctx);
   if (result instanceof Promise)
     result = await result;
   return result.issues.length ? {
@@ -9165,40 +9165,40 @@ var _safeParseAsync = (_Err) => async (schema, value, _ctx) => {
   } : { success: true, data: result.value };
 };
 var safeParseAsync = /* @__PURE__ */ _safeParseAsync($ZodRealError);
-var _encode = (_Err) => (schema, value, _ctx) => {
+var _encode = (_Err) => (schema2, value, _ctx) => {
   const ctx = _ctx ? Object.assign(_ctx, { direction: "backward" }) : { direction: "backward" };
-  return _parse(_Err)(schema, value, ctx);
+  return _parse(_Err)(schema2, value, ctx);
 };
 var encode = /* @__PURE__ */ _encode($ZodRealError);
-var _decode = (_Err) => (schema, value, _ctx) => {
-  return _parse(_Err)(schema, value, _ctx);
+var _decode = (_Err) => (schema2, value, _ctx) => {
+  return _parse(_Err)(schema2, value, _ctx);
 };
 var decode = /* @__PURE__ */ _decode($ZodRealError);
-var _encodeAsync = (_Err) => async (schema, value, _ctx) => {
+var _encodeAsync = (_Err) => async (schema2, value, _ctx) => {
   const ctx = _ctx ? Object.assign(_ctx, { direction: "backward" }) : { direction: "backward" };
-  return _parseAsync(_Err)(schema, value, ctx);
+  return _parseAsync(_Err)(schema2, value, ctx);
 };
 var encodeAsync = /* @__PURE__ */ _encodeAsync($ZodRealError);
-var _decodeAsync = (_Err) => async (schema, value, _ctx) => {
-  return _parseAsync(_Err)(schema, value, _ctx);
+var _decodeAsync = (_Err) => async (schema2, value, _ctx) => {
+  return _parseAsync(_Err)(schema2, value, _ctx);
 };
 var decodeAsync = /* @__PURE__ */ _decodeAsync($ZodRealError);
-var _safeEncode = (_Err) => (schema, value, _ctx) => {
+var _safeEncode = (_Err) => (schema2, value, _ctx) => {
   const ctx = _ctx ? Object.assign(_ctx, { direction: "backward" }) : { direction: "backward" };
-  return _safeParse(_Err)(schema, value, ctx);
+  return _safeParse(_Err)(schema2, value, ctx);
 };
 var safeEncode = /* @__PURE__ */ _safeEncode($ZodRealError);
-var _safeDecode = (_Err) => (schema, value, _ctx) => {
-  return _safeParse(_Err)(schema, value, _ctx);
+var _safeDecode = (_Err) => (schema2, value, _ctx) => {
+  return _safeParse(_Err)(schema2, value, _ctx);
 };
 var safeDecode = /* @__PURE__ */ _safeDecode($ZodRealError);
-var _safeEncodeAsync = (_Err) => async (schema, value, _ctx) => {
+var _safeEncodeAsync = (_Err) => async (schema2, value, _ctx) => {
   const ctx = _ctx ? Object.assign(_ctx, { direction: "backward" }) : { direction: "backward" };
-  return _safeParseAsync(_Err)(schema, value, ctx);
+  return _safeParseAsync(_Err)(schema2, value, ctx);
 };
 var safeEncodeAsync = /* @__PURE__ */ _safeEncodeAsync($ZodRealError);
-var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
-  return _safeParseAsync(_Err)(schema, value, _ctx);
+var _safeDecodeAsync = (_Err) => async (schema2, value, _ctx) => {
+  return _safeParseAsync(_Err)(schema2, value, _ctx);
 };
 var safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync($ZodRealError);
 
@@ -10667,10 +10667,10 @@ var $ZodObject = /* @__PURE__ */ $constructor("$ZodObject", (inst, def) => {
     const shape = def.shape;
     const propValues = {};
     for (const key in shape) {
-      const field = shape[key]._zod;
-      if (field.values) {
+      const field2 = shape[key]._zod;
+      if (field2.values) {
         propValues[key] ?? (propValues[key] = /* @__PURE__ */ new Set());
-        for (const v of field.values)
+        for (const v of field2.values)
           propValues[key].add(v);
       }
     }
@@ -17459,14 +17459,14 @@ var $ZodRegistry = class {
     this._map = /* @__PURE__ */ new WeakMap();
     this._idmap = /* @__PURE__ */ new Map();
   }
-  add(schema, ..._meta) {
+  add(schema2, ..._meta) {
     const meta = _meta[0];
-    this._map.set(schema, meta);
+    this._map.set(schema2, meta);
     if (meta && typeof meta === "object" && "id" in meta) {
       if (this._idmap.has(meta.id)) {
         throw new Error(`ID ${meta.id} already exists in the registry`);
       }
-      this._idmap.set(meta.id, schema);
+      this._idmap.set(meta.id, schema2);
     }
     return this;
   }
@@ -17475,26 +17475,26 @@ var $ZodRegistry = class {
     this._idmap = /* @__PURE__ */ new Map();
     return this;
   }
-  remove(schema) {
-    const meta = this._map.get(schema);
+  remove(schema2) {
+    const meta = this._map.get(schema2);
     if (meta && typeof meta === "object" && "id" in meta) {
       this._idmap.delete(meta.id);
     }
-    this._map.delete(schema);
+    this._map.delete(schema2);
     return this;
   }
-  get(schema) {
-    const p = schema._zod.parent;
+  get(schema2) {
+    const p = schema2._zod.parent;
     if (p) {
       const pm = { ...this.get(p) ?? {} };
       delete pm.id;
-      const f = { ...pm, ...this._map.get(schema) };
+      const f = { ...pm, ...this._map.get(schema2) };
       return Object.keys(f).length ? f : void 0;
     }
-    return this._map.get(schema);
+    return this._map.get(schema2);
   }
-  has(schema) {
-    return this._map.has(schema);
+  has(schema2) {
+    return this._map.has(schema2);
   }
 };
 function registry() {
@@ -18063,11 +18063,11 @@ function _endsWith(suffix, params) {
     suffix
   });
 }
-function _property(property, schema, params) {
+function _property(property, schema2, params) {
   return new $ZodCheckProperty({
     check: "property",
     property,
-    schema,
+    schema: schema2,
     ...normalizeParams(params)
   });
 }
@@ -18272,22 +18272,22 @@ function _promise(Class2, innerType) {
 function _custom(Class2, fn, _params) {
   const norm = normalizeParams(_params);
   norm.abort ?? (norm.abort = true);
-  const schema = new Class2({
+  const schema2 = new Class2({
     type: "custom",
     check: "custom",
     fn,
     ...norm
   });
-  return schema;
+  return schema2;
 }
 function _refine(Class2, fn, _params) {
-  const schema = new Class2({
+  const schema2 = new Class2({
     type: "custom",
     check: "custom",
     fn,
     ...normalizeParams(_params)
   });
-  return schema;
+  return schema2;
 }
 function _superRefine(fn) {
   const ch = _check((payload) => {
@@ -18396,9 +18396,9 @@ var JSONSchemaGenerator = class {
     this.io = params?.io ?? "output";
     this.seen = /* @__PURE__ */ new Map();
   }
-  process(schema, _params = { path: [], schemaPath: [] }) {
+  process(schema2, _params = { path: [], schemaPath: [] }) {
     var _a;
-    const def = schema._zod.def;
+    const def = schema2._zod.def;
     const formatMap = {
       guid: "uuid",
       url: "uri",
@@ -18407,27 +18407,27 @@ var JSONSchemaGenerator = class {
       regex: ""
       // do not set
     };
-    const seen = this.seen.get(schema);
+    const seen = this.seen.get(schema2);
     if (seen) {
       seen.count++;
-      const isCycle = _params.schemaPath.includes(schema);
+      const isCycle = _params.schemaPath.includes(schema2);
       if (isCycle) {
         seen.cycle = _params.path;
       }
       return seen.schema;
     }
     const result = { schema: {}, count: 1, cycle: void 0, path: _params.path };
-    this.seen.set(schema, result);
-    const overrideSchema = schema._zod.toJSONSchema?.();
+    this.seen.set(schema2, result);
+    const overrideSchema = schema2._zod.toJSONSchema?.();
     if (overrideSchema) {
       result.schema = overrideSchema;
     } else {
       const params = {
         ..._params,
-        schemaPath: [..._params.schemaPath, schema],
+        schemaPath: [..._params.schemaPath, schema2],
         path: _params.path
       };
-      const parent = schema._zod.parent;
+      const parent = schema2._zod.parent;
       if (parent) {
         result.ref = parent;
         this.process(parent, params);
@@ -18438,7 +18438,7 @@ var JSONSchemaGenerator = class {
           case "string": {
             const json3 = _json;
             json3.type = "string";
-            const { minimum, maximum, format, patterns, contentEncoding } = schema._zod.bag;
+            const { minimum, maximum, format, patterns, contentEncoding } = schema2._zod.bag;
             if (typeof minimum === "number")
               json3.minLength = minimum;
             if (typeof maximum === "number")
@@ -18467,7 +18467,7 @@ var JSONSchemaGenerator = class {
           }
           case "number": {
             const json3 = _json;
-            const { minimum, maximum, format, multipleOf, exclusiveMaximum, exclusiveMinimum } = schema._zod.bag;
+            const { minimum, maximum, format, multipleOf, exclusiveMaximum, exclusiveMinimum } = schema2._zod.bag;
             if (typeof format === "string" && format.includes("int"))
               json3.type = "integer";
             else
@@ -18566,7 +18566,7 @@ var JSONSchemaGenerator = class {
           }
           case "array": {
             const json3 = _json;
-            const { minimum, maximum } = schema._zod.bag;
+            const { minimum, maximum } = schema2._zod.bag;
             if (typeof minimum === "number")
               json3.minItems = minimum;
             if (typeof maximum === "number")
@@ -18673,7 +18673,7 @@ var JSONSchemaGenerator = class {
                 json3.additionalItems = rest;
               }
             }
-            const { minimum, maximum } = schema._zod.bag;
+            const { minimum, maximum } = schema2._zod.bag;
             if (typeof minimum === "number")
               json3.minItems = minimum;
             if (typeof maximum === "number")
@@ -18765,7 +18765,7 @@ var JSONSchemaGenerator = class {
               format: "binary",
               contentEncoding: "binary"
             };
-            const { minimum, maximum, mime } = schema._zod.bag;
+            const { minimum, maximum, mime } = schema2._zod.bag;
             if (minimum !== void 0)
               file2.minLength = minimum;
             if (maximum !== void 0)
@@ -18844,7 +18844,7 @@ var JSONSchemaGenerator = class {
           }
           case "template_literal": {
             const json3 = _json;
-            const pattern = schema._zod.pattern;
+            const pattern = schema2._zod.pattern;
             if (!pattern)
               throw new Error("Pattern not found in template literal");
             json3.type = "string";
@@ -18875,7 +18875,7 @@ var JSONSchemaGenerator = class {
             break;
           }
           case "lazy": {
-            const innerType = schema._zod.innerType;
+            const innerType = schema2._zod.innerType;
             this.process(innerType, params);
             result.ref = innerType;
             break;
@@ -18898,20 +18898,20 @@ var JSONSchemaGenerator = class {
         }
       }
     }
-    const meta = this.metadataRegistry.get(schema);
+    const meta = this.metadataRegistry.get(schema2);
     if (meta)
       Object.assign(result.schema, meta);
-    if (this.io === "input" && isTransforming(schema)) {
+    if (this.io === "input" && isTransforming(schema2)) {
       delete result.schema.examples;
       delete result.schema.default;
     }
     if (this.io === "input" && result.schema._prefault)
       (_a = result.schema).default ?? (_a.default = result.schema._prefault);
     delete result.schema._prefault;
-    const _result = this.seen.get(schema);
+    const _result = this.seen.get(schema2);
     return _result.schema;
   }
-  emit(schema, _params) {
+  emit(schema2, _params) {
     const params = {
       cycles: _params?.cycles ?? "ref",
       reused: _params?.reused ?? "inline",
@@ -18919,7 +18919,7 @@ var JSONSchemaGenerator = class {
       // uri: _params?.uri ?? ((id) => `${id}`),
       external: _params?.external ?? void 0
     };
-    const root = this.seen.get(schema);
+    const root = this.seen.get(schema2);
     if (!root)
       throw new Error("Unprocessed schema. This is a bug in Zod.");
     const makeURI = (entry) => {
@@ -18951,11 +18951,11 @@ var JSONSchemaGenerator = class {
       seen.def = { ...seen.schema };
       if (defId)
         seen.defId = defId;
-      const schema2 = seen.schema;
-      for (const key in schema2) {
-        delete schema2[key];
+      const schema3 = seen.schema;
+      for (const key in schema3) {
+        delete schema3[key];
       }
-      schema2.$ref = ref;
+      schema3.$ref = ref;
     };
     if (params.cycles === "throw") {
       for (const entry of this.seen.entries()) {
@@ -18969,13 +18969,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     }
     for (const entry of this.seen.entries()) {
       const seen = entry[1];
-      if (schema === entry[0]) {
+      if (schema2 === entry[0]) {
         extractToDef(entry);
         continue;
       }
       if (params.external) {
         const ext = params.external.registry.get(entry[0])?.id;
-        if (schema !== entry[0] && ext) {
+        if (schema2 !== entry[0] && ext) {
           extractToDef(entry);
           continue;
         }
@@ -18998,8 +18998,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     }
     const flattenRef = (zodSchema, params2) => {
       const seen = this.seen.get(zodSchema);
-      const schema2 = seen.def ?? seen.schema;
-      const _cached = { ...schema2 };
+      const schema3 = seen.def ?? seen.schema;
+      const _cached = { ...schema3 };
       if (seen.ref === null) {
         return;
       }
@@ -19009,17 +19009,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
         flattenRef(ref, params2);
         const refSchema = this.seen.get(ref).schema;
         if (refSchema.$ref && (params2.target === "draft-7" || params2.target === "draft-4" || params2.target === "openapi-3.0")) {
-          schema2.allOf = schema2.allOf ?? [];
-          schema2.allOf.push(refSchema);
+          schema3.allOf = schema3.allOf ?? [];
+          schema3.allOf.push(refSchema);
         } else {
-          Object.assign(schema2, refSchema);
-          Object.assign(schema2, _cached);
+          Object.assign(schema3, refSchema);
+          Object.assign(schema3, _cached);
         }
       }
       if (!seen.isParent)
         this.override({
           zodSchema,
-          jsonSchema: schema2,
+          jsonSchema: schema3,
           path: seen.path ?? []
         });
     };
@@ -19038,7 +19038,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       console.warn(`Invalid target: ${this.target}`);
     }
     if (params.external?.uri) {
-      const id2 = params.external.registry.get(schema)?.id;
+      const id2 = params.external.registry.get(schema2)?.id;
       if (!id2)
         throw new Error("Schema is missing an `id` property");
       result.$id = params.external.uri(id2);
@@ -19073,8 +19073,8 @@ function toJSONSchema(input, _params) {
     const gen2 = new JSONSchemaGenerator(_params);
     const defs = {};
     for (const entry of input._idmap.entries()) {
-      const [_, schema] = entry;
-      gen2.process(schema);
+      const [_, schema2] = entry;
+      gen2.process(schema2);
     }
     const schemas = {};
     const external = {
@@ -19083,8 +19083,8 @@ function toJSONSchema(input, _params) {
       defs
     };
     for (const entry of input._idmap.entries()) {
-      const [key, schema] = entry;
-      schemas[key] = gen2.emit(schema, {
+      const [key, schema2] = entry;
+      schemas[key] = gen2.emit(schema2, {
         ..._params,
         external
       });
@@ -19106,8 +19106,8 @@ function isTransforming(_schema, _ctx) {
   if (ctx.seen.has(_schema))
     return false;
   ctx.seen.add(_schema);
-  const schema = _schema;
-  const def = schema._zod.def;
+  const schema2 = _schema;
+  const def = schema2._zod.def;
   switch (def.type) {
     case "string":
     case "number":
@@ -19766,8 +19766,8 @@ var ZodArray = /* @__PURE__ */ $constructor("ZodArray", (inst, def) => {
 function array(element, params) {
   return _array(ZodArray, element, params);
 }
-function keyof(schema) {
-  const shape = schema._zod.def.shape;
+function keyof(schema2) {
+  const shape = schema2._zod.def.shape;
   return _enum2(Object.keys(shape));
 }
 var ZodObject = /* @__PURE__ */ $constructor("ZodObject", (inst, def) => {
@@ -20268,8 +20268,8 @@ function json(params) {
   });
   return jsonSchema;
 }
-function preprocess(fn, schema) {
-  return pipe(transform(fn), schema);
+function preprocess(fn, schema2) {
+  return pipe(transform(fn), schema2);
 }
 
 // node_modules/zod/v4/classic/compat.js
@@ -20495,7 +20495,11 @@ var configSchema = external_exports.object({
   baseUrl: external_exports.url(),
   maxChars: external_exports.number().int().min(256).max(1e5).default(2e4),
   timeoutMs: external_exports.number().int().min(100).max(15e3).default(5e3),
-  captureNativeTiming: external_exports.boolean().default(true)
+  queryTimeoutMs: external_exports.number().int().min(100).max(6e4).default(15e3),
+  captureNativeTiming: external_exports.boolean().default(true),
+  captureNativeContext: external_exports.boolean().optional(),
+  validateNativeSchema: external_exports.boolean().default(true),
+  nativeTimingWaitMs: external_exports.number().int().min(1e3).max(6e5).default(12e4)
 }).strict();
 async function readConfig() {
   const config2 = configSchema.parse(
@@ -20510,7 +20514,10 @@ async function readConfig() {
     !base.username && !base.password && !base.search && !base.hash,
     "Invalid Laminar base URL"
   );
-  return config2;
+  return {
+    ...config2,
+    captureNativeContext: config2.captureNativeContext ?? config2.captureNativeTiming
+  };
 }
 function sessionKey(payload, config2) {
   return (0, import_node_crypto.createHash)("sha256").update(
@@ -20559,8 +20566,241 @@ function ownerAlive(owner) {
   return info.startTicks === owner.startTicks && !["Z", "X"].includes(info.state);
 }
 
-// src/traces.ts
+// src/backfill.ts
+var import_strict4 = __toESM(require("node:assert/strict"), 1);
+var import_node_crypto3 = require("node:crypto");
+var import_node_fs3 = require("node:fs");
+var import_promises3 = require("node:fs/promises");
+var import_node_path3 = require("node:path");
+var import_proper_lockfile2 = __toESM(require_proper_lockfile(), 1);
+
+// src/native-timing.ts
 var import_strict2 = __toESM(require("node:assert/strict"), 1);
+var import_node_fs2 = require("node:fs");
+var import_promises2 = require("node:fs/promises");
+var import_node_path2 = require("node:path");
+var import_light = __toESM(require_light(), 1);
+var generator = import_light.default.Root.fromJSON({
+  nested: {
+    Duration: {
+      fields: {
+        seconds: { type: "int64", id: 1 },
+        nanos: { type: "int32", id: 2 }
+      }
+    },
+    ChatToolCall: {
+      fields: {
+        id: { type: "string", id: 1 },
+        name: { type: "string", id: 2 },
+        argumentsJson: { type: "string", id: 3 }
+      }
+    },
+    ChatMessagePrompt: {
+      fields: {
+        source: { type: "int32", id: 2 },
+        prompt: { type: "string", id: 3 },
+        toolCalls: { rule: "repeated", type: "ChatToolCall", id: 6 },
+        toolCallId: { type: "string", id: 7 }
+      }
+    },
+    ChatToolDefinition: {
+      fields: {
+        name: { type: "string", id: 1 },
+        description: { type: "string", id: 2 },
+        jsonSchemaString: { type: "string", id: 3 }
+      }
+    },
+    ChatModelMetadata: {
+      fields: {
+        systemPrompt: { type: "string", id: 1 },
+        messagePrompts: { rule: "repeated", type: "ChatMessagePrompt", id: 2 },
+        modelCost: { type: "float", id: 5 },
+        tools: { rule: "repeated", type: "ChatToolDefinition", id: 8 },
+        responseModel: { type: "string", id: 19 },
+        responseModelFull: { type: "string", id: 22 },
+        timeToFirstToken: { type: "Duration", id: 11 },
+        streamingDuration: { type: "Duration", id: 12 }
+      }
+    },
+    CortexStepGeneratorMetadata: {
+      fields: {
+        chatModel: { type: "ChatModelMetadata", id: 1 },
+        stepIndices: { rule: "repeated", type: "uint32", id: 2 }
+      }
+    }
+  }
+}).lookupType("CortexStepGeneratorMetadata");
+var duration3 = external_exports.object({
+  // Zero components are omitted by proto3 serialization.
+  seconds: external_exports.coerce.number().int().nonnegative().safe().default(0),
+  nanos: external_exports.number().int().min(0).max(999999999).default(0)
+}).transform((value) => value.seconds + value.nanos / 1e9);
+var nativeMessage = external_exports.object({
+  source: external_exports.union([
+    external_exports.literal(0),
+    external_exports.literal(1),
+    external_exports.literal(2),
+    external_exports.literal(3),
+    external_exports.literal(4),
+    external_exports.literal(5),
+    external_exports.literal(6)
+  ]).default(0),
+  prompt: external_exports.string().optional(),
+  toolCalls: external_exports.array(
+    external_exports.object({ id: external_exports.string(), name: external_exports.string(), argumentsJson: external_exports.string() })
+  ).optional(),
+  toolCallId: external_exports.string().optional()
+});
+var contextSchema = external_exports.object({
+  generatorIndex: external_exports.number().int().nonnegative(),
+  stepIndices: external_exports.array(external_exports.number().int().nonnegative()),
+  systemPrompt: external_exports.string().optional(),
+  messagePrompts: external_exports.array(nativeMessage),
+  tools: external_exports.array(
+    external_exports.object({
+      name: external_exports.string(),
+      description: external_exports.string().optional(),
+      jsonSchemaString: external_exports.string()
+    })
+  )
+});
+var metadata = external_exports.object({
+  stepIndices: external_exports.array(external_exports.number().int().nonnegative()).optional(),
+  chatModel: external_exports.object({
+    systemPrompt: external_exports.string().optional(),
+    messagePrompts: external_exports.array(nativeMessage).optional(),
+    tools: contextSchema.shape.tools.optional(),
+    modelCost: external_exports.number().finite().nonnegative().optional(),
+    responseModel: external_exports.string().optional(),
+    responseModelFull: external_exports.string().optional(),
+    timeToFirstToken: duration3.optional(),
+    streamingDuration: duration3.optional()
+  }).optional()
+});
+async function readNativeTimings(transcriptPath, conversationId, steps) {
+  const result = /* @__PURE__ */ new Map();
+  if (steps.length === 0) return result;
+  const cliRoot = (0, import_node_path2.resolve)((0, import_node_path2.dirname)(transcriptPath), "../../../..");
+  import_strict2.default.equal(
+    transcriptPath,
+    (0, import_node_path2.join)(
+      cliRoot,
+      "brain",
+      conversationId,
+      ".system_generated",
+      "logs",
+      "transcript_full.jsonl"
+    ),
+    "Native timing requires the CLI's original transcript path"
+  );
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(
+    (0, import_node_path2.join)(cliRoot, "conversations", `${conversationId}.db`),
+    { readOnly: true }
+  );
+  const pending = new Set(steps);
+  try {
+    for (const row of db.prepare("SELECT data FROM gen_metadata ORDER BY idx DESC").iterate()) {
+      (0, import_strict2.default)(row.data instanceof Uint8Array, "Invalid generator metadata blob");
+      const value = metadata.parse(
+        generator.toObject(generator.decode(row.data), { longs: String })
+      );
+      if (!value.stepIndices) continue;
+      for (const step of value.stepIndices) {
+        if (!pending.has(step)) continue;
+        if (value.chatModel?.timeToFirstToken !== void 0) {
+          result.set(step, {
+            ttftSeconds: value.chatModel.timeToFirstToken,
+            streamingSeconds: value.chatModel.streamingDuration,
+            nativeModelCost: value.chatModel.modelCost,
+            responseModel: value.chatModel.responseModelFull || value.chatModel.responseModel
+          });
+        } else {
+          result.set(step, null);
+        }
+        pending.delete(step);
+      }
+      if (pending.size === 0) break;
+    }
+  } finally {
+    db.close();
+  }
+  return result;
+}
+async function captureNativeContext(transcriptPath, conversationId, directory) {
+  const cliRoot = (0, import_node_path2.resolve)((0, import_node_path2.dirname)(transcriptPath), "../../../..");
+  import_strict2.default.equal(
+    transcriptPath,
+    (0, import_node_path2.join)(
+      cliRoot,
+      "brain",
+      conversationId,
+      ".system_generated/logs/transcript_full.jsonl"
+    )
+  );
+  const { DatabaseSync } = await import("node:sqlite");
+  const db = new DatabaseSync(
+    (0, import_node_path2.join)(cliRoot, "conversations", `${conversationId}.db`),
+    { readOnly: true }
+  );
+  try {
+    for (const row of db.prepare("SELECT idx, data FROM gen_metadata ORDER BY idx DESC LIMIT 4").iterate()) {
+      (0, import_strict2.default)(typeof row.idx === "number" && row.data instanceof Uint8Array);
+      const value = metadata.parse(
+        generator.toObject(generator.decode(row.data), { longs: String })
+      );
+      const chat = value.chatModel;
+      if (!chat?.messagePrompts?.length || !value.stepIndices?.length) continue;
+      const contextPath = (0, import_node_path2.join)(directory, "native-context", `${row.idx}.json`);
+      await (0, import_promises2.mkdir)((0, import_node_path2.dirname)(contextPath), { recursive: true, mode: 448 });
+      if (!(0, import_node_fs2.existsSync)(contextPath))
+        await atomicJson(
+          contextPath,
+          contextSchema.parse({
+            generatorIndex: row.idx,
+            stepIndices: value.stepIndices,
+            systemPrompt: chat.systemPrompt,
+            messagePrompts: chat.messagePrompts,
+            tools: chat.tools ?? []
+          })
+        );
+      for (const step of value.stepIndices) {
+        const indexPath = (0, import_node_path2.join)(
+          directory,
+          "native-context",
+          `step-${step}.json`
+        );
+        if (!(0, import_node_fs2.existsSync)(indexPath))
+          await atomicJson(indexPath, { generatorIndex: row.idx });
+      }
+    }
+  } finally {
+    db.close();
+  }
+}
+async function readNativeContexts(directory, steps) {
+  const result = /* @__PURE__ */ new Map();
+  if (!steps.length || !(0, import_node_fs2.existsSync)((0, import_node_path2.join)(directory, "native-context")))
+    return result;
+  for (const step of steps) {
+    const indexPath = (0, import_node_path2.join)(directory, "native-context", `step-${step}.json`);
+    if (!(0, import_node_fs2.existsSync)(indexPath)) continue;
+    const index2 = external_exports.object({ generatorIndex: external_exports.number().int().nonnegative() }).parse(JSON.parse(await (0, import_promises2.readFile)(indexPath, "utf8")));
+    const context = contextSchema.parse(
+      JSON.parse(
+        await (0, import_promises2.readFile)(
+          (0, import_node_path2.join)(directory, "native-context", `${index2.generatorIndex}.json`),
+          "utf8"
+        )
+      )
+    );
+    result.set(step, context);
+  }
+  return result;
+}
+
+// src/traces.ts
+var import_strict3 = __toESM(require("node:assert/strict"), 1);
 var import_node_crypto2 = require("node:crypto");
 function id(seed, length) {
   return (0, import_node_crypto2.createHash)("sha256").update(seed).digest("hex").slice(0, length);
@@ -20579,25 +20819,26 @@ function text(value, limit) {
 }
 function json2(value, limit) {
   const encoded = JSON.stringify(value);
-  (0, import_strict2.default)(encoded !== void 0);
+  (0, import_strict3.default)(encoded !== void 0);
   return encoded.length > limit ? JSON.stringify(text(encoded, limit)) : encoded;
 }
-function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, alive, partialTranscript) {
+function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, alive, partialTranscript, completedTurns = /* @__PURE__ */ new Set()) {
   const first = events.find(
     (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps > importedThroughStep
   );
   if (!first) return [];
-  (0, import_strict2.default)(first.payload.event === "PreInvocation");
+  (0, import_strict3.default)(first.payload.event === "PreInvocation");
   const firstStep = first.payload.initialNumSteps;
   const firstUser = rows.findLast(
     (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index < firstStep
   );
-  (0, import_strict2.default)(firstUser, "No user turn before observed invocation");
+  (0, import_strict3.default)(firstUser, "No user turn before observed invocation");
   const starts = rows.filter(
     (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index >= firstUser.step_index && r.step_index > importedThroughStep
   );
   const spans = [];
   for (const [turnIndex, user] of starts.entries()) {
+    if (completedTurns.has(user.step_index)) continue;
     const next = starts[turnIndex + 1];
     const turnRows = rows.filter(
       (r) => r.step_index >= user.step_index && (next === void 0 || r.step_index < next.step_index)
@@ -20632,7 +20873,7 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
     );
     const rootId = id(`${traceId}:root`, 16);
     const makeSpan = (name, key, start, end, attrs, error46) => {
-      (0, import_strict2.default)(Date.parse(end) >= Date.parse(start), `Negative duration: ${key}`);
+      (0, import_strict3.default)(Date.parse(end) >= Date.parse(start), `Negative duration: ${key}`);
       return {
         traceId,
         spanId: id(`${traceId}:${key}`, 16),
@@ -20657,7 +20898,7 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
         status: error46 ? { code: 2, message: text(error46, maxChars) } : { code: 1 }
       };
     };
-    (0, import_strict2.default)(user.content !== void 0, "Missing user content");
+    (0, import_strict3.default)(user.content !== void 0, "Missing user content");
     const messages = [
       { role: "user", content: text(user.content, maxChars) }
     ];
@@ -20669,7 +20910,7 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
       for (const system of turnRows.filter(
         (r) => ["SYSTEM_MESSAGE", "CHECKPOINT", "ERROR_MESSAGE"].includes(r.type) && r.step_index > priorModel && r.step_index < model.step_index
       )) {
-        (0, import_strict2.default)(
+        (0, import_strict3.default)(
           system.source === "SYSTEM" && (system.content !== void 0 || system.error !== void 0),
           "Invalid system message"
         );
@@ -20683,14 +20924,14 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
         (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps <= model.step_index
       );
       if (!pre) {
-        (0, import_strict2.default)(!finishAt, `Missing PreInvocation at step ${model.step_index}`);
+        (0, import_strict3.default)(!finishAt, `Missing PreInvocation at step ${model.step_index}`);
         break;
       }
-      (0, import_strict2.default)(pre.payload.event === "PreInvocation");
+      (0, import_strict3.default)(pre.payload.event === "PreInvocation");
       const prePayload = pre.payload;
       const invocationKey = `${pre.at}:${prePayload.initialNumSteps}`;
       if (seenInvocations.has(invocationKey)) {
-        (0, import_strict2.default)(
+        (0, import_strict3.default)(
           !finishAt,
           `Multiple model responses mapped to one invocation at step ${model.step_index}`
         );
@@ -20701,18 +20942,18 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
         (e) => e.payload.event === "PostInvocation" && e.payload.initialNumSteps === prePayload.initialNumSteps && e.payload.invocationNum === prePayload.invocationNum && e.at >= pre.at
       );
       if (normal)
-        (0, import_strict2.default)(post, `Missing PostInvocation at step ${model.step_index}`);
+        (0, import_strict3.default)(post, `Missing PostInvocation at step ${model.step_index}`);
       const following = models.find((r) => r.step_index > model.step_index)?.step_index ?? next?.step_index ?? Infinity;
       const results = turnRows.filter(
         (r) => r.type === "GENERIC" && r.step_index > model.step_index && r.step_index < following
       );
       const calls = model.tool_calls ?? [];
-      (0, import_strict2.default)(
+      (0, import_strict3.default)(
         results.length <= calls.length,
         `Too many tool results at step ${model.step_index}`
       );
       if (normal)
-        (0, import_strict2.default)(
+        (0, import_strict3.default)(
           results.length === calls.length,
           `Tool-call/result mismatch at step ${model.step_index}`
         );
@@ -20758,15 +20999,15 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
           "antigravity.timing_source": toolHooks.length > 0 || post ? "hook_wall_clock" : "recovery_observation"
         };
         if (modelComplete) {
-          for (const [field, target] of [
+          for (const [field2, target] of [
             ["output_tokens", "output_tokens"],
             ["cache_read_tokens", "cache_read_input_tokens"],
             ["thinking_tokens", "reasoning_tokens"]
           ])
-            if (model[field] !== void 0)
-              attrs[`gen_ai.usage.${target}`] = model[field];
+            if (model[field2] !== void 0)
+              attrs[`gen_ai.usage.${target}`] = model[field2];
           if (model.input_tokens !== void 0) {
-            (0, import_strict2.default)(
+            (0, import_strict3.default)(
               model.cache_read_tokens !== void 0,
               "Cannot normalize input tokens without cache counter"
             );
@@ -20796,24 +21037,24 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
           (e) => e.payload.event === "PostToolUse" && e.payload.stepIdx === result.step_index
         );
         if (preTool) {
-          (0, import_strict2.default)(preTool.payload.event === "PreToolUse");
-          import_strict2.default.deepEqual(preTool.payload.toolCall, call);
+          (0, import_strict3.default)(preTool.payload.event === "PreToolUse");
+          import_strict3.default.deepEqual(preTool.payload.toolCall, call);
         }
         if (postTool) {
-          (0, import_strict2.default)(preTool && postTool.payload.event === "PostToolUse");
-          import_strict2.default.deepEqual(postTool.payload.toolCall, call);
-          (0, import_strict2.default)(postTool.at >= preTool.at);
+          (0, import_strict3.default)(preTool && postTool.payload.event === "PostToolUse");
+          import_strict3.default.deepEqual(postTool.payload.toolCall, call);
+          (0, import_strict3.default)(postTool.at >= preTool.at);
         }
         const failedBeforeHook = !preTool && ["ERROR", "INVALID"].includes(result.status);
         if (!preTool && !failedBeforeHook) {
-          (0, import_strict2.default)(!finishAt, `Missing PreToolUse for step ${result.step_index}`);
+          (0, import_strict3.default)(!finishAt, `Missing PreToolUse for step ${result.step_index}`);
           continue;
         }
         if (!postTool && !failedBeforeHook && !result.error && !finishAt)
           continue;
         if (normal && preTool && !result.error)
-          (0, import_strict2.default)(postTool, `Missing PostToolUse for step ${result.step_index}`);
-        (0, import_strict2.default)(
+          (0, import_strict3.default)(postTool, `Missing PostToolUse for step ${result.step_index}`);
+        (0, import_strict3.default)(
           result.content !== void 0 || result.error !== void 0,
           `Missing tool content at step ${result.step_index}`
         );
@@ -20849,10 +21090,10 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
     }
     if (finishAt) {
       for (const pre of invocations) {
-        (0, import_strict2.default)(pre.payload.event === "PreInvocation");
+        (0, import_strict3.default)(pre.payload.event === "PreInvocation");
         if (seenInvocations.has(`${pre.at}:${pre.payload.initialNumSteps}`))
           continue;
-        (0, import_strict2.default)(
+        (0, import_strict3.default)(
           terminalError,
           `Invocation has no model response at step ${pre.payload.initialNumSteps}`
         );
@@ -20876,7 +21117,7 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
       for (const e of turnEvents) {
         if (e.payload.event !== "PreToolUse" || seenTools.has(e.payload.stepIdx))
           continue;
-        (0, import_strict2.default)(
+        (0, import_strict3.default)(
           terminalError,
           `Unmatched tool start at step ${e.payload.stepIdx}`
         );
@@ -20899,7 +21140,7 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
         );
       }
       for (const r of turnRows)
-        (0, import_strict2.default)(
+        (0, import_strict3.default)(
           r.type !== "USER_INPUT" || r.step_index === user.step_index,
           `Unsupported injected input at step ${r.step_index}`
         );
@@ -20949,16 +21190,489 @@ function pack(spans) {
           })
         },
         scopeSpans: [
-          { scope: { name: "lmnr.antigravity", version: "0.3.1" }, spans }
+          { scope: { name: "lmnr.antigravity", version: "0.4.0" }, spans }
         ]
       }
     ]
   };
 }
 
+// src/backfill.ts
+async function backfill(directory, config2) {
+  const release = await import_proper_lockfile2.default.lock(directory, {
+    retries: { retries: 200, minTimeout: 100, maxTimeout: 100 },
+    stale: 3e4
+  });
+  try {
+    const first = eventRecord.parse(
+      JSON.parse(
+        (await (0, import_promises3.readFile)((0, import_node_path3.join)(directory, "events.jsonl"), "utf8")).split(
+          "\n"
+        )[0]
+      )
+    );
+    import_strict4.default.equal(
+      sessionKey(first.payload, config2),
+      directory.split("/").at(-1),
+      "Backfill project scope mismatch"
+    );
+    const cid = first.payload.conversationId;
+    const response = await fetch(
+      `${config2.baseUrl.replace(/\/$/, "")}/v1/sql/query`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${config2.projectApiKey}`
+        },
+        body: JSON.stringify({
+          query: `SELECT trace_id, span_id, attributes, span_type, toString(toUnixTimestamp64Nano(end_time)) AS end_ns FROM spans WHERE (span_type = 'LLM' OR JSONExtractString(attributes, 'antigravity.enrichment.type') = 'native_metadata') AND JSONExtractString(attributes, 'lmnr.association.properties.session_id') = '${cid}' ORDER BY start_time LIMIT 10001`
+        }),
+        signal: AbortSignal.timeout(config2.queryTimeoutMs),
+        redirect: "error"
+      }
+    );
+    (0, import_strict4.default)(response.ok, `Backfill lookup failed: HTTP ${response.status}`);
+    const rows = external_exports.object({
+      data: external_exports.array(
+        external_exports.object({
+          trace_id: external_exports.guid(),
+          span_type: external_exports.enum(["LLM", "DEFAULT"]),
+          span_id: external_exports.guid(),
+          attributes: external_exports.string().transform(
+            (s) => external_exports.record(external_exports.string(), external_exports.json()).parse(JSON.parse(s))
+          ),
+          end_ns: external_exports.string().regex(/^\d+$/)
+        })
+      )
+    }).parse(await response.json()).data;
+    (0, import_strict4.default)(
+      rows.length <= 1e4,
+      "Backfill exceeds 10000 spans; narrow the session explicitly"
+    );
+    const sourceText = await (0, import_promises3.readFile)(first.payload.transcriptPath, "utf8");
+    const source = sourceText.slice(0, sourceText.lastIndexOf("\n")).split("\n").filter(Boolean).map((line) => transcriptEnvelope.parse(JSON.parse(line)));
+    const models = new Map(
+      source.filter((r) => r.type === "PLANNER_RESPONSE").map((r) => [r.step_index, r])
+    );
+    const candidates = rows.filter(
+      (r) => r.span_type === "LLM" && r.attributes["antigravity.llm.timing_status"] !== "recorded" && typeof r.attributes["antigravity.step_index"] === "number"
+    );
+    const steps = candidates.map(
+      (r) => external_exports.number().int().nonnegative().parse(r.attributes["antigravity.step_index"])
+    );
+    const timings = await readNativeTimings(
+      first.payload.transcriptPath,
+      cid,
+      steps
+    );
+    const storedIds = new Set(
+      rows.map(
+        (r) => r.trace_id.replaceAll("-", "") + "-" + r.span_id.replaceAll("-", "").slice(-16)
+      )
+    );
+    let queued = 0, unavailable = 0, existing = 0;
+    const outbox = (0, import_node_path3.join)(directory, "outbox");
+    await (0, import_promises3.mkdir)(outbox, { recursive: true, mode: 448 });
+    for (const [index2, row] of candidates.entries()) {
+      const step = steps[index2];
+      const timing = timings.get(step);
+      const model = models.get(step);
+      if (!timing || !model) {
+        unavailable++;
+        continue;
+      }
+      const traceId = row.trace_id.replaceAll("-", "");
+      const parentSpanId = row.span_id.replaceAll("-", "").slice(-16);
+      const spanId = (0, import_node_crypto3.createHash)("sha256").update(`antigravity:native-enrichment:v1:${traceId}:${parentSpanId}`).digest("hex").slice(0, 16);
+      const name = `${traceId}-${spanId}`;
+      if (storedIds.has(name) || (0, import_node_fs3.existsSync)((0, import_node_path3.join)(outbox, `${name}.json`))) {
+        existing++;
+        continue;
+      }
+      const priorUser = source.findLast(
+        (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index < step
+      );
+      const firstCall = priorUser !== void 0 && source.find(
+        (r) => r.type === "PLANNER_RESPONSE" && r.step_index > priorUser.step_index
+      )?.step_index === step;
+      const span2 = {
+        traceId,
+        spanId,
+        parentSpanId,
+        name: "Native metadata (historical)",
+        kind: 1,
+        startTimeUnixNano: row.end_ns,
+        endTimeUnixNano: row.end_ns,
+        status: { code: 1 },
+        attributes: [
+          { key: "lmnr.span.type", value: { stringValue: "DEFAULT" } },
+          {
+            key: "lmnr.association.properties.session_id",
+            value: { stringValue: cid }
+          },
+          {
+            key: "antigravity.enrichment.type",
+            value: { stringValue: "native_metadata" }
+          },
+          {
+            key: "antigravity.enrichment.original_span_id",
+            value: { stringValue: row.span_id }
+          },
+          { key: "antigravity.step_index", value: { intValue: String(step) } },
+          {
+            key: "antigravity.user_turn_first_call",
+            value: { boolValue: firstCall }
+          },
+          {
+            key: "antigravity.llm.ttft_seconds",
+            value: { doubleValue: timing.ttftSeconds }
+          },
+          {
+            key: "antigravity.llm.timing_status",
+            value: { stringValue: "recorded" }
+          },
+          {
+            key: "antigravity.llm.timing_source",
+            value: { stringValue: "cli_sqlite_gen_metadata" }
+          },
+          {
+            key: "antigravity.llm.ttft_scope",
+            value: {
+              stringValue: "cli_first_output_including_thinking_not_first_answer_text"
+            }
+          }
+        ]
+      };
+      if (timing.streamingSeconds !== void 0)
+        span2.attributes.push({
+          key: "antigravity.llm.streaming_duration_seconds",
+          value: { doubleValue: timing.streamingSeconds }
+        });
+      if (model.thinking !== void 0) {
+        const thinking = external_exports.string().parse(model.thinking);
+        span2.attributes.push({
+          key: "lmnr.span.output",
+          value: {
+            stringValue: JSON.stringify({
+              thinking: thinking.length > config2.maxChars ? thinking.slice(0, config2.maxChars) + "\n[truncated by lmnr-antigravity]" : thinking
+            })
+          }
+        });
+      }
+      await atomicJson((0, import_node_path3.join)(outbox, `${name}.json`), {
+        span: span2,
+        request: pack([span2])
+      });
+      await atomicJson((0, import_node_path3.join)(outbox, `${name}.receipt.json`), {
+        state: "ready",
+        attempts: 0,
+        retryAt: 0
+      });
+      queued++;
+    }
+    return {
+      conversationId: cid,
+      llmSpans: rows.filter((r) => r.span_type === "LLM").length,
+      queued,
+      existing,
+      unavailable
+    };
+  } finally {
+    await release();
+  }
+}
+
+// src/compatibility.ts
+var import_strict5 = __toESM(require("node:assert/strict"), 1);
+var import_node_crypto4 = require("node:crypto");
+var import_promises4 = require("node:fs/promises");
+var import_node_fs4 = require("node:fs");
+var import_node_path4 = require("node:path");
+var import_light2 = __toESM(require_light(), 1);
+var descriptor = import_light2.default.Root.fromJSON({
+  nested: {
+    Field: {
+      fields: {
+        name: { type: "string", id: 1 },
+        number: { type: "int32", id: 3 },
+        label: { type: "int32", id: 4 },
+        type: { type: "int32", id: 5 },
+        typeName: { type: "string", id: 6 }
+      }
+    },
+    Descriptor: {
+      fields: {
+        name: { type: "string", id: 1 },
+        field: { rule: "repeated", type: "Field", id: 2 }
+      }
+    }
+  }
+}).lookupType("Descriptor");
+var field = external_exports.object({
+  name: external_exports.string(),
+  number: external_exports.number(),
+  label: external_exports.number(),
+  type: external_exports.number(),
+  typeName: external_exports.string().optional()
+});
+var schema = external_exports.object({ name: external_exports.string(), field: external_exports.array(field) });
+var expected = {
+  CortexStepGeneratorMetadata: [
+    [1, "chat_model", 11, 1, ".exa.cortex_pb.ChatModelMetadata"],
+    [2, "step_indices", 13, 3]
+  ],
+  ChatModelMetadata: [
+    [1, "system_prompt", 9, 1],
+    [2, "message_prompts", 11, 3, ".exa.chat_pb.ChatMessagePrompt"],
+    [5, "model_cost", 2, 1],
+    [8, "tools", 11, 3, ".exa.chat_pb.ChatToolDefinition"],
+    [11, "time_to_first_token", 11, 1, ".google.protobuf.Duration"],
+    [12, "streaming_duration", 11, 1, ".google.protobuf.Duration"],
+    [19, "response_model", 9, 1],
+    [22, "response_model_full", 9, 1]
+  ],
+  ChatMessagePrompt: [
+    [2, "source", 14, 1, ".exa.codeium_common_pb.ChatMessageSource"],
+    [3, "prompt", 9, 1],
+    [6, "tool_calls", 11, 3, ".exa.codeium_common_pb.ChatToolCall"],
+    [7, "tool_call_id", 9, 1]
+  ],
+  ChatToolCall: [
+    [1, "id", 9, 1],
+    [2, "name", 9, 1],
+    [3, "arguments_json", 9, 1]
+  ],
+  ChatToolDefinition: [
+    [1, "name", 9, 1],
+    [2, "description", 9, 1],
+    [3, "json_schema_string", 9, 1]
+  ]
+};
+async function verifyNativeSchema(binaryPath) {
+  const executable = binaryPath ?? process.env.LMNR_ANTIGRAVITY_BINARY ?? process.env.PATH.split(import_node_path4.delimiter).map((p) => (0, import_node_path4.join)(p, "agy")).find(import_node_fs4.existsSync);
+  (0, import_strict5.default)(executable, "Antigravity executable not found");
+  const info = await (0, import_promises4.stat)(executable, { bigint: true });
+  const identity = [info.dev, info.ino, info.size, info.mtimeNs].join(":");
+  const projectionHash = (0, import_node_crypto4.createHash)("sha256").update(JSON.stringify(expected)).digest("hex");
+  const cachePath = (0, import_node_path4.join)(
+    stateRoot,
+    `compatibility-${(0, import_node_crypto4.createHash)("sha256").update(identity + projectionHash).digest("hex")}.json`
+  );
+  if ((0, import_node_fs4.existsSync)(cachePath)) {
+    const cached2 = external_exports.object({
+      identity: external_exports.string(),
+      projectionHash: external_exports.string(),
+      binarySha256: external_exports.string(),
+      checkedAt: external_exports.string(),
+      executable: external_exports.string()
+    }).parse(JSON.parse(await (0, import_promises4.readFile)(cachePath, "utf8")));
+    if (cached2.identity === identity && cached2.projectionHash === projectionHash)
+      return cached2;
+  }
+  const binary = await (0, import_promises4.readFile)(executable);
+  for (const [name, fields] of Object.entries(expected)) {
+    const needle = Buffer.concat([
+      Buffer.from([10, Buffer.byteLength(name)]),
+      Buffer.from(name)
+    ]);
+    const at = binary.indexOf(needle);
+    (0, import_strict5.default)(at >= 0, `Missing native descriptor: ${name}`);
+    const candidates = [];
+    for (let start = Math.max(0, at - 6); start < at; start++) {
+      if (binary[start] !== 34) continue;
+      let size = 0, shift = 0, end = start + 1;
+      for (; end < at; end++) {
+        const byte = binary[end];
+        size += (byte & 127) * 2 ** shift;
+        shift += 7;
+        if (byte < 128) {
+          end++;
+          break;
+        }
+      }
+      if (end !== at || size < needle.length || at + size > binary.length)
+        continue;
+      candidates.push(
+        schema.parse(
+          descriptor.toObject(
+            descriptor.decode(binary.subarray(at, at + size))
+          )
+        )
+      );
+    }
+    import_strict5.default.equal(candidates.length, 1, `Ambiguous native descriptor: ${name}`);
+    const actual = candidates[0];
+    import_strict5.default.equal(actual.name, name);
+    for (const [number4, fieldName, type, label, typeName] of fields) {
+      import_strict5.default.deepEqual(
+        actual.field.find((f) => f.number === number4),
+        {
+          name: fieldName,
+          number: number4,
+          label,
+          type,
+          ...typeName ? { typeName } : {}
+        },
+        `Unsupported native field: ${name}.${fieldName}`
+      );
+    }
+  }
+  const result = {
+    executable,
+    identity,
+    projectionHash,
+    binarySha256: (0, import_node_crypto4.createHash)("sha256").update(binary).digest("hex"),
+    checkedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const { mkdir: mkdir5 } = await import("node:fs/promises");
+  await mkdir5(stateRoot, { recursive: true, mode: 448 });
+  await atomicJson(cachePath, result);
+  return result;
+}
+
+// src/incremental.ts
+var import_strict6 = __toESM(require("node:assert/strict"), 1);
+var import_node_crypto5 = require("node:crypto");
+var import_promises5 = require("node:fs/promises");
+var cursorSchema = external_exports.object({
+  offset: external_exports.number().int().nonnegative(),
+  anchor: external_exports.string()
+});
+async function readAppended(path, previous) {
+  const file2 = await (0, import_promises5.open)(path, "r");
+  try {
+    const stat3 = await file2.stat();
+    const offset = previous?.offset ?? 0;
+    (0, import_strict6.default)(stat3.size >= offset, `Append-only source shrank: ${path}`);
+    const anchorSize = Math.min(offset, 256);
+    const anchor = Buffer.alloc(anchorSize);
+    if (anchorSize) {
+      const read2 = await file2.read(anchor, 0, anchorSize, offset - anchorSize);
+      import_strict6.default.equal(
+        read2.bytesRead,
+        anchorSize,
+        "Source changed during cursor validation"
+      );
+    }
+    const hash2 = (data2) => (0, import_node_crypto5.createHash)("sha256").update(data2).digest("hex");
+    if (previous)
+      import_strict6.default.equal(
+        hash2(anchor),
+        previous.anchor,
+        `Committed source bytes changed: ${path}`
+      );
+    const data = Buffer.alloc(stat3.size - offset);
+    let read = 0;
+    while (read < data.length) {
+      const part = await file2.read(
+        data,
+        read,
+        data.length - read,
+        offset + read
+      );
+      (0, import_strict6.default)(part.bytesRead > 0, "Source shrank during incremental read");
+      read += part.bytesRead;
+    }
+    const complete = data.lastIndexOf(10) + 1;
+    const newOffset = offset + complete;
+    const tail = Buffer.concat([anchor, data.subarray(0, complete)]).subarray(
+      -256
+    );
+    return {
+      cursor: { offset: newOffset, anchor: hash2(tail) },
+      lines: data.subarray(0, complete).toString("utf8").split("\n").filter(Boolean),
+      partial: complete < data.length,
+      bytesRead: data.length + anchor.length
+    };
+  } finally {
+    await file2.close();
+  }
+}
+
+// src/native-input.ts
+function enrichNativeInput(span2, context, maxChars) {
+  let truncated = false;
+  const clip = (value) => {
+    if (value.length <= maxChars) return value;
+    truncated = true;
+    return value.slice(0, maxChars) + "\n[truncated by lmnr-antigravity]";
+  };
+  const roles = {
+    0: "unspecified",
+    1: "user",
+    2: "assistant",
+    3: "unknown",
+    4: "tool",
+    5: "system",
+    6: "context"
+  };
+  const messages = [];
+  if (context.systemPrompt)
+    messages.push({ role: "system", content: clip(context.systemPrompt) });
+  for (const message of context.messagePrompts) {
+    messages.push({
+      role: roles[message.source],
+      ...message.prompt !== void 0 && !message.toolCalls ? { content: clip(message.prompt) } : {},
+      ...message.toolCallId ? { tool_call_id: message.toolCallId } : {},
+      ...message.toolCalls ? {
+        parts: [
+          ...message.prompt === void 0 ? [] : [{ type: "text", content: clip(message.prompt) }],
+          ...message.toolCalls.map((call) => ({
+            type: "tool_call",
+            id: call.id,
+            name: call.name,
+            arguments: call.argumentsJson.length > maxChars ? { _truncated: clip(call.argumentsJson) } : external_exports.record(external_exports.string(), external_exports.json()).parse(JSON.parse(call.argumentsJson))
+          }))
+        ]
+      } : {}
+    });
+  }
+  span2.attributes = span2.attributes.filter(
+    (a) => a.key !== "gen_ai.input.messages"
+  );
+  span2.attributes.push(
+    {
+      key: "gen_ai.input.messages",
+      value: { stringValue: JSON.stringify(messages) }
+    },
+    {
+      key: "gen_ai.tool.definitions",
+      value: {
+        stringValue: JSON.stringify(
+          context.tools.map((tool) => ({
+            name: tool.name,
+            description: tool.description === void 0 ? void 0 : clip(tool.description),
+            parameters: external_exports.record(external_exports.string(), external_exports.json()).parse(JSON.parse(tool.jsonSchemaString))
+          }))
+        )
+      }
+    },
+    {
+      key: "antigravity.input_source",
+      value: { stringValue: "cli_sqlite_request_snapshot" }
+    },
+    {
+      key: "antigravity.input_scope",
+      value: {
+        stringValue: "native_text_system_history_and_tools_without_media_or_provider_envelope"
+      }
+    },
+    { key: "antigravity.input_truncated", value: { boolValue: truncated } },
+    {
+      key: "antigravity.native.generator_index",
+      value: { intValue: String(context.generatorIndex) }
+    },
+    {
+      key: "antigravity.native.message_count",
+      value: { intValue: String(context.messagePrompts.length) }
+    }
+  );
+}
+
 // src/delivery.ts
-var import_strict3 = __toESM(require("node:assert/strict"), 1);
-var import_promises2 = require("node:fs/promises");
+var import_strict7 = __toESM(require("node:assert/strict"), 1);
+var import_promises6 = require("node:fs/promises");
 var uuid3 = (hex3) => `${hex3.slice(0, 8)}-${hex3.slice(8, 12)}-${hex3.slice(12, 16)}-${hex3.slice(16, 20)}-${hex3.slice(20)}`;
 var responseSchema = external_exports.object({
   partialSuccess: external_exports.object({
@@ -20967,9 +21681,9 @@ var responseSchema = external_exports.object({
   }).optional()
 }).strict();
 async function deliver(path, receiptPath, config2) {
-  const item = outboxSchema.parse(JSON.parse(await (0, import_promises2.readFile)(path, "utf8")));
+  const item = outboxSchema.parse(JSON.parse(await (0, import_promises6.readFile)(path, "utf8")));
   let receipt = deliverySchema.parse(
-    JSON.parse(await (0, import_promises2.readFile)(receiptPath, "utf8"))
+    JSON.parse(await (0, import_promises6.readFile)(receiptPath, "utf8"))
   );
   if (["confirmed", "rejected"].includes(receipt.state) || receipt.retryAt > Date.now())
     return;
@@ -20993,10 +21707,10 @@ async function deliver(path, receiptPath, config2) {
         Authorization: `Bearer ${config2.projectApiKey}`
       },
       body: JSON.stringify({ query }),
-      signal: AbortSignal.timeout(config2.timeoutMs),
+      signal: AbortSignal.timeout(config2.queryTimeoutMs),
       redirect: "error"
     });
-    (0, import_strict3.default)(
+    (0, import_strict7.default)(
       response.ok,
       `Laminar reconciliation failed: HTTP ${response.status}`
     );
@@ -21011,7 +21725,7 @@ async function deliver(path, receiptPath, config2) {
       ).length(1)
     }).parse(await response.json());
     const copies = Number(result.data[0].copies);
-    (0, import_strict3.default)(copies <= 1, `Duplicate stored span detected: ${item.span.spanId}`);
+    (0, import_strict7.default)(copies <= 1, `Duplicate stored span detected: ${item.span.spanId}`);
     if (copies === 1)
       await save({
         ...receipt,
@@ -21022,7 +21736,7 @@ async function deliver(path, receiptPath, config2) {
     else await save({ ...receipt, retryAt: Date.now() + 1e4 });
     return;
   }
-  import_strict3.default.equal(deliverySchema.parse(receipt).state, "ready");
+  import_strict7.default.equal(deliverySchema.parse(receipt).state, "ready");
   await save({ state: "sending", attempts: receipt.attempts + 1, retryAt: 0 });
   try {
     const response = await fetch(`${base}/v1/traces`, {
@@ -21050,10 +21764,10 @@ async function deliver(path, receiptPath, config2) {
         retryAt: 0
       });
     }
-    (0, import_strict3.default)(response.ok, `Laminar OTLP export failed: HTTP ${response.status}`);
+    (0, import_strict7.default)(response.ok, `Laminar OTLP export failed: HTTP ${response.status}`);
     const body = await response.text();
     const result = responseSchema.parse(body === "" ? {} : JSON.parse(body));
-    (0, import_strict3.default)(
+    (0, import_strict7.default)(
       Number(result.partialSuccess?.rejectedSpans ?? 0) === 0,
       "Laminar partial rejection; delivery requires reconciliation"
     );
@@ -21076,93 +21790,6 @@ async function deliver(path, receiptPath, config2) {
   }
 }
 
-// src/native-timing.ts
-var import_strict4 = __toESM(require("node:assert/strict"), 1);
-var import_node_path2 = require("node:path");
-var import_light = __toESM(require_light(), 1);
-var generator = import_light.default.Root.fromJSON({
-  nested: {
-    Duration: {
-      fields: {
-        seconds: { type: "int64", id: 1 },
-        nanos: { type: "int32", id: 2 }
-      }
-    },
-    ChatModelMetadata: {
-      fields: {
-        timeToFirstToken: { type: "Duration", id: 11 },
-        streamingDuration: { type: "Duration", id: 12 }
-      }
-    },
-    CortexStepGeneratorMetadata: {
-      fields: {
-        chatModel: { type: "ChatModelMetadata", id: 1 },
-        stepIndices: { rule: "repeated", type: "uint32", id: 2 }
-      }
-    }
-  }
-}).lookupType("CortexStepGeneratorMetadata");
-var duration3 = external_exports.object({
-  // Zero components are omitted by proto3 serialization.
-  seconds: external_exports.coerce.number().int().nonnegative().safe().default(0),
-  nanos: external_exports.number().int().min(0).max(999999999).default(0)
-}).transform((value) => value.seconds + value.nanos / 1e9);
-var metadata = external_exports.object({
-  stepIndices: external_exports.array(external_exports.number().int().nonnegative()).optional(),
-  chatModel: external_exports.object({
-    timeToFirstToken: duration3.optional(),
-    streamingDuration: duration3.optional()
-  }).optional()
-});
-async function readNativeTimings(transcriptPath, conversationId, steps) {
-  const result = /* @__PURE__ */ new Map();
-  if (steps.length === 0) return result;
-  const cliRoot = (0, import_node_path2.resolve)((0, import_node_path2.dirname)(transcriptPath), "../../../..");
-  import_strict4.default.equal(
-    transcriptPath,
-    (0, import_node_path2.join)(
-      cliRoot,
-      "brain",
-      conversationId,
-      ".system_generated",
-      "logs",
-      "transcript_full.jsonl"
-    ),
-    "Native timing requires the CLI's original transcript path"
-  );
-  const { DatabaseSync } = await import("node:sqlite");
-  const db = new DatabaseSync(
-    (0, import_node_path2.join)(cliRoot, "conversations", `${conversationId}.db`),
-    { readOnly: true }
-  );
-  const pending = new Set(steps);
-  try {
-    for (const row of db.prepare("SELECT data FROM gen_metadata ORDER BY idx DESC").iterate()) {
-      (0, import_strict4.default)(row.data instanceof Uint8Array, "Invalid generator metadata blob");
-      const value = metadata.parse(
-        generator.toObject(generator.decode(row.data), { longs: String })
-      );
-      if (!value.stepIndices) continue;
-      for (const step of value.stepIndices) {
-        if (!pending.has(step)) continue;
-        if (value.chatModel?.timeToFirstToken !== void 0) {
-          result.set(step, {
-            ttftSeconds: value.chatModel.timeToFirstToken,
-            streamingSeconds: value.chatModel.streamingDuration
-          });
-        } else {
-          result.set(step, null);
-        }
-        pending.delete(step);
-      }
-      if (pending.size === 0) break;
-    }
-  } finally {
-    db.close();
-  }
-  return result;
-}
-
 // src/worker.ts
 function lines(raw) {
   const end = raw.lastIndexOf("\n");
@@ -21172,57 +21799,69 @@ function lines(raw) {
   };
 }
 async function session(directory, config2) {
-  const release = await import_proper_lockfile2.default.lock(directory, {
+  const release = await import_proper_lockfile3.default.lock(directory, {
     retries: { retries: 200, minTimeout: 100, maxTimeout: 100 },
     stale: 3e4
   });
   try {
-    (0, import_strict5.default)(
-      (0, import_node_fs2.existsSync)((0, import_node_path3.join)(directory, "ledger.json")),
+    (0, import_strict8.default)(
+      (0, import_node_fs5.existsSync)((0, import_node_path5.join)(directory, "ledger.json")),
       "Run worker --migrate before processing v0.2 state"
     );
     const ledger = ledgerSchema.parse(
-      JSON.parse(await (0, import_promises3.readFile)((0, import_node_path3.join)(directory, "ledger.json"), "utf8"))
+      JSON.parse(await (0, import_promises7.readFile)((0, import_node_path5.join)(directory, "ledger.json"), "utf8"))
     );
-    const path = (0, import_node_path3.join)(directory, "events.jsonl");
-    const releaseJournal = await import_proper_lockfile2.default.lock(path, journalLock);
-    let journalText;
+    const snapshotPath = (0, import_node_path5.join)(directory, "cursor.json");
+    const snapshotSchema = external_exports.object({
+      journal: cursorSchema,
+      transcript: cursorSchema,
+      events: external_exports.array(eventRecord),
+      rows: external_exports.array(transcriptEnvelope),
+      completedTurns: external_exports.array(external_exports.number().int().nonnegative()),
+      settledReceipts: external_exports.array(external_exports.string())
+    }).strict();
+    const snapshot = (0, import_node_fs5.existsSync)(snapshotPath) ? snapshotSchema.parse(JSON.parse(await (0, import_promises7.readFile)(snapshotPath, "utf8"))) : void 0;
+    const path = (0, import_node_path5.join)(directory, "events.jsonl");
+    const releaseJournal = await import_proper_lockfile3.default.lock(path, journalLock);
+    let journal;
     try {
-      journalText = await (0, import_promises3.readFile)(path, "utf8");
+      journal = await readAppended(path, snapshot?.journal);
     } finally {
       await releaseJournal();
     }
-    const journal = lines(journalText);
-    const events = journal.lines.map(
-      (line) => eventRecord.parse(JSON.parse(line))
-    );
+    let events = [
+      ...snapshot?.events ?? [],
+      ...journal.lines.map((line) => eventRecord.parse(JSON.parse(line)))
+    ];
     if (events.length === 0) return;
-    (0, import_strict5.default)(
-      sessionKey(events[0].payload, config2) === (0, import_node_path3.basename)(directory),
+    (0, import_strict8.default)(
+      sessionKey(events[0].payload, config2) === (0, import_node_path5.basename)(directory),
       "Session belongs to a different endpoint or project credential; refusing to reroute it"
     );
-    const raw = lines(
-      await (0, import_promises3.readFile)(events[0].payload.transcriptPath, "utf8")
-    );
-    const envelopes = raw.lines.map(
-      (line) => transcriptEnvelope.parse(JSON.parse(line))
-    );
+    const transcriptPath = events[0].payload.transcriptPath;
+    const raw = await readAppended(transcriptPath, snapshot?.transcript);
+    let envelopes = [
+      ...snapshot?.rows ?? [],
+      ...raw.lines.map((line) => transcriptEnvelope.parse(JSON.parse(line)))
+    ];
     for (let i = 1; i < envelopes.length; i++)
-      (0, import_strict5.default)(
+      (0, import_strict8.default)(
         envelopes[i].step_index > envelopes[i - 1].step_index,
         "Transcript indices must strictly increase"
       );
+    const completedTurns = new Set(snapshot?.completedTurns ?? []);
+    const settledReceipts = new Set(snapshot?.settledReceipts ?? []);
     const first = events.find(
       (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps > ledger.importedThroughStep
     );
     let spans = [];
     if (first) {
-      (0, import_strict5.default)(first.payload.event === "PreInvocation");
+      (0, import_strict8.default)(first.payload.event === "PreInvocation");
       const initial = first.payload.initialNumSteps;
       const user = envelopes.findLast(
         (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT" && r.step_index < initial
       );
-      (0, import_strict5.default)(user, "No explicit user input before first observed invocation");
+      (0, import_strict8.default)(user, "No explicit user input before first observed invocation");
       const rows = envelopes.filter(
         (r) => r.step_index >= user.step_index && r.step_index > ledger.importedThroughStep
       ).map((r) => transcriptRow.parse(r));
@@ -21233,15 +21872,16 @@ async function session(directory, config2) {
         config2.maxChars,
         (/* @__PURE__ */ new Date()).toISOString(),
         ownerAlive,
-        raw.partial || journal.partial
+        raw.partial || journal.partial,
+        completedTurns
       );
     }
-    const outbox = (0, import_node_path3.join)(directory, "outbox");
-    await (0, import_promises3.mkdir)(outbox, { recursive: true, mode: 448 });
+    const outbox = (0, import_node_path5.join)(directory, "outbox");
+    await (0, import_promises7.mkdir)(outbox, { recursive: true, mode: 448 });
     const newModels = spans.filter(
       (span2) => span2.attributes.some(
         (a) => a.key === "lmnr.span.type" && "stringValue" in a.value && a.value.stringValue === "LLM"
-      ) && !(0, import_node_fs2.existsSync)((0, import_node_path3.join)(outbox, `${span2.traceId}-${span2.spanId}.json`))
+      ) && !(0, import_node_fs5.existsSync)((0, import_node_path5.join)(outbox, `${span2.traceId}-${span2.spanId}.json`))
     );
     const stepOf = (span2) => external_exports.object({ intValue: external_exports.coerce.number().int().nonnegative() }).parse(
       span2.attributes.find((a) => a.key === "antigravity.step_index").value
@@ -21249,21 +21889,69 @@ async function session(directory, config2) {
     const modelSteps = newModels.filter(
       (span2) => span2.attributes.some((a) => a.key === "antigravity.step_index")
     );
+    if (config2.validateNativeSchema && (config2.captureNativeContext || config2.captureNativeTiming)) {
+      const recordedOwner = events.findLast((e) => e.owner !== null)?.owner;
+      if (recordedOwner && ownerAlive(recordedOwner))
+        await verifyNativeSchema(`/proc/${recordedOwner.pid}/exe`);
+    }
+    if (config2.captureNativeContext)
+      await captureNativeContext(
+        transcriptPath,
+        events[0].payload.conversationId,
+        directory
+      );
+    const contexts = config2.captureNativeContext ? await readNativeContexts(directory, modelSteps.map(stepOf)) : /* @__PURE__ */ new Map();
     const timings = config2.captureNativeTiming ? await readNativeTimings(
       events[0].payload.transcriptPath,
       events[0].payload.conversationId,
       modelSteps.map(stepOf)
     ) : /* @__PURE__ */ new Map();
+    const waitPath = (0, import_node_path5.join)(directory, "native-waits.json");
+    const waits = (0, import_node_fs5.existsSync)(waitPath) ? external_exports.record(external_exports.string(), external_exports.number().nonnegative()).parse(JSON.parse(await (0, import_promises7.readFile)(waitPath, "utf8"))) : {};
+    const waitsBefore = JSON.stringify(waits);
     const pendingNativeTiming = /* @__PURE__ */ new Set();
+    let oldestPendingTimingSeconds = 0;
     for (const span2 of modelSteps) {
+      const context = contexts.get(stepOf(span2));
+      if (context) enrichNativeInput(span2, context, config2.maxChars);
+      else
+        span2.attributes.push({
+          key: "antigravity.input_source",
+          value: {
+            stringValue: config2.captureNativeContext ? "visible_turn_transcript_native_request_unavailable" : "visible_turn_transcript"
+          }
+        });
+      span2.attributes.push(
+        {
+          key: "antigravity.llm.answer_ttft_status",
+          value: { stringValue: "not_exposed_by_cli" }
+        },
+        {
+          key: "antigravity.cost.status",
+          value: { stringValue: "billing_amount_not_exposed_by_cli" }
+        }
+      );
       const timing = timings.get(stepOf(span2));
       if (config2.captureNativeTiming && timing == null) {
         const lastOwner = events.findLast((e) => e.owner !== null)?.owner;
         if (lastOwner && ownerAlive(lastOwner)) {
-          pendingNativeTiming.add(span2.spanId);
-          continue;
+          waits[span2.spanId] ??= Date.now();
+          const waitingSeconds = (Date.now() - waits[span2.spanId]) / 1e3;
+          if (waitingSeconds * 1e3 < config2.nativeTimingWaitMs) {
+            oldestPendingTimingSeconds = Math.max(
+              oldestPendingTimingSeconds,
+              waitingSeconds
+            );
+            pendingNativeTiming.add(span2.spanId);
+            continue;
+          }
+          span2.attributes.push({
+            key: "antigravity.llm.timing_unavailable_reason",
+            value: { stringValue: "native_metadata_wait_expired" }
+          });
         }
       }
+      delete waits[span2.spanId];
       span2.attributes.push({
         key: "antigravity.llm.timing_status",
         value: {
@@ -21271,6 +21959,11 @@ async function session(directory, config2) {
         }
       });
       if (timing) {
+        if (timing.nativeModelCost !== void 0)
+          span2.attributes.push({
+            key: "antigravity.usage.native_model_cost",
+            value: { doubleValue: timing.nativeModelCost }
+          });
         span2.attributes.push(
           {
             key: "antigravity.llm.ttft_seconds",
@@ -21294,61 +21987,140 @@ async function session(directory, config2) {
           });
       }
     }
+    if (JSON.stringify(waits) !== waitsBefore)
+      await atomicJson(waitPath, waits);
     for (const span2 of spans) {
       if (pendingNativeTiming.has(span2.spanId)) continue;
+      if (!span2.parentSpanId && spans.some(
+        (child) => child.traceId === span2.traceId && pendingNativeTiming.has(child.spanId)
+      ))
+        continue;
       const name = `${span2.traceId}-${span2.spanId}`;
-      const itemPath = (0, import_node_path3.join)(outbox, `${name}.json`), receiptPath = (0, import_node_path3.join)(outbox, `${name}.receipt.json`);
-      if (!(0, import_node_fs2.existsSync)(itemPath))
+      const itemPath = (0, import_node_path5.join)(outbox, `${name}.json`), receiptPath = (0, import_node_path5.join)(outbox, `${name}.receipt.json`);
+      if (!(0, import_node_fs5.existsSync)(itemPath))
         await atomicJson(itemPath, { span: span2, request: pack([span2]) });
-      if (!(0, import_node_fs2.existsSync)(receiptPath))
+      if (!(0, import_node_fs5.existsSync)(receiptPath))
         await atomicJson(receiptPath, {
           state: "ready",
           attempts: 0,
           retryAt: 0
         });
     }
+    for (const span2 of spans) {
+      if (!span2.parentSpanId && !spans.some(
+        (child) => child.traceId === span2.traceId && pendingNativeTiming.has(child.spanId)
+      ) && (0, import_node_fs5.existsSync)((0, import_node_path5.join)(outbox, `${span2.traceId}-${span2.spanId}.json`))) {
+        const userStep = span2.attributes.find(
+          (a) => a.key === "antigravity.user_step"
+        );
+        (0, import_strict8.default)("intValue" in userStep.value);
+        completedTurns.add(Number(userStep.value.intValue));
+      }
+    }
     let attempted = 0;
-    for (const name of (await (0, import_promises3.readdir)(outbox)).filter((n) => n.endsWith(".json") && !n.endsWith(".receipt.json")).sort()) {
-      const receiptPath = (0, import_node_path3.join)(
+    let nextDeliveryAt = Infinity;
+    let oldestUnconfirmedSeconds = 0;
+    const counts = {};
+    for (const name of (await (0, import_promises7.readdir)(outbox)).filter((n) => n.endsWith(".json") && !n.endsWith(".receipt.json")).sort()) {
+      if (settledReceipts.has(name)) continue;
+      const receiptPath = (0, import_node_path5.join)(
         outbox,
         name.replace(/\.json$/, ".receipt.json")
       );
-      if (!(0, import_node_fs2.existsSync)(receiptPath))
+      if (!(0, import_node_fs5.existsSync)(receiptPath))
         await atomicJson(receiptPath, {
           state: "ready",
           attempts: 0,
           retryAt: 0
         });
       const receipt = deliverySchema.parse(
-        JSON.parse(await (0, import_promises3.readFile)(receiptPath, "utf8"))
+        JSON.parse(await (0, import_promises7.readFile)(receiptPath, "utf8"))
       );
-      if (["confirmed", "rejected"].includes(receipt.state) || receipt.retryAt > Date.now())
+      if (receipt.state === "confirmed") {
+        settledReceipts.add(name);
         continue;
-      if (attempted++ === 20) break;
-      await deliver((0, import_node_path3.join)(outbox, name), receiptPath, config2);
+      }
+      if (receipt.state !== "rejected" && receipt.retryAt <= Date.now() && attempted < 20) {
+        attempted++;
+        await deliver((0, import_node_path5.join)(outbox, name), receiptPath, config2);
+      }
+      const current = deliverySchema.parse(
+        JSON.parse(await (0, import_promises7.readFile)(receiptPath, "utf8"))
+      );
+      counts[current.state] = (counts[current.state] ?? 0) + 1;
+      if (current.state !== "confirmed") {
+        const itemStat = await (0, import_promises7.stat)((0, import_node_path5.join)(outbox, name));
+        oldestUnconfirmedSeconds = Math.max(
+          oldestUnconfirmedSeconds,
+          (Date.now() - itemStat.mtimeMs) / 1e3
+        );
+      }
+      if (current.state === "confirmed") settledReceipts.add(name);
+      else if (current.state !== "rejected")
+        nextDeliveryAt = Math.min(nextDeliveryAt, current.retryAt);
     }
-    await atomicJson((0, import_node_path3.join)(directory, "worker-status.json"), {
+    const users = envelopes.filter(
+      (r) => r.type === "USER_INPUT" && r.source === "USER_EXPLICIT"
+    );
+    const keep = users.find(
+      (r) => !completedTurns.has(r.step_index) && r.step_index > ledger.importedThroughStep
+    ) ?? users.at(-1);
+    if (keep) {
+      const firstKept = events.find(
+        (e) => e.payload.event === "PreInvocation" && e.payload.initialNumSteps > keep.step_index
+      );
+      if (firstKept) {
+        envelopes = envelopes.filter((r) => r.step_index >= keep.step_index);
+        events = events.filter((e) => e.at >= firstKept.at);
+        for (const step of completedTurns)
+          if (step < keep.step_index) completedTurns.delete(step);
+      }
+    }
+    await atomicJson(snapshotPath, {
+      journal: journal.cursor,
+      transcript: raw.cursor,
+      events,
+      rows: envelopes,
+      completedTurns: [...completedTurns],
+      settledReceipts: [...settledReceipts]
+    });
+    if (counts.uncertain || counts.rejected || oldestPendingTimingSeconds > 120)
+      console.error(
+        `lmnr-antigravity attention session=${events[0].payload.conversationId} uncertain=${counts.uncertain ?? 0} rejected=${counts.rejected ?? 0} pending_native=${pendingNativeTiming.size} oldest_native_seconds=${Math.round(oldestPendingTimingSeconds)}`
+      );
+    await atomicJson((0, import_node_path5.join)(directory, "worker-status.json"), {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
       partialTranscript: raw.partial,
       partialJournal: journal.partial,
-      pendingNativeTiming: pendingNativeTiming.size
+      pendingNativeTiming: pendingNativeTiming.size,
+      oldestPendingTimingSeconds,
+      oldestUnconfirmedSeconds,
+      sourceBytesRead: journal.bytesRead + raw.bytesRead,
+      bufferedRows: envelopes.length,
+      bufferedEvents: events.length,
+      confirmed: settledReceipts.size,
+      deliveries: counts,
+      nextDeliveryAt: Number.isFinite(nextDeliveryAt) ? nextDeliveryAt : null,
+      transcriptPath,
+      owner: events.findLast((e) => e.owner !== null)?.owner ?? null,
+      ownerAlive: events.findLast((e) => e.owner !== null)?.owner ? ownerAlive(events.findLast((e) => e.owner !== null).owner) : null
     });
   } finally {
     await release();
   }
 }
 async function migrate(directory) {
-  const release = await import_proper_lockfile2.default.lock(directory, {
+  const release = await import_proper_lockfile3.default.lock(directory, {
     retries: { retries: 200, minTimeout: 100, maxTimeout: 100 },
     stale: 3e4
   });
   try {
-    if ((0, import_node_fs2.existsSync)((0, import_node_path3.join)(directory, "ledger.json"))) return;
-    const journal = (0, import_node_path3.join)(directory, "events.jsonl");
-    const releaseJournal = await import_proper_lockfile2.default.lock(journal, journalLock);
+    if ((0, import_node_fs5.existsSync)((0, import_node_path5.join)(directory, "ledger.json"))) return;
+    const journal = (0, import_node_path5.join)(directory, "events.jsonl");
+    const releaseJournal = await import_proper_lockfile3.default.lock(journal, journalLock);
     try {
-      const original = await (0, import_promises3.readFile)(journal, "utf8");
-      (0, import_strict5.default)(
+      const original = await (0, import_promises7.readFile)(journal, "utf8");
+      (0, import_strict8.default)(
         original.endsWith("\n"),
         "Repair partial legacy journal before migration"
       );
@@ -21356,13 +22128,13 @@ async function migrate(directory) {
         const old = eventRecord.omit({ owner: true }).extend({ owner: eventRecord.shape.owner.optional() }).parse(JSON.parse(line));
         return eventRecord.parse({ ...old, owner: old.owner ?? null });
       });
-      const checkpointPath = (0, import_node_path3.join)(directory, "checkpoint.json");
-      const baseline = (0, import_node_fs2.existsSync)(checkpointPath) ? external_exports.object({ throughStep: external_exports.number().int().min(-1) }).parse(JSON.parse(await (0, import_promises3.readFile)(checkpointPath, "utf8"))).throughStep : -1;
-      await atomicJson((0, import_node_path3.join)(directory, "v02-backup.json"), {
+      const checkpointPath = (0, import_node_path5.join)(directory, "checkpoint.json");
+      const baseline = (0, import_node_fs5.existsSync)(checkpointPath) ? external_exports.object({ throughStep: external_exports.number().int().min(-1) }).parse(JSON.parse(await (0, import_promises7.readFile)(checkpointPath, "utf8"))).throughStep : -1;
+      await atomicJson((0, import_node_path5.join)(directory, "v02-backup.json"), {
         events: original,
         checkpoint: baseline
       });
-      const file2 = await (0, import_promises3.open)(`${journal}.migrate`, "w", 384);
+      const file2 = await (0, import_promises7.open)(`${journal}.migrate`, "w", 384);
       try {
         await file2.writeFile(
           migrated.map((value) => JSON.stringify(value)).join("\n") + "\n"
@@ -21371,35 +22143,35 @@ async function migrate(directory) {
       } finally {
         await file2.close();
       }
-      await (0, import_promises3.rename)(`${journal}.migrate`, journal);
-      const pendingPath = (0, import_node_path3.join)(directory, "pending.json");
-      if ((0, import_node_fs2.existsSync)(pendingPath)) {
-        const pending = external_exports.object({ request: outboxSchema.shape.request }).parse(JSON.parse(await (0, import_promises3.readFile)(pendingPath, "utf8")));
-        const outbox = (0, import_node_path3.join)(directory, "outbox");
-        await (0, import_promises3.mkdir)(outbox, { recursive: true, mode: 448 });
+      await (0, import_promises7.rename)(`${journal}.migrate`, journal);
+      const pendingPath = (0, import_node_path5.join)(directory, "pending.json");
+      if ((0, import_node_fs5.existsSync)(pendingPath)) {
+        const pending = external_exports.object({ request: outboxSchema.shape.request }).parse(JSON.parse(await (0, import_promises7.readFile)(pendingPath, "utf8")));
+        const outbox = (0, import_node_path5.join)(directory, "outbox");
+        await (0, import_promises7.mkdir)(outbox, { recursive: true, mode: 448 });
         for (const resource of pending.request.resourceSpans)
           for (const scope of resource.scopeSpans)
             for (const span2 of scope.spans) {
               const name = `${span2.traceId}-${span2.spanId}`;
-              await atomicJson((0, import_node_path3.join)(outbox, `${name}.json`), {
+              await atomicJson((0, import_node_path5.join)(outbox, `${name}.json`), {
                 span: span2,
                 request: pack([span2])
               });
-              await atomicJson((0, import_node_path3.join)(outbox, `${name}.receipt.json`), {
+              await atomicJson((0, import_node_path5.join)(outbox, `${name}.receipt.json`), {
                 state: "uncertain",
                 attempts: 1,
                 retryAt: 0,
                 error: "Imported v0.2 pending upload; server acknowledgement unknown"
               });
             }
-        await atomicJson((0, import_node_path3.join)(directory, "v02-pending-backup.json"), pending);
-        await (0, import_promises3.rm)(pendingPath);
+        await atomicJson((0, import_node_path5.join)(directory, "v02-pending-backup.json"), pending);
+        await (0, import_promises7.rm)(pendingPath);
       }
-      await atomicJson((0, import_node_path3.join)(directory, "ledger.json"), {
+      await atomicJson((0, import_node_path5.join)(directory, "ledger.json"), {
         version: 3,
         importedThroughStep: baseline
       });
-      if ((0, import_node_fs2.existsSync)(checkpointPath)) await (0, import_promises3.rm)(checkpointPath);
+      if ((0, import_node_fs5.existsSync)(checkpointPath)) await (0, import_promises7.rm)(checkpointPath);
     } finally {
       await releaseJournal();
     }
@@ -21408,46 +22180,168 @@ async function migrate(directory) {
   }
 }
 async function directories() {
-  if (!(0, import_node_fs2.existsSync)(stateRoot)) return [];
-  const entries = await (0, import_promises3.readdir)(stateRoot, { withFileTypes: true });
-  return entries.filter((e) => e.isDirectory() && /^[0-9a-f]{64}$/.test(e.name)).map((e) => (0, import_node_path3.join)(stateRoot, e.name));
+  if (!(0, import_node_fs5.existsSync)(stateRoot)) return [];
+  const entries = await (0, import_promises7.readdir)(stateRoot, { withFileTypes: true });
+  return entries.filter((e) => e.isDirectory() && /^[0-9a-f]{64}$/.test(e.name)).map((e) => (0, import_node_path5.join)(stateRoot, e.name));
 }
 async function main() {
-  const mode = external_exports.enum(["--once", "--session", "--status", "--migrate", "--daemon"]).parse(process.argv[2]);
+  const mode = external_exports.enum([
+    "--once",
+    "--session",
+    "--status",
+    "--health",
+    "--doctor",
+    "--backfill",
+    "--retry-rejected",
+    "--migrate",
+    "--daemon"
+  ]).parse(process.argv[2]);
   const config2 = await readConfig();
+  if (mode === "--doctor") {
+    console.log(
+      JSON.stringify({
+        native: await verifyNativeSchema(),
+        capabilities: {
+          firstOutputTiming: "native_including_thinking",
+          firstAnswerTextTiming: "not_exposed",
+          request: "native_text_and_tools_snapshot",
+          billing: "not_exposed",
+          exactlyOnceIngestion: "requires_server_idempotency"
+        }
+      })
+    );
+    return;
+  }
+  if (mode === "--daemon" && config2.validateNativeSchema && (config2.captureNativeTiming || config2.captureNativeContext))
+    await verifyNativeSchema();
   if (mode === "--session") {
-    (0, import_strict5.default)(process.argv[3]);
-    await session((0, import_node_path3.resolve)(process.argv[3]), config2);
+    (0, import_strict8.default)(process.argv[3]);
+    await session((0, import_node_path5.resolve)(process.argv[3]), config2);
+    return;
+  }
+  if (mode === "--retry-rejected") {
+    (0, import_strict8.default)(process.argv[3], "Provide one session directory for retry-rejected");
+    const dir = (0, import_node_path5.resolve)(process.argv[3]);
+    const release = await import_proper_lockfile3.default.lock(dir, {
+      retries: { retries: 200, minTimeout: 100, maxTimeout: 100 },
+      stale: 3e4
+    });
+    try {
+      const first = eventRecord.parse(
+        JSON.parse(
+          (await (0, import_promises7.readFile)((0, import_node_path5.join)(dir, "events.jsonl"), "utf8")).split("\n")[0]
+        )
+      );
+      import_strict8.default.equal(
+        sessionKey(first.payload, config2),
+        (0, import_node_path5.basename)(dir),
+        "Retry project scope mismatch"
+      );
+      for (const name of await (0, import_promises7.readdir)((0, import_node_path5.join)(dir, "outbox"))) {
+        if (!name.endsWith(".receipt.json")) continue;
+        const path = (0, import_node_path5.join)(dir, "outbox", name);
+        const receipt = deliverySchema.parse(
+          JSON.parse(await (0, import_promises7.readFile)(path, "utf8"))
+        );
+        if (receipt.state !== "rejected") continue;
+        (0, import_strict8.default)(
+          /^HTTP (400|401|403|404|405|413|415): request rejected$/.test(
+            receipt.error
+          ),
+          "Only definite server rejections can be retried"
+        );
+        await (0, import_promises7.mkdir)((0, import_node_path5.join)(dir, "recovery-audit"), {
+          recursive: true,
+          mode: 448
+        });
+        await atomicJson((0, import_node_path5.join)(dir, "recovery-audit", `${Date.now()}-${name}`), {
+          action: "retry_definite_rejection",
+          previous: receipt
+        });
+        await atomicJson(path, {
+          state: "ready",
+          attempts: receipt.attempts,
+          retryAt: 0
+        });
+      }
+    } finally {
+      await release();
+    }
+    await session(dir, config2);
+    return;
+  }
+  if (mode === "--backfill") {
+    const selected = process.argv[3] ? [(0, import_node_path5.resolve)(process.argv[3])] : await directories();
+    for (const dir of selected) {
+      console.log(JSON.stringify(await backfill(dir, config2)));
+      await session(dir, config2);
+    }
     return;
   }
   if (mode === "--migrate") {
     for (const dir of await directories()) await migrate(dir);
     return;
   }
-  if (mode === "--status") {
+  if (mode === "--status" || mode === "--health") {
+    const problems = [];
     for (const dir of await directories()) {
       const counts = {};
-      const outbox = (0, import_node_path3.join)(dir, "outbox");
-      if ((0, import_node_fs2.existsSync)(outbox)) {
-        for (const name of await (0, import_promises3.readdir)(outbox))
+      const outbox = (0, import_node_path5.join)(dir, "outbox");
+      if ((0, import_node_fs5.existsSync)(outbox)) {
+        for (const name of await (0, import_promises7.readdir)(outbox))
           if (name.endsWith(".receipt.json")) {
             const r = deliverySchema.parse(
-              JSON.parse(await (0, import_promises3.readFile)((0, import_node_path3.join)(outbox, name), "utf8"))
+              JSON.parse(await (0, import_promises7.readFile)((0, import_node_path5.join)(outbox, name), "utf8"))
             );
             counts[r.state] = (counts[r.state] ?? 0) + 1;
           }
       }
-      const data = lines(await (0, import_promises3.readFile)((0, import_node_path3.join)(dir, "events.jsonl"), "utf8"));
+      const data = lines(await (0, import_promises7.readFile)((0, import_node_path5.join)(dir, "events.jsonl"), "utf8"));
       const last = data.lines.at(-1);
       const record2 = last ? eventRecord.parse(JSON.parse(last)) : void 0;
+      const statusPath = (0, import_node_path5.join)(dir, "worker-status.json");
+      const status = (0, import_node_fs5.existsSync)(statusPath) ? external_exports.object({
+        checkedAt: external_exports.string(),
+        pendingNativeTiming: external_exports.number(),
+        oldestPendingTimingSeconds: external_exports.number().optional(),
+        oldestUnconfirmedSeconds: external_exports.number().optional(),
+        sourceBytesRead: external_exports.number().optional(),
+        bufferedRows: external_exports.number().optional()
+      }).parse(JSON.parse(await (0, import_promises7.readFile)(statusPath, "utf8"))) : void 0;
+      if (counts.uncertain || counts.rejected || counts.sending)
+        problems.push(`${record2?.payload.conversationId}: unresolved delivery`);
+      if ((status?.oldestPendingTimingSeconds ?? 0) > 120)
+        problems.push(
+          `${record2?.payload.conversationId}: native metadata delayed`
+        );
+      if ((status?.oldestUnconfirmedSeconds ?? 0) > 300)
+        problems.push(
+          `${record2?.payload.conversationId}: delivery not confirmed for five minutes`
+        );
+      if ((0, import_node_fs5.existsSync)((0, import_node_path5.join)(dir, "worker-error.json")))
+        problems.push(
+          `${record2?.payload.conversationId}: worker failure; inspect journal`
+        );
       console.log(
         JSON.stringify({
           session: record2?.payload.conversationId,
+          ...status,
           counts,
           ownerAlive: record2?.owner ? ownerAlive(record2.owner) : null,
           partialJournal: data.partial
         })
       );
+    }
+    if (mode === "--health") {
+      const heartbeatPath = (0, import_node_path5.join)(stateRoot, "heartbeat.json");
+      if (!(0, import_node_fs5.existsSync)(heartbeatPath)) problems.push("daemon heartbeat absent");
+      else {
+        const heartbeat = external_exports.object({ at: external_exports.string() }).parse(JSON.parse(await (0, import_promises7.readFile)(heartbeatPath, "utf8")));
+        if (Date.now() - Date.parse(heartbeat.at) > 6e4)
+          problems.push("daemon heartbeat stale");
+      }
+      console.log(JSON.stringify({ healthy: problems.length === 0, problems }));
+      if (problems.length) process.exitCode = 1;
     }
     return;
   }
@@ -21459,24 +22353,73 @@ async function main() {
     running = false;
   });
   let failures = 0;
+  const lastInputs = /* @__PURE__ */ new Map();
+  const failedUntil = /* @__PURE__ */ new Map();
+  let heartbeatAt = 0;
   do {
     failures = 0;
     for (const dir of await directories()) {
+      if (!running) break;
+      const statusPath = (0, import_node_path5.join)(dir, "worker-status.json");
+      const status = (0, import_node_fs5.existsSync)(statusPath) ? external_exports.object({
+        transcriptPath: external_exports.string().optional(),
+        pendingNativeTiming: external_exports.number(),
+        nextDeliveryAt: external_exports.number().nullable().optional(),
+        owner: eventRecord.shape.owner.optional(),
+        ownerAlive: external_exports.boolean().nullable().optional()
+      }).parse(JSON.parse(await (0, import_promises7.readFile)(statusPath, "utf8"))) : void 0;
+      const journalStat = await (0, import_promises7.stat)((0, import_node_path5.join)(dir, "events.jsonl"), {
+        bigint: true
+      });
+      const transcriptStat = status?.transcriptPath ? await (0, import_promises7.stat)(status.transcriptPath, { bigint: true }) : void 0;
+      const outboxStat = (0, import_node_fs5.existsSync)((0, import_node_path5.join)(dir, "outbox")) ? await (0, import_promises7.stat)((0, import_node_path5.join)(dir, "outbox"), { bigint: true }) : void 0;
+      const live = status?.owner ? ownerAlive(status.owner) : null;
+      const signature = [
+        journalStat.size,
+        journalStat.mtimeNs,
+        transcriptStat?.size,
+        transcriptStat?.mtimeNs,
+        outboxStat?.mtimeNs,
+        live
+      ].join(":");
+      const changed = lastInputs.get(dir) !== signature;
+      const due = status?.nextDeliveryAt !== null && status?.nextDeliveryAt !== void 0 && status.nextDeliveryAt <= Date.now();
+      if (mode === "--daemon" && !changed && !due && !status?.pendingNativeTiming && !failedUntil.has(dir))
+        continue;
+      if ((failedUntil.get(dir) ?? 0) > Date.now() && !changed) continue;
+      lastInputs.set(dir, signature);
       const child = (0, import_node_child_process.spawn)(
         process.execPath,
         [process.argv[1], "--session", dir],
         { stdio: ["ignore", "inherit", "inherit"] }
       );
       const [code] = await (0, import_node_events.once)(child, "exit");
+      if (!running) break;
       if (code !== 0) {
         failures++;
+        failedUntil.set(dir, Date.now() + 6e4);
+        await atomicJson((0, import_node_path5.join)(dir, "worker-error.json"), {
+          at: (/* @__PURE__ */ new Date()).toISOString(),
+          exitCode: code
+        });
         console.error(
-          `lmnr-antigravity worker_failed session=${(0, import_node_path3.basename)(dir)} exit=${code}`
+          `lmnr-antigravity worker_failed session=${(0, import_node_path5.basename)(dir)} exit=${code}`
         );
+      } else {
+        failedUntil.delete(dir);
+        if ((0, import_node_fs5.existsSync)((0, import_node_path5.join)(dir, "worker-error.json")))
+          await (0, import_promises7.rm)((0, import_node_path5.join)(dir, "worker-error.json"));
       }
     }
     if (mode !== "--daemon") break;
-    if (running) await new Promise((resolve3) => setTimeout(resolve3, 5e3));
+    if (Date.now() - heartbeatAt > 15e3) {
+      await atomicJson((0, import_node_path5.join)(stateRoot, "heartbeat.json"), {
+        at: (/* @__PURE__ */ new Date()).toISOString(),
+        pid: process.pid
+      });
+      heartbeatAt = Date.now();
+    }
+    if (running) await new Promise((resolve3) => setTimeout(resolve3, 1e3));
   } while (running);
   if (mode === "--once" && failures) process.exitCode = 1;
 }

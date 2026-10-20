@@ -1,11 +1,22 @@
-# Validation — 0.3.1 — 2026-10-20
+# Validation — 0.4.0 — 2026-10-20
 
 ## Environment
 
-- Antigravity CLI 1.4.2 on Linux, Node.js 24.18.0 locally; CI runs Node.js 22.
+- Antigravity CLI 1.4.2 and 1.4.3 on Linux, Node.js 24.18.0 locally; CI runs Node.js 22.
 - Self-hosted Laminar app-server v0.3.1.
 - The global plugin was updated and exercised through actual CLI hooks.
 - User transcripts and credentials remain private on the operator's machine. Only synthetic fixtures are committed.
+
+## 0.4.0 incremental processing and native inputs
+
+- Reviewed Laminar's official Codex and Claude Code plugin sources. Both use byte offsets; Codex explicitly documents at-least-once delivery. This adapter adopts append-only cursors but retains query reconciliation for ambiguous sends, because the deployed server does not provide an idempotency contract.
+- All 32 regression and 22 lifecycle checks pass. New scenarios cover appended turns and cursor pruning, mutation of committed boundary bytes, idle-daemon skipping and heartbeat health, native system/history/tool request snapshots, repeated historical enrichment without additional LLM calls or token usage, and bounded native metadata waits.
+- On the same long-running conversation, a warm manual worker pass used 0.346 CPU seconds versus 1.408 seconds before the change (75% lower), with wall time 0.332 versus 1.834 seconds and peak RSS 73,088 versus 203,800 KiB. An unchanged pass read 512 boundary-check bytes. A 30-second running-service sample used 1.016 CPU seconds (3.39% of one core); this is an observation under the sampled workload, not a throughput guarantee.
+- Installed-plugin CLI 1.4.3 trial: session `a19822cc-b51c-4be6-8a8e-2ed162d01fc1`, first trace `599b63a6-d40c-7763-fd05-671a8310ebc3`. The server returned two unique spans, native input messages including the system prompt, and numeric TTFT 9.122233431 seconds. Billing and answer-text first-token timing were explicitly marked unavailable.
+- Resuming that session produced trace `28f08b83-e198-46ac-4c46-822f032fb9d3`. Its six native input messages included both the previous and current user prompts. Both turns were independently exported without duplicate IDs.
+- Actual CLI 1.4.3 embedded descriptors passed the native field projection check. The live long-running CLI's executable was also checked separately. The systemd installer pins the discovered agy executable path and waits for a heartbeat from the new service PID; a restricted-PATH doctor check passed.
+- Historical enrichment added 129 distinct zero-duration DEFAULT children. The 132 original model spans were re-read and matched their pre-operation IDs and input/output token counts exactly. The 129 enrichment rows were unique and had zero input tokens, output tokens and costs. Two interrupted calls had no response step, and one had no persisted native timing; those three were not fabricated.
+- No provider wire request, image/media payload, first-answer-text timestamp or actual subscription bill is claimed. Uncertain sends still require server-side idempotency to become safely and automatically retryable.
 
 ## Why 0.1.0 failed
 

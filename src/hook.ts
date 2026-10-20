@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
 import { z } from "zod";
+import { captureNativeContext } from "./native-timing.js";
 import { hookPayload } from "./schema.js";
 import {
   appendRecord,
@@ -45,11 +46,20 @@ async function main(): Promise<void> {
   for await (const chunk of process.stdin) stdin += chunk;
   const payload = hookPayload.parse({ ...JSON.parse(stdin), event });
   assert(isAbsolute(payload.transcriptPath), "transcriptPath must be absolute");
-  await appendRecord(join(stateRoot, sessionKey(payload, config)), {
+  const directory = join(stateRoot, sessionKey(payload, config));
+  const owner = observeOwner();
+  await appendRecord(directory, {
     at: new Date().toISOString(),
     payload,
-    owner: observeOwner(),
+    owner,
   });
+  if (config.captureNativeContext) {
+    await captureNativeContext(
+      payload.transcriptPath,
+      payload.conversationId,
+      directory,
+    );
+  }
   console.log(JSON.stringify(reply));
 }
 void main();

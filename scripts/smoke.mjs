@@ -7,6 +7,7 @@ import {
   mkdir,
   readFile,
   writeFile,
+  appendFile,
   readdir,
   rm,
   utimes,
@@ -41,6 +42,41 @@ const handler = async (req, res) => {
   const body = JSON.parse(raw);
   assert.equal(req.headers.authorization, "Bearer synthetic");
   if (req.url === "/v1/sql/query") {
+    if (body.query.startsWith("SELECT trace_id, span_id, attributes")) {
+      const uuid = (s) =>
+        `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`;
+      res.end(
+        JSON.stringify({
+          data: [...stored.values()]
+            .map((v) => v.span)
+            .filter(
+              (span) =>
+                attributes(span)["lmnr.span.type"] === "LLM" ||
+                attributes(span)["antigravity.enrichment.type"] ===
+                  "native_metadata",
+            )
+            .map((span) => ({
+              trace_id: uuid(span.traceId),
+              span_type: attributes(span)["lmnr.span.type"],
+              span_id: uuid("0000000000000000" + span.spanId),
+              end_ns: span.endTimeUnixNano,
+              attributes: JSON.stringify(
+                Object.fromEntries(
+                  span.attributes.map((a) => [
+                    a.key,
+                    "intValue" in a.value
+                      ? Number(a.value.intValue)
+                      : (a.value.stringValue ??
+                        a.value.doubleValue ??
+                        a.value.boolValue),
+                  ]),
+                ),
+              ),
+            })),
+        }),
+      );
+      return;
+    }
     const sid = body.query
       .match(/span_id = '([0-9a-f-]+)'/)[1]
       .replaceAll("-", "")
@@ -182,6 +218,7 @@ async function fixture(data = full(), baseUrl = url, nativeTiming = false) {
       baseUrl,
       projectApiKey: "synthetic",
       captureNativeTiming: nativeTiming,
+      validateNativeSchema: false,
       timeoutMs: 1000,
     }),
   );
@@ -570,6 +607,37 @@ try {
     Buffer.from("0a0f5a0510c0b2cd3b62061080afd0e502120101", "hex"),
   );
   insertMetadata.run(1, Buffer.from("0a065a0062020801120103", "hex"));
+  // Include a native request snapshot independent of the visible turn transcript.
+  const varint = (n) => {
+    const bytes = [];
+    do {
+      bytes.push((n & 127) | (n > 127 ? 128 : 0));
+      n >>>= 7;
+    } while (n);
+    return Buffer.from(bytes);
+  };
+  const wire = (field, bytes) =>
+    Buffer.concat([varint(field * 8 + 2), varint(bytes.length), bytes]);
+  const stringField = (field, value) => wire(field, Buffer.from(value));
+  const nativePrompt = Buffer.concat([
+    Buffer.from([16, 1]),
+    stringField(3, "Earlier user context not in this transcript turn"),
+  ]);
+  const nativeTool = Buffer.concat([
+    stringField(1, "native_tool"),
+    stringField(2, "Synthetic tool definition"),
+    stringField(3, '{"type":"object"}'),
+  ]);
+  const nativeChat = Buffer.concat([
+    stringField(1, "Synthetic native system instruction"),
+    wire(2, nativePrompt),
+    wire(8, nativeTool),
+    Buffer.from("5a0510c0b2cd3b62061080afd0e502", "hex"),
+  ]);
+  insertMetadata.run(
+    0,
+    Buffer.concat([wire(1, nativeChat), Buffer.from("120101", "hex")]),
+  );
   nativeDb.close();
   await run(f);
   const nativeModels = entries()
@@ -602,6 +670,179 @@ try {
   assert.equal(entries().length, 4);
   pass(
     "native SQLite timing waits for metadata, preserves fractional/zero durations and exports thinking separately without duplicates",
+  );
+  const snapshotInput = JSON.parse(firstNative["gen_ai.input.messages"]);
+  assert.equal(snapshotInput[0].role, "system");
+  assert.equal(snapshotInput[0].content, "Synthetic native system instruction");
+  assert.equal(
+    snapshotInput[1].content,
+    "Earlier user context not in this transcript turn",
+  );
+  assert.equal(
+    JSON.parse(firstNative["gen_ai.tool.definitions"])[0].name,
+    "native_tool",
+  );
+  assert.equal(
+    firstNative["antigravity.input_source"],
+    "cli_sqlite_request_snapshot",
+  );
+  assert.equal(
+    firstNative["antigravity.llm.answer_ttft_status"],
+    "not_exposed_by_cli",
+  );
+  assert.equal(
+    firstNative["antigravity.cost.status"],
+    "billing_amount_not_exposed_by_cli",
+  );
+  pass(
+    "native request snapshot supplies system/history/tools with explicit metric availability",
+  );
+  const tokensBefore = entries().reduce(
+    (n, s) =>
+      n +
+      Number(attributes(s)["gen_ai.usage.input_tokens"] ?? 0) +
+      Number(attributes(s)["gen_ai.usage.output_tokens"] ?? 0),
+    0,
+  );
+  for (const value of stored.values())
+    if (attributes(value.span)["lmnr.span.type"] === "LLM")
+      value.span.attributes = value.span.attributes.filter(
+        (a) => !a.key.startsWith("antigravity.llm."),
+      );
+  await run(f, true, ["--backfill", f.state]);
+  await run(f);
+  unique();
+  assert.equal(entries().length, 6);
+  assert.equal(
+    entries().filter((s) => attributes(s)["lmnr.span.type"] === "LLM").length,
+    2,
+  );
+  assert.equal(
+    entries().reduce(
+      (n, s) =>
+        n +
+        Number(attributes(s)["gen_ai.usage.input_tokens"] ?? 0) +
+        Number(attributes(s)["gen_ai.usage.output_tokens"] ?? 0),
+      0,
+    ),
+    tokensBefore,
+  );
+  assert.equal(
+    entries().filter(
+      (s) => attributes(s)["antigravity.enrichment.type"] === "native_metadata",
+    ).length,
+    2,
+  );
+  await run(f, true, ["--backfill", f.state]);
+  unique();
+  assert.equal(entries().length, 6);
+  pass(
+    "historical enrichment is repeatable without new LLM calls or duplicate token totals",
+  );
+
+  stored.clear();
+  f = await fixture(full(), url, true);
+  await mkdir(join(f.dir, "cli", "conversations"));
+  const absentDb = new DatabaseSync(
+    join(f.dir, "cli", "conversations", `${f.base.conversationId}.db`),
+  );
+  absentDb.exec(
+    "CREATE TABLE gen_metadata (idx INTEGER PRIMARY KEY, data BLOB)",
+  );
+  absentDb.close();
+  await run(f);
+  const waitFile = join(f.state, "native-waits.json");
+  const waiting = JSON.parse(await readFile(waitFile, "utf8"));
+  assert.equal(Object.keys(waiting).length, 2);
+  for (const id of Object.keys(waiting)) waiting[id] = Date.now() - 120001;
+  await writeFile(waitFile, JSON.stringify(waiting));
+  await run(f);
+  assert.equal(entries().length, 4);
+  for (const span of entries().filter(
+    (s) => attributes(s)["lmnr.span.type"] === "LLM",
+  )) {
+    assert.equal(
+      attributes(span)["antigravity.llm.timing_status"],
+      "not_recorded",
+    );
+    assert.equal(
+      attributes(span)["antigravity.llm.timing_unavailable_reason"],
+      "native_metadata_wait_expired",
+    );
+  }
+  pass(
+    "missing native timing has a bounded wait and cannot hold the original turn forever",
+  );
+
+  // An appended turn must not rebuild/reupload the completed turn; only new bytes are read.
+  stored.clear();
+  f = await fixture();
+  await run(f);
+  await run(f);
+  const extraRows = [
+    row(4, "USER_INPUT", "second turn"),
+    row(5, "PLANNER_RESPONSE", "second answer", {
+      input_tokens: 2,
+      cache_read_tokens: 0,
+      output_tokens: 1,
+    }),
+  ];
+  const extraEvents = [
+    ev(8, "PreInvocation", { initialNumSteps: 5, invocationNum: 0 }),
+    ev(9, "PostInvocation", { initialNumSteps: 5, invocationNum: 0 }),
+    ev(10, "Stop", {
+      fullyIdle: true,
+      executionNum: 1,
+      terminationReason: "NO_TOOL_CALL",
+    }),
+  ].map((e) => ({ ...e, payload: { ...f.base, ...e.payload } }));
+  await appendFile(
+    f.base.transcriptPath,
+    extraRows.map(JSON.stringify).join("\n") + "\n",
+  );
+  await appendFile(
+    join(f.state, "events.jsonl"),
+    extraEvents.map(JSON.stringify).join("\n") + "\n",
+  );
+  await run(f);
+  await run(f);
+  unique();
+  assert.equal(entries().length, 6);
+  let status = JSON.parse(
+    await readFile(join(f.state, "worker-status.json"), "utf8"),
+  );
+  assert(status.sourceBytesRead <= 512);
+  assert.equal(status.bufferedRows, 2);
+  pass(
+    "byte cursors export an appended turn once and discard completed history",
+  );
+  const original = await readFile(f.base.transcriptPath, "utf8");
+  await writeFile(
+    f.base.transcriptPath,
+    original.replace("second answer", "edited answer"),
+  );
+  const changedSource = await run(f, false);
+  assert(changedSource.stderr.includes("Committed source bytes changed"));
+  pass(
+    "mutated committed source fails visibly instead of silently skipping changed bytes",
+  );
+  await writeFile(f.base.transcriptPath, original);
+  const daemon = launch(f, ["--daemon"]);
+  await new Promise((r) => setTimeout(r, 4000));
+  const checked = JSON.parse(
+    await readFile(join(f.state, "worker-status.json"), "utf8"),
+  ).checkedAt;
+  await new Promise((r) => setTimeout(r, 2200));
+  assert.equal(
+    JSON.parse(await readFile(join(f.state, "worker-status.json"), "utf8"))
+      .checkedAt,
+    checked,
+  );
+  await run(f, true, ["--health"]);
+  daemon.child.kill("SIGTERM");
+  await daemon.done;
+  pass(
+    "idle daemon skips unchanged sessions while maintaining a healthy heartbeat",
   );
   console.log(`${count} worker lifecycle scenarios passed`);
 } finally {

@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { copyFile, mkdir, rename, writeFile } from "node:fs/promises";
 import { homedir, userInfo } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, delimiter } from "node:path";
 import { fileURLToPath } from "node:url";
 
 function command(binary, args) {
@@ -22,6 +22,12 @@ assert(
   "Install and enable lmnr-antigravity with agy before installing its worker",
 );
 const target = installed.path;
+const unitPath = join(
+  homedir(),
+  ".config/systemd/user/lmnr-antigravity-worker.service",
+);
+if (existsSync(unitPath))
+  command("systemctl", ["--user", "stop", "lmnr-antigravity-worker.service"]);
 const startTicks = (pid) =>
   readFileSync(`/proc/${pid}/stat`, "utf8")
     .split(") ")[1]
@@ -74,9 +80,20 @@ const quote = (s) =>
   '"' +
   s.replaceAll("%", "%%").replaceAll("\\", "\\\\").replaceAll('"', '\\"') +
   '"';
-const environment = ["LMNR_ANTIGRAVITY_CONFIG", "LMNR_ANTIGRAVITY_STATE_DIR"]
-  .filter((k) => process.env[k] !== undefined)
-  .map((k) => `Environment=${quote(`${k}=${process.env[k]}`)}`)
+const agyExecutable = process.env.PATH.split(delimiter)
+  .map((entry) => join(entry, "agy"))
+  .find(existsSync);
+assert(
+  agyExecutable,
+  "Antigravity executable not found while installing the worker",
+);
+const environment = ["LMNR_ANTIGRAVITY_BINARY=" + resolve(agyExecutable)]
+  .map((entry) => `Environment=${quote(entry)}`)
+  .concat(
+    ["LMNR_ANTIGRAVITY_CONFIG", "LMNR_ANTIGRAVITY_STATE_DIR"]
+      .filter((k) => process.env[k] !== undefined)
+      .map((k) => `Environment=${quote(`${k}=${process.env[k]}`)}`),
+  )
   .join("\n");
 const unit = `[Unit]\nDescription=Laminar Antigravity durable background exporter\n\n[Service]\nType=simple\nExecStart=${quote(process.execPath)} ${quote(join(target, "dist/worker.cjs"))} --daemon\nRestart=on-failure\nRestartSec=5\nTimeoutStopSec=10\nKillMode=control-group\nUMask=0077\n${environment}\n\n[Install]\nWantedBy=default.target\n`;
 await writeFile(join(unitDir, "lmnr-antigravity-worker.service"), unit, {
@@ -93,8 +110,43 @@ assert.equal(
   ]).trim(),
   "active",
 );
+const stateDirectory =
+  process.env.LMNR_ANTIGRAVITY_STATE_DIR ??
+  join(homedir(), ".local/state/lmnr/antigravity");
+const heartbeatPath = join(stateDirectory, "heartbeat.json");
+const readinessDeadline = Date.now() + 60_000;
+while (true) {
+  assert.equal(
+    command("systemctl", [
+      "--user",
+      "is-active",
+      "lmnr-antigravity-worker.service",
+    ]).trim(),
+    "active",
+    "Worker exited before readiness; inspect its journal",
+  );
+  const pid = Number(
+    command("systemctl", [
+      "--user",
+      "show",
+      "lmnr-antigravity-worker.service",
+      "--property=MainPID",
+      "--value",
+    ]).trim(),
+  );
+  if (
+    existsSync(heartbeatPath) &&
+    JSON.parse(readFileSync(heartbeatPath, "utf8")).pid === pid
+  )
+    break;
+  assert(
+    Date.now() < readinessDeadline,
+    "Worker did not publish a readiness heartbeat; inspect its journal",
+  );
+  await new Promise((r) => setTimeout(r, 250));
+}
 console.log(
-  "Worker installed, enabled and active. Check pending delivery with node dist/worker.cjs --status.",
+  "Worker installed, enabled and ready. Check pending delivery with node dist/worker.cjs --health.",
 );
 const linger = command("loginctl", [
   "show-user",

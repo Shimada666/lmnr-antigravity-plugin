@@ -1,4 +1,4 @@
-# Validation — 0.4.0 — 2026-10-20
+# Validation — 0.4.1 — 2026-10-21
 
 ## Environment
 
@@ -6,6 +6,15 @@
 - Self-hosted Laminar app-server v0.3.1.
 - The global plugin was updated and exercised through actual CLI hooks.
 - User transcripts and credentials remain private on the operator's machine. Only synthetic fixtures are committed.
+
+## 0.4.1 recovery of real CLI transcript variants
+
+- A real session repeated an identical adjacent transcript row at step 3064. Incremental parsing now processes exact repeats once, including repeats across cursor reads. Conflicting repeated rows and decreasing indices still fail visibly; source transcripts are never rewritten.
+- The same session recorded a `RUNNING` background dispatch with `PreToolUse` and `PostInvocation`, but no `PostToolUse`. Its span now uses the invocation boundary as an explicitly labeled dispatch-duration upper bound. Successful `DONE` results still require their completion hook.
+- All 32 regression and 22 worker lifecycle scenarios pass, together with type/format checks, the bundle build and strict CLI plugin validation. Private manual integration checks cover identical duplicates, duplicates across cursor reads, conflicting duplicates and a background dispatch without a completion hook.
+- A private replay of 4,045 real transcript rows drained fully into a local receiver: 1,824 unique spans, including 872 LLM spans. Model token counters matched their source rows; interrupted invocations without model responses retained absent counters.
+- During live recovery, a server query returned 1,696 unique spans. All 1,055 pre-recovery span IDs and input/output token counts remained unchanged. The 750 available model counters matched the transcript; 624 exported native TTFT values matched independent protobuf extraction within one nanosecond.
+- The installed worker bundle matches the repository build. Existing user CLI processes remained running throughout recovery.
 
 ## 0.4.0 incremental processing and native inputs
 

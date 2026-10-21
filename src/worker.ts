@@ -100,14 +100,30 @@ async function session(directory: string, config: Config): Promise<void> {
     );
     const transcriptPath = events[0]!.payload.transcriptPath;
     const raw = await readAppended(transcriptPath, snapshot?.transcript);
-    let envelopes = [
+    const parsedRows = [
       ...(snapshot?.rows ?? []),
       ...raw.lines.map((line) => transcriptEnvelope.parse(JSON.parse(line))),
     ];
-    for (let i = 1; i < envelopes.length; i++)
+    let envelopes = parsedRows.filter((row, index) => {
+      const previous = parsedRows[index - 1];
+      if (!previous) return true;
+      if (row.step_index === previous.step_index) {
+        assert.deepStrictEqual(
+          row,
+          previous,
+          `Conflicting transcript rows at step ${row.step_index}`,
+        );
+        return false;
+      }
       assert(
-        envelopes[i]!.step_index > envelopes[i - 1]!.step_index,
+        row.step_index > previous.step_index,
         "Transcript indices must strictly increase",
+      );
+      return true;
+    });
+    if (envelopes.length !== parsedRows.length)
+      console.error(
+        `lmnr-antigravity duplicate_transcript_rows=${parsedRows.length - envelopes.length} session=${events[0]!.payload.conversationId}`,
       );
     const completedTurns = new Set(snapshot?.completedTurns ?? []);
     const settledReceipts = new Set(snapshot?.settledReceipts ?? []);

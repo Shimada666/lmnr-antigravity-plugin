@@ -382,13 +382,31 @@ export function buildSpans(
         }
         const failedBeforeHook =
           !preTool && ["ERROR", "INVALID"].includes(result.status);
+        // RUNNING is an asynchronous dispatch. PostInvocation proves that the
+        // model/tool iteration has returned even when no PostToolUse was emitted.
+        // This is an upper bound for dispatch, never the background job's runtime.
+        const backgroundDispatchBoundary =
+          result.status === "RUNNING" && preTool && !postTool && post
+            ? post.at
+            : undefined;
         if (!preTool && !failedBeforeHook) {
           assert(!finishAt, `Missing PreToolUse for step ${result.step_index}`);
           continue;
         }
-        if (!postTool && !failedBeforeHook && !result.error && !finishAt)
+        if (
+          !postTool &&
+          backgroundDispatchBoundary === undefined &&
+          !failedBeforeHook &&
+          !result.error &&
+          !finishAt
+        )
           continue;
-        if (normal && preTool && !result.error)
+        if (
+          normal &&
+          preTool &&
+          !result.error &&
+          backgroundDispatchBoundary === undefined
+        )
           assert(postTool, `Missing PostToolUse for step ${result.step_index}`);
         assert(
           result.content !== undefined || result.error !== undefined,
@@ -400,7 +418,10 @@ export function buildSpans(
             ? postTool.payload.error
             : undefined;
         const incomplete =
-          preTool !== undefined && postTool === undefined && !result.error;
+          preTool !== undefined &&
+          postTool === undefined &&
+          backgroundDispatchBoundary === undefined &&
+          !result.error;
         spans.push(
           makeSpan(
             call.name,
@@ -409,6 +430,7 @@ export function buildSpans(
               ? result.created_at
               : (preTool?.at ?? result.created_at),
             postTool?.at ??
+              backgroundDispatchBoundary ??
               (result.error
                 ? result.created_at
                 : preTool
@@ -427,9 +449,13 @@ export function buildSpans(
                   : "tool_execution",
               "antigravity.timing_source": postTool
                 ? "hook_wall_clock"
-                : preTool
-                  ? "recovery_observation"
-                  : "transcript_timestamp_only",
+                : backgroundDispatchBoundary !== undefined
+                  ? "post_invocation_dispatch_upper_bound"
+                  : preTool
+                    ? "recovery_observation"
+                    : "transcript_timestamp_only",
+              "antigravity.duration_is_upper_bound":
+                backgroundDispatchBoundary !== undefined,
             },
             hookError ||
               result.error ||
@@ -553,7 +579,7 @@ export function pack(spans: Span[]): ExportRequest {
           }),
         },
         scopeSpans: [
-          { scope: { name: "lmnr.antigravity", version: "0.4.0" }, spans },
+          { scope: { name: "lmnr.antigravity", version: "0.4.1" }, spans },
         ],
       },
     ],

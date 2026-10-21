@@ -21,6 +21,8 @@ The format was observed from `transcript_full.jsonl` supplied by real CLI hooks.
 
 Background tools retain their `RUNNING` transcript status even after their dispatch hooks finish. These spans are labeled `background_dispatch`: their duration measures dispatch, not the background job's lifetime. Subsequent system messages carry the job completion output. `ERROR` and `INVALID` tool results produce error spans, including failures rejected before tool hooks fire; those use explicitly labeled transcript-only timing. Parallel tool results are paired by step and checked against the model's calls.
 
+A `RUNNING` tool can return without a `PostToolUse` hook. When its corresponding `PostInvocation` is observed, the dispatch span ends at that boundary and is marked `antigravity.timing_source=post_invocation_dispatch_upper_bound` and `antigravity.duration_is_upper_bound=true`. This includes any time between dispatch and the invocation hook; it does not claim an exact tool completion time. Successful `DONE` tools still require their completion hook.
+
 Cancellation and terminal errors with a recorded fully-idle Stop produce error traces. An interrupted invocation without a model response is marked incomplete and has no invented token counts. Unknown current kinds/statuses, injected inputs, and missing successful hook pairs fail visibly. A partial final transcript line is deferred; complete preceding lines remain eligible for export.
 
 ## Thinking and first-output timing
@@ -130,6 +132,7 @@ The service uses the installed plugin's bundles. Run `node scripts/install-worke
 - Hooks must be enabled before the first model invocation of the turn. Earlier unobserved turns are not backfilled. Transcript compaction that physically deletes earlier observed rows is not supported.
 - The CLI must emit its first hook. New sessions can recover after process exit even without Stop; there is no recovery for completely unobserved invocations.
 - Byte cursors validate committed boundary bytes and fail visibly on truncation or changed committed bytes. They do not silently restart and duplicate history. A partial trailing UTF-8/JSON line is reread after completion.
+- Adjacent transcript rows that repeat the same step with identical parsed content are processed once, including repeats across incremental reads. Conflicting content for the same step or decreasing step indices still fails visibly. The original transcript is never rewritten.
 - Native protobuf projections are verified against the actual running CLI executable and cached by file identity and projection hash. Upgrades trigger verification again; unknown field types fail visibly. `validateNativeSchema: false` is only for synthetic/offline fixtures, not normal collection.
 - Span boundaries are observed at hook execution, not provider-server timestamps. Native TTFT/streaming attributes retain the separate CLI measurements. In CLI 1.4.2, `PostInvocation` occurs after tools, so the LLM span ends at the first pre-tool hook when tools are present.
 - Tool spans are siblings of LLM spans under the turn root. There is no guessed subagent hierarchy.

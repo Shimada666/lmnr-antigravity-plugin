@@ -21046,13 +21046,14 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
           (0, import_strict3.default)(postTool.at >= preTool.at);
         }
         const failedBeforeHook = !preTool && ["ERROR", "INVALID"].includes(result.status);
+        const backgroundDispatchBoundary = result.status === "RUNNING" && preTool && !postTool && post ? post.at : void 0;
         if (!preTool && !failedBeforeHook) {
           (0, import_strict3.default)(!finishAt, `Missing PreToolUse for step ${result.step_index}`);
           continue;
         }
-        if (!postTool && !failedBeforeHook && !result.error && !finishAt)
+        if (!postTool && backgroundDispatchBoundary === void 0 && !failedBeforeHook && !result.error && !finishAt)
           continue;
-        if (normal && preTool && !result.error)
+        if (normal && preTool && !result.error && backgroundDispatchBoundary === void 0)
           (0, import_strict3.default)(postTool, `Missing PostToolUse for step ${result.step_index}`);
         (0, import_strict3.default)(
           result.content !== void 0 || result.error !== void 0,
@@ -21060,13 +21061,13 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
         );
         const content = result.content ?? result.error;
         const hookError = postTool?.payload.event === "PostToolUse" ? postTool.payload.error : void 0;
-        const incomplete = preTool !== void 0 && postTool === void 0 && !result.error;
+        const incomplete = preTool !== void 0 && postTool === void 0 && backgroundDispatchBoundary === void 0 && !result.error;
         spans.push(
           makeSpan(
             call.name,
             `tool:${result.step_index}`,
             !postTool && result.error ? result.created_at : preTool?.at ?? result.created_at,
-            postTool?.at ?? (result.error ? result.created_at : preTool ? finishAt : result.created_at),
+            postTool?.at ?? backgroundDispatchBoundary ?? (result.error ? result.created_at : preTool ? finishAt : result.created_at),
             {
               "lmnr.span.type": "TOOL",
               "lmnr.span.input": json2(call.args, maxChars),
@@ -21075,7 +21076,8 @@ function buildSpans(rows, events, importedThroughStep, maxChars, observedAt, ali
               "antigravity.transcript_status": result.status,
               "antigravity.incomplete": incomplete,
               "antigravity.tool_scope": result.status === "RUNNING" ? "background_dispatch" : "tool_execution",
-              "antigravity.timing_source": postTool ? "hook_wall_clock" : preTool ? "recovery_observation" : "transcript_timestamp_only"
+              "antigravity.timing_source": postTool ? "hook_wall_clock" : backgroundDispatchBoundary !== void 0 ? "post_invocation_dispatch_upper_bound" : preTool ? "recovery_observation" : "transcript_timestamp_only",
+              "antigravity.duration_is_upper_bound": backgroundDispatchBoundary !== void 0
             },
             hookError || result.error || (incomplete ? terminalError || "Interrupted tool" : void 0)
           )
@@ -21190,7 +21192,7 @@ function pack(spans) {
           })
         },
         scopeSpans: [
-          { scope: { name: "lmnr.antigravity", version: "0.4.0" }, spans }
+          { scope: { name: "lmnr.antigravity", version: "0.4.1" }, spans }
         ]
       }
     ]
@@ -21840,14 +21842,30 @@ async function session(directory, config2) {
     );
     const transcriptPath = events[0].payload.transcriptPath;
     const raw = await readAppended(transcriptPath, snapshot?.transcript);
-    let envelopes = [
+    const parsedRows = [
       ...snapshot?.rows ?? [],
       ...raw.lines.map((line) => transcriptEnvelope.parse(JSON.parse(line)))
     ];
-    for (let i = 1; i < envelopes.length; i++)
+    let envelopes = parsedRows.filter((row, index2) => {
+      const previous = parsedRows[index2 - 1];
+      if (!previous) return true;
+      if (row.step_index === previous.step_index) {
+        import_strict8.default.deepStrictEqual(
+          row,
+          previous,
+          `Conflicting transcript rows at step ${row.step_index}`
+        );
+        return false;
+      }
       (0, import_strict8.default)(
-        envelopes[i].step_index > envelopes[i - 1].step_index,
+        row.step_index > previous.step_index,
         "Transcript indices must strictly increase"
+      );
+      return true;
+    });
+    if (envelopes.length !== parsedRows.length)
+      console.error(
+        `lmnr-antigravity duplicate_transcript_rows=${parsedRows.length - envelopes.length} session=${events[0].payload.conversationId}`
       );
     const completedTurns = new Set(snapshot?.completedTurns ?? []);
     const settledReceipts = new Set(snapshot?.settledReceipts ?? []);

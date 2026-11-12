@@ -1,5 +1,6 @@
 {
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "lmnr-antigravity",
+  "version": "0.4.1",
   "description": "Laminar tracing for Antigravity CLI 1.4.2; opt-in configuration required"
 }
